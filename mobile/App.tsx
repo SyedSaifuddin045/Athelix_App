@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import {
   ActivityIndicator,
   Alert,
@@ -14,7 +13,9 @@ import {
   TextInput,
   View,
   KeyboardAvoidingView,
+  StatusBar,
 } from "react-native";
+import { useSafeAreaInsets, SafeAreaProvider } from "react-native-safe-area-context";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -315,7 +316,7 @@ function ProgressBar({
 
 function VerticalBars({
   data,
-  height = 72,
+  height = 80,
   activeColor = COLORS.teal,
   mutedColor = "rgba(255,255,255,0.18)",
 }: {
@@ -327,10 +328,10 @@ function VerticalBars({
   const max = Math.max(...data.map((item) => item.value), 1);
 
   return (
-    <View>
+    <View style={{ height: height + 20 }}>
       <View style={[styles.barRow, { height }]}>
         {data.map((item, index) => {
-          const barHeight = item.value === 0 ? 6 : Math.max(12, (item.value / max) * height);
+          const barHeight = item.value === 0 ? 6 : Math.max(14, (item.value / max) * (height - 8));
           const isActive = item.highlight ?? index === data.length - 1;
           return (
             <View key={`${item.label ?? item.day}-${index}`} style={styles.barColumn}>
@@ -930,7 +931,7 @@ function HomeScreen({ navigation }: { navigation: any }) {
           <Text style={styles.sectionCardTitle}>This Week</Text>
           <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>6 / 7 days</Text>
         </View>
-        <View style={{ marginTop: 12 }}>
+        <View style={{ marginTop: 16 }}>
           <VerticalBars data={WEEKLY_BARS.map((item, index) => ({ day: item.day, value: item.value, highlight: index === 6 }))} />
         </View>
         <View style={styles.statRowDivider} />
@@ -1121,7 +1122,7 @@ function ExploreScreen({ navigation }: { navigation: any }) {
           <Pressable key={exercise.id} onPress={() => navigation.navigate("ExerciseDetail", { id: exercise.id })}>
             <Card style={styles.listRowCard}>
               <View style={styles.exerciseEmojiWrap}>
-                <Text style={{ fontSize: 22 }}>{exercise.emoji}</Text>
+                <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
               </View>
               <View style={styles.listRowBody}>
                 <Text style={styles.listRowTitle}>{exercise.name}</Text>
@@ -1129,7 +1130,7 @@ function ExploreScreen({ navigation }: { navigation: any }) {
                   {exercise.primaryMuscle} - {exercise.equipment}
                 </Text>
               </View>
-              <View style={{ alignItems: "flex-end", gap: 8 }}>
+              <View style={{ alignItems: "flex-end", gap: 6 }}>
                 <Tag label={exercise.difficulty} color={DIFFICULTY_COLORS[exercise.difficulty]} />
                 <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.22)" />
               </View>
@@ -1278,23 +1279,20 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
           >
             <Card style={{ borderColor: "advanced" in section && section.advanced ? "rgba(139,92,246,0.2)" : COLORS.border }}>
               <View style={styles.rowBetween}>
-                <View style={styles.rowGap}>
-                  <View style={[styles.sectionIconWrap, { backgroundColor: `${section.color}18` }]}>
-                    {section.title === "Templates" ? <Feather name="book-open" size={20} color={section.color} /> : null}
+                <View style={[styles.rowGap, { flexShrink: 1 }]}>
+                  <View style={[styles.sectionIconWrapSmall, { backgroundColor: `${section.color}18` }]}>
+                    {section.title === "Templates" ? <Feather name="book-open" size={18} color={section.color} /> : null}
                     {section.title === "Workout History" ? (
-                      <MaterialCommunityIcons name="history" size={20} color={section.color} />
+                      <MaterialCommunityIcons name="history" size={18} color={section.color} />
                     ) : null}
-                    {section.title === "Mesocycles" ? <Feather name="trending-up" size={20} color={section.color} /> : null}
+                    {section.title === "Mesocycles" ? <Feather name="trending-up" size={18} color={section.color} /> : null}
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <View style={[styles.rowGap, { alignItems: "center" }]}>
-                      <Text style={styles.cardTitle}>{section.title}</Text>
-                      {"advanced" in section && section.advanced ? <Tag label="ADVANCED" color={COLORS.purple} /> : null}
-                    </View>
+                  <View style={{ flex: 1, flexShrink: 1 }}>
+                    <Text style={styles.cardTitle}>{section.title}</Text>
                     <Text style={styles.detailLabel}>{section.desc}</Text>
                   </View>
                 </View>
-                <View style={{ alignItems: "flex-end", gap: 8 }}>
+                <View style={{ alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
                   <Tag label={section.badge} color={"advanced" in section && section.advanced ? COLORS.purple : section.color} />
                   <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
                 </View>
@@ -1326,12 +1324,12 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
         {TEMPLATE_LIST.map((template) => (
           <Card key={template.id} style={{ borderRadius: 28 }}>
             <View style={styles.rowBetween}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
+              <View style={{ flex: 1 }}>
                 <View style={styles.rowGap}>
                   <View style={[styles.statusDot, { backgroundColor: template.color }]} />
                   <Text style={styles.cardTitle}>{template.name}</Text>
                 </View>
-                <Text style={[styles.detailLabel, { marginLeft: 14, marginTop: 8 }]}>
+                <Text style={[styles.detailLabel, { marginLeft: 14, marginTop: 6 }]}>
                   {template.exercises.slice(0, 3).join(", ")}
                   {template.exercises.length > 3 ? ` +${template.exercises.length - 3}` : ""}
                 </Text>
@@ -1340,7 +1338,7 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
                 <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.5)" />
               </RoundButton>
             </View>
-            <View style={[styles.rowBetween, { marginTop: 18 }]}>
+            <View style={[styles.rowBetween, { marginTop: 14 }]}>
               <View style={styles.rowGapLarge}>
                 <MetaInline icon={<Feather name="clock" size={11} color="rgba(255,255,255,0.32)" />} text={template.duration} />
                 <MetaInline
@@ -1555,7 +1553,7 @@ function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { 
         <Card style={{ borderColor: "rgba(0,212,168,0.3)", backgroundColor: "rgba(0,212,168,0.12)" }}>
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
-              <View style={[styles.sectionIconWrap, { backgroundColor: "rgba(0,212,168,0.2)" }]}>
+              <View style={[styles.sectionIconWrapSmall, { backgroundColor: "rgba(0,212,168,0.2)" }]}>
                 <Feather name="zap" size={22} color={COLORS.teal} />
               </View>
               <View style={{ flex: 1 }}>
@@ -1898,14 +1896,14 @@ function WorkoutHistoryScreen({ navigation }: { navigation: any }) {
                 <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: session.id })}>
                   <Card style={styles.listRowCard}>
                     <View style={styles.historyMoodWrap}>
-                      <Text style={{ fontSize: 20 }}>{session.mood}</Text>
+                      <Text style={{ fontSize: 18 }}>{session.mood}</Text>
                     </View>
                     <View style={styles.listRowBody}>
                       <Text style={styles.listRowTitle}>{session.name}</Text>
                       <Text style={styles.detailLabel}>
                         {session.date} - {session.time}
                       </Text>
-                      <View style={[styles.rowGapLarge, { marginTop: 8, flexWrap: "wrap" }]}>
+                      <View style={[styles.rowGapLarge, { marginTop: 6 }]}>
                         <MetaInline icon={<Feather name="clock" size={10} color="rgba(255,255,255,0.3)" />} text={`${session.duration}m`} />
                         <MetaInline
                           icon={<MaterialCommunityIcons name="dumbbell" size={10} color="rgba(255,255,255,0.3)" />}
@@ -2066,14 +2064,14 @@ function MesocycleListScreen({ navigation }: { navigation: any }) {
             <Pressable key={meso.id} onPress={() => navigation.navigate("MesocycleDetail", { id: meso.id })}>
               <Card style={{ borderColor: `${meso.color}24` }}>
                 <View style={styles.rowBetween}>
-                  <View style={{ flex: 1, paddingRight: 12 }}>
+                  <View style={{ flex: 1 }}>
                     <View style={styles.rowGap}>
                       <View style={[styles.statusDot, { backgroundColor: meso.color }]} />
                       <Text style={styles.cardTitle}>{meso.name}</Text>
                     </View>
-                    <Text style={[styles.detailLabel, { marginLeft: 14, marginTop: 8 }]}>{meso.phase}</Text>
+                    <Text style={[styles.detailLabel, { marginLeft: 14, marginTop: 6 }]}>{meso.phase}</Text>
                   </View>
-                  <View style={{ alignItems: "flex-end", gap: 8 }}>
+                  <View style={{ alignItems: "flex-end", gap: 6 }}>
                     <Tag label={status.label} color={status.color} backgroundColor={status.bg} />
                     <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
                   </View>
@@ -2970,6 +2968,7 @@ function SettingsScreen({ navigation }: { navigation: any }) {
 }
 
 function MainTabNavigator() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={{
@@ -2979,8 +2978,8 @@ function MainTabNavigator() {
           borderTopColor: "rgba(255,255,255,0.06)",
           borderTopWidth: 1,
           paddingTop: 8,
-          paddingBottom: 10,
-          height: 70,
+          paddingBottom: 10 + Math.max(insets.bottom, 6),
+          height: 70 + Math.max(insets.bottom, 6),
         },
         tabBarActiveTintColor: COLORS.teal,
         tabBarInactiveTintColor: "rgba(255,255,255,0.28)",
@@ -3029,8 +3028,17 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <View style={styles.root}>
-      <ExpoStatusBar style="light" />
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
+  );
+}
+
+function AppContent() {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.root} translucent={false} />
       <NavigationContainer
         theme={{
           dark: true,
@@ -3132,7 +3140,7 @@ const styles = StyleSheet.create({
   rowGap: { flexDirection: "row", alignItems: "center", gap: 10 },
   rowGapTiny: { flexDirection: "row", alignItems: "center", gap: 4 },
   rowGapSmall: { flexDirection: "row", alignItems: "baseline", gap: 6 },
-  rowGapLarge: { flexDirection: "row", alignItems: "center", gap: 14 },
+  rowGapLarge: { flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" },
   smallStrongText: { color: COLORS.text, fontSize: 11, fontWeight: "700" },
   cardTitle: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
   sectionCardTitle: { color: COLORS.text, fontSize: 13, fontWeight: "700" },
@@ -3142,7 +3150,7 @@ const styles = StyleSheet.create({
   statPillValue: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
   statPillLabel: { color: "rgba(255,255,255,0.38)", fontSize: 10 },
   verticalDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.07)", marginHorizontal: 8 },
-  softIconWrap: { width: 36, height: 36, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" },
+  softIconWrap: { width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" },
   detailLabel: { color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 },
   heroMetric: { color: COLORS.text, fontSize: 20, fontWeight: "800" },
   metricSuffix: { color: "rgba(255,255,255,0.4)", fontSize: 13 },
@@ -3163,8 +3171,8 @@ const styles = StyleSheet.create({
   activeFilterTag: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: "rgba(0,212,168,0.15)", borderWidth: 1, borderColor: "rgba(0,212,168,0.3)" },
   activeFilterText: { color: COLORS.teal, fontSize: 11, fontWeight: "700" },
   resultsText: { color: "rgba(255,255,255,0.35)", fontSize: 11, marginBottom: 10 },
-  listRowCard: { flexDirection: "row", alignItems: "center", gap: 12 },
-  exerciseEmojiWrap: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)" },
+  listRowCard: { flexDirection: "row", alignItems: "center", gap: 10 },
+  exerciseEmojiWrap: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)" },
   listRowBody: { flex: 1 },
   listRowTitle: { color: COLORS.text, fontSize: 13, fontWeight: "700" },
   emptyState: { alignItems: "center", paddingVertical: 40, gap: 8 },
@@ -3196,6 +3204,7 @@ const styles = StyleSheet.create({
   compactStatValue: { color: COLORS.text, fontSize: 18, fontWeight: "900" },
   compactStatLabel: { color: "rgba(255,255,255,0.35)", fontSize: 9, textAlign: "center", marginTop: 6 },
   sectionIconWrap: { width: 48, height: 48, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  sectionIconWrapSmall: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center" },
   smallAccentButton: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 14, backgroundColor: "rgba(0,212,168,0.15)", borderWidth: 1, borderColor: "rgba(0,212,168,0.3)" },
   smallAccentText: { color: COLORS.teal, fontSize: 12, fontWeight: "700" },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
@@ -3210,8 +3219,8 @@ const styles = StyleSheet.create({
   templateGridHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8, marginBottom: 10 },
   templateGridRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   templateSetIndex: { width: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
-  gridHeaderText: { flex: 1, color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center" },
-  miniInput: { flex: 1, minHeight: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: COLORS.text, textAlign: "center", fontSize: 13, paddingHorizontal: 6 },
+  gridHeaderText: { flex: 1, color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 },
+  miniInput: { flex: 1, minHeight: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: COLORS.text, textAlign: "center", fontSize: 13, paddingHorizontal: 4 },
   dashedButton: { marginTop: 10, minHeight: 42, borderRadius: 14, borderWidth: 1, borderStyle: "dashed", borderColor: "rgba(0,212,168,0.25)", backgroundColor: "rgba(0,212,168,0.08)", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 6 },
   dashedButtonText: { color: COLORS.teal, fontSize: 12, fontWeight: "700" },
   selectableRow: { minHeight: 54, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: "rgba(255,255,255,0.03)", justifyContent: "center", paddingHorizontal: 14 },
@@ -3224,9 +3233,9 @@ const styles = StyleSheet.create({
   finishPillText: { color: "#000000", fontSize: 12, fontWeight: "800" },
   timerText: { color: COLORS.text, fontSize: 18, fontWeight: "900" },
   timerSubtext: { color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 2 },
-  workoutGridHeader: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 },
-  workoutGridRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  workoutGridIndex: { width: 32, alignItems: "center" },
+  workoutGridHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginBottom: 10 },
+  workoutGridRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 },
+  workoutGridIndex: { width: 32, alignItems: "center", justifyContent: "center" },
   doneToggle: { width: 36, height: 36, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
   moodButton: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "transparent" },
   notesInput: { flex: 1, minHeight: 64, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", color: COLORS.text, paddingHorizontal: 14, paddingVertical: 12, fontSize: 13, textAlignVertical: "top" },
@@ -3236,7 +3245,7 @@ const styles = StyleSheet.create({
   sheetHandle: { width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: "rgba(255,255,255,0.2)", marginBottom: 18 },
   sheetTitle: { color: COLORS.text, fontSize: 22, fontWeight: "900", textAlign: "center" },
   sheetSubtitle: { color: COLORS.muted, fontSize: 13, textAlign: "center", marginTop: 6 },
-  historyMoodWrap: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" },
+  historyMoodWrap: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" },
   menuPopover: { position: "absolute", top: 46, right: 0, width: 170, borderRadius: 18, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 6, zIndex: 10 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   menuItemText: { color: "rgba(255,255,255,0.75)", fontSize: 13 },
