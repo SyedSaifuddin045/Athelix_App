@@ -1,44 +1,35 @@
 import React from "react";
 import { View, StyleSheet, StatusBar } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
-import { NavigationContainer } from "@react-navigation/native";
+import { PostHogProvider } from "./src/services/analytics/PostHogProvider";
 import { AppNavigator } from "./src/navigation";
 import { COLORS } from "./src/theme/colors";
+import { env } from "./src/env";
 
 function AppContent(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.root} translucent={false} />
-      <NavigationContainer
-        theme={{
-          dark: true,
-          colors: {
-            primary: COLORS.teal,
-            background: COLORS.root,
-            card: COLORS.screen,
-            text: COLORS.text,
-            border: COLORS.border,
-            notification: COLORS.teal,
-          },
-          fonts: {
-            regular: { fontFamily: "System", fontWeight: "400" as const },
-            medium: { fontFamily: "System", fontWeight: "500" as const },
-            bold: { fontFamily: "System", fontWeight: "700" as const },
-            heavy: { fontFamily: "System", fontWeight: "800" as const },
-          },
-        }}
-      >
-        <AppNavigator />
-      </NavigationContainer>
+      <AppNavigator />
     </View>
   );
 }
 
 export default function App(): React.JSX.Element {
+  if (!env.isAnalyticsEnabled) {
+    return (
+      <SafeAreaProvider>
+        <AppContent />
+      </SafeAreaProvider>
+    );
+  }
+
   return (
     <SafeAreaProvider>
-      <AppContent />
+      <PostHogProvider>
+        <AppContent />
+      </PostHogProvider>
     </SafeAreaProvider>
   );
 }

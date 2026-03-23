@@ -5,10 +5,13 @@ import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, Tag, PrimaryButton, RoundButton } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
+import { useScreenAnalytics, identifyUser, captureEvent } from "../../services/analytics";
 
 type Props = RootStackScreenProps<"Login">;
 
 export function LoginScreen({ navigation }: Props): React.JSX.Element {
+  useScreenAnalytics("Login");
+  
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -22,6 +25,10 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
     }
     setError("");
     setLoading(true);
+    
+    identifyUser(email, { email });
+    captureEvent("user_logged_in", { method: "email" });
+    
     setTimeout(() => {
       setLoading(false);
       navigation.replace("MainTabs");

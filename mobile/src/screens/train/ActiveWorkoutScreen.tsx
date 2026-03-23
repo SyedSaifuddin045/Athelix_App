@@ -7,15 +7,22 @@ import { Screen, Card, Tag, PrimaryButton, MiniInput, ProgressBar } from "../../
 import { RootStackScreenProps } from "../../types/navigation";
 import { INITIAL_WORKOUT_EXERCISES, WorkoutExercise, WorkoutSet } from "../../data";
 import { formatTime } from "../../utils";
+import { useScreenAnalytics, captureEvent } from "../../services/analytics";
 
 type Props = RootStackScreenProps<"ActiveWorkout">;
 
 export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
+  useScreenAnalytics("ActiveWorkout");
+  
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [workoutName, setWorkoutName] = useState("Upper Body Push");
   const [exercises, setExercises] = useState<WorkoutExercise[]>(INITIAL_WORKOUT_EXERCISES);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [notes, setNotes] = useState("");
+
+  useEffect(() => {
+    captureEvent("workout_started", { workout_name: workoutName });
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -26,8 +33,17 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
 
   const toggleSet = (exerciseIndex: number, setIndex: number) => {
     const updated = [...exercises];
-    updated[exerciseIndex].sets[setIndex].done = !updated[exerciseIndex].sets[setIndex].done;
+    const wasDone = updated[exerciseIndex].sets[setIndex].done;
+    updated[exerciseIndex].sets[setIndex].done = !wasDone;
     setExercises(updated);
+    
+    if (!wasDone) {
+      captureEvent("set_completed", {
+        exercise_name: exercises[exerciseIndex].name,
+        set_number: setIndex + 1,
+        workout_name: workoutName,
+      });
+    }
   };
 
   const updateSetWeight = (exerciseIndex: number, setIndex: number, weight: string) => {
@@ -48,6 +64,17 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
   );
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => !s.warmup).length, 0);
   const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
+
+  const handleFinishWorkout = () => {
+    captureEvent("workout_completed", {
+      workout_name: workoutName,
+      duration_seconds: elapsedSeconds,
+      exercises_count: exercises.length,
+      sets_completed: completedSets,
+      total_sets: totalSets,
+    });
+    navigation.navigate("SessionDetail", { id: "1" });
+  };
 
   const finishWorkout = () => {
     setShowFinishModal(true);
