@@ -9,11 +9,11 @@ interface VerticalBarsProps {
   mutedColor?: string;
 }
 
-export function VerticalBars({ data, height = 80, activeColor = COLORS.teal, mutedColor = "rgba(255,255,255,0.18)" }: VerticalBarsProps): React.JSX.Element {
+export function VerticalBars({ data, height = 70, activeColor = COLORS.teal, mutedColor = "rgba(255,255,255,0.18)" }: VerticalBarsProps): React.JSX.Element {
   const max = Math.max(...data.map((item) => item.value), 1);
 
   return (
-    <View style={{ height: height + 20 }}>
+    <View style={styles.container}>
       <View style={[styles.barRow, { height }]}>
         {data.map((item, index) => {
           const barHeight = item.value === 0 ? 6 : Math.max(14, (item.value / max) * (height - 8));
@@ -41,9 +41,10 @@ export function VerticalBars({ data, height = 80, activeColor = COLORS.teal, mut
 }
 
 const styles = StyleSheet.create({
+  container: { paddingVertical: 8 },
   barRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   barColumn: { flex: 1, alignItems: "center" },
   barTrackShell: { justifyContent: "flex-end", width: 26 },
   bar: { width: 22, borderRadius: 6, alignSelf: "center" },
-  barLabel: { color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 8 },
+  barLabel: { color: COLORS.faint, fontSize: 10, marginTop: 8, fontWeight: "500" },
 });

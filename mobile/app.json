@@ -26,12 +26,10 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-localization"
+      "expo-localization",
+      "expo-font"
     ],
     "extra": {
-      "POSTHOG_API_KEY": "phc_test_key",
-      "POSTHOG_HOST": "https://us.i.posthog.com",
-      "ENABLE_ANALYTICS_IN_DEV": "true",
       "eas": {
         "projectId": "fittrack-mobile"
       }

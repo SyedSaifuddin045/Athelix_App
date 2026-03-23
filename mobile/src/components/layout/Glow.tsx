@@ -19,5 +19,6 @@ const styles = StyleSheet.create({
     height: 260,
     borderRadius: 260,
     opacity: 0.4,
+    zIndex: -1,
   },
 });

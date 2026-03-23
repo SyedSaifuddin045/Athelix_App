@@ -1,38 +1,21 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import type { NavigationContainerRef } from "@react-navigation/native";
-import { captureEvent, identifyUser, resetUser, setUserProperties, screenView } from "./analyticsService";
-import type { RootStackParamList } from "../../types/navigation";
+import { usePostHog, useFeatureFlag as usePostHogFeatureFlag } from "posthog-react-native";
 
-type NavigationRef = NavigationContainerRef<RootStackParamList>;
-
-interface AnalyticsOptions {
-  trackScreenViews?: boolean;
-  userId?: string;
-  userProperties?: Record<string, unknown>;
-}
-
-export function useAnalytics(options: AnalyticsOptions = {}) {
-  const { trackScreenViews = true, userId, userProperties = {} } = options;
-  const navigation = useNavigation<NavigationRef>();
+export function useAnalytics() {
+  const navigation = useNavigation();
   const route = useRoute();
+  const posthog = usePostHog();
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (userId) {
-      identifyUser(userId, userProperties);
-    }
-  }, [userId, userProperties]);
-
-  useEffect(() => {
-    if (!trackScreenViews) return;
-
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      const currentRoute = navigation.getState();
-      const routeName = currentRoute.routes[currentRoute.index ?? 0]?.name;
-      if (routeName) {
-        screenView(routeName);
+      const state = navigation.getState();
+      const currentRoute = state?.routes?.[state.index ?? 0];
+      const routeName = currentRoute?.name;
+      if (routeName && posthog) {
+        posthog.screen(routeName);
       }
     }
 
@@ -43,28 +26,34 @@ export function useAnalytics(options: AnalyticsOptions = {}) {
       const currentRoute = state.routes[state.index ?? state.routes.length - 1];
       const routeName = currentRoute?.name;
       
-      if (routeName) {
-        screenView(routeName);
+      if (routeName && posthog) {
+        posthog.screen(routeName);
       }
     });
 
     return unsubscribe;
-  }, [navigation, trackScreenViews]);
+  }, [navigation, posthog]);
 
   const track = useCallback((eventName: string, properties?: Record<string, unknown>) => {
-    captureEvent(eventName, properties);
-  }, []);
+    if (posthog) {
+      posthog.capture(eventName, properties as any);
+    }
+  }, [posthog]);
 
   const trackButtonPress = useCallback((buttonName: string, screenName?: string) => {
-    captureEvent("button_pressed", {
-      button_name: buttonName,
-      screen_name: screenName ?? route.name,
-    });
-  }, [route.name]);
+    if (posthog) {
+      posthog.capture("button_pressed", {
+        button_name: buttonName,
+        screen_name: screenName ?? route.name,
+      } as any);
+    }
+  }, [posthog, route.name]);
 
   const trackAction = useCallback((action: string, properties?: Record<string, unknown>) => {
-    captureEvent(action, properties);
-  }, []);
+    if (posthog) {
+      posthog.capture(action, properties as any);
+    }
+  }, [posthog]);
 
   return {
     track,
@@ -74,30 +63,34 @@ export function useAnalytics(options: AnalyticsOptions = {}) {
 }
 
 export function useScreenAnalytics(screenName: string) {
-  const route = useRoute();
+  const posthog = usePostHog();
   const isFirstRender = useRef(true);
 
   useEffect(() => {
-    if (isFirstRender.current) {
+    if (isFirstRender.current && posthog) {
       isFirstRender.current = false;
-      screenView(screenName);
+      posthog.screen(screenName);
     }
-  }, [screenName]);
+  }, [screenName, posthog]);
 
   const trackEvent = useCallback((eventName: string, properties?: Record<string, unknown>) => {
-    captureEvent(eventName, {
-      ...properties,
-      screen_name: screenName,
-    });
-  }, [screenName]);
+    if (posthog) {
+      posthog.capture(eventName, {
+        ...properties,
+        screen_name: screenName,
+      } as any);
+    }
+  }, [screenName, posthog]);
 
   const trackInteraction = useCallback((interaction: string, properties?: Record<string, unknown>) => {
-    captureEvent("interaction", {
-      ...properties,
-      interaction_type: interaction,
-      screen_name: screenName,
-    });
-  }, [screenName]);
+    if (posthog) {
+      posthog.capture("interaction", {
+        ...properties,
+        interaction_type: interaction,
+        screen_name: screenName,
+      } as any);
+    }
+  }, [screenName, posthog]);
 
   return {
     trackEvent,
@@ -105,4 +98,52 @@ export function useScreenAnalytics(screenName: string) {
   };
 }
 
-export { captureEvent, identifyUser, resetUser, setUserProperties, screenView } from "./analyticsService";
+export function useIdentifyUser(userId: string, userProperties?: Record<string, unknown>) {
+  const posthog = usePostHog();
+
+  useEffect(() => {
+    if (posthog && userId) {
+      posthog.identify(userId, userProperties as any);
+    }
+  }, [posthog, userId, userProperties]);
+}
+
+export function useFeatureFlag(flagKey: string): boolean | undefined {
+  const result = usePostHogFeatureFlag(flagKey);
+  return typeof result === "boolean" ? result : undefined;
+}
+
+export function captureEvent(eventName: string, properties?: Record<string, unknown>): void {
+  const posthog = usePostHog();
+  if (posthog) {
+    posthog.capture(eventName, properties as any);
+  }
+}
+
+export function identifyUser(userId: string, userProperties?: Record<string, unknown>): void {
+  const posthog = usePostHog();
+  if (posthog) {
+    posthog.identify(userId, userProperties as any);
+  }
+}
+
+export function resetUser(): void {
+  const posthog = usePostHog();
+  if (posthog) {
+    posthog.reset();
+  }
+}
+
+export function setUserProperties(properties: Record<string, unknown>): void {
+  const posthog = usePostHog();
+  if (posthog) {
+    posthog.setPersonProperties(properties as any);
+  }
+}
+
+export function screenView(screenName: string, properties?: Record<string, unknown>): void {
+  const posthog = usePostHog();
+  if (posthog) {
+    posthog.screen(screenName, properties as any);
+  }
+}

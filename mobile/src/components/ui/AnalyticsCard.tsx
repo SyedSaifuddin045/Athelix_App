@@ -11,7 +11,7 @@ interface AnalyticsCardProps {
 
 export function AnalyticsCard({ label, value, sub, color }: AnalyticsCardProps): React.JSX.Element {
   return (
-    <View style={styles.analyticsCard}>
+    <View style={[styles.analyticsCard, { borderColor: `${color}30` }]}>
       <Text style={styles.analyticsLabel}>{label}</Text>
       <Text style={[styles.analyticsValue, { color }]}>{value}</Text>
       <Text style={styles.analyticsSub}>{sub}</Text>
@@ -23,9 +23,8 @@ const styles = StyleSheet.create({
   analyticsCard: {
     width: "48%",
     borderRadius: 16,
-    backgroundColor: "rgba(139,92,246,0.1)",
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: "rgba(139,92,246,0.15)",
     paddingHorizontal: 12,
     paddingVertical: 12,
   },
