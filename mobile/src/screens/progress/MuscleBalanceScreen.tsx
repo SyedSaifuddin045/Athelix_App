@@ -1,26 +1,71 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, Tag, BackHeader, ProgressBar, SectionEyebrow } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { MUSCLE_DATA, MUSCLE_PERIODS } from "../../data";
+import { useMuscleBalance } from "../../hooks";
 import { getMuscleStatus } from "../../utils";
 
 type Props = RootStackScreenProps<"MuscleBalance">;
 
+const PERIODS = ["2W", "4W", "8W", "12W"];
+
+const MUSCLE_COLORS: Record<string, string> = {
+  "Chest": COLORS.red,
+  "Back": COLORS.blue,
+  "Shoulders": COLORS.purple,
+  "Biceps": COLORS.green,
+  "Triceps": COLORS.orange,
+  "Forearms": COLORS.gold,
+  "Quadriceps": COLORS.teal,
+  "Hamstrings": "#ec4899",
+  "Glutes": COLORS.green,
+  "Calves": COLORS.orange,
+  "Abs": "#eab308",
+  "Obliques": "#eab308",
+};
+
 export function MuscleBalanceScreen({ navigation }: Props): React.JSX.Element {
   const [selectedPeriod, setSelectedPeriod] = useState("4W");
+  const weeks = parseInt(selectedPeriod.replace("W", ""));
+  
+  const { data: muscleBalance, isLoading, error } = useMuscleBalance({ weeks });
 
-  const totalSets = MUSCLE_DATA.reduce((sum, m) => sum + m.sets, 0);
-  const balancedMuscles = MUSCLE_DATA.filter((m) => {
-    const status = getMuscleStatus(m.sets, m.target);
+  if (isLoading) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <BackHeader title="Muscle Balance" subtitle="Weekly analysis" onBack={() => navigation.goBack()} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.teal} />
+          <Text style={styles.loadingText}>Loading muscle balance...</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error || !muscleBalance) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <BackHeader title="Muscle Balance" subtitle="Weekly analysis" onBack={() => navigation.goBack()} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load muscle balance data</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  const totalSets = muscleBalance.total_sets || 0;
+  const balancedMuscles = (muscleBalance.muscle_groups || []).filter((m) => {
+    const status = getMuscleStatus(m.sets, m.target_sets);
     return status.label === "On track" || status.label === "Over";
   }).length;
-  const needsWork = MUSCLE_DATA.filter((m) => {
-    const status = getMuscleStatus(m.sets, m.target);
+  const needsWork = (muscleBalance.muscle_groups || []).filter((m) => {
+    const status = getMuscleStatus(m.sets, m.target_sets);
     return status.label === "Under" || status.label === "Low";
   });
+
+  const balanceScore = Math.round((balancedMuscles / (muscleBalance.muscle_groups?.length || 1)) * 100);
 
   const getStatusColor = (label: string) => {
     switch (label) {
@@ -37,7 +82,7 @@ export function MuscleBalanceScreen({ navigation }: Props): React.JSX.Element {
       <BackHeader title="Muscle Balance" subtitle="Weekly analysis" onBack={() => navigation.goBack()} />
 
       <View style={styles.periodSelector}>
-        {MUSCLE_PERIODS.map((period) => (
+        {PERIODS.map((period) => (
           <Pressable
             key={period}
             onPress={() => setSelectedPeriod(period)}
@@ -68,19 +113,20 @@ export function MuscleBalanceScreen({ navigation }: Props): React.JSX.Element {
       <View style={styles.section}>
         <SectionEyebrow color={COLORS.purple}>Muscle Groups</SectionEyebrow>
 
-        {MUSCLE_DATA.map((muscle) => {
-          const status = getMuscleStatus(muscle.sets, muscle.target);
-          const percent = (muscle.sets / muscle.target) * 100;
+        {(muscleBalance.muscle_groups || []).map((muscle) => {
+          const status = getMuscleStatus(muscle.sets, muscle.target_sets);
+          const percent = muscle.target_sets > 0 ? (muscle.sets / muscle.target_sets) * 100 : 0;
+          const muscleColor = MUSCLE_COLORS[muscle.muscle] || COLORS.teal;
 
           return (
             <Card key={muscle.muscle} style={styles.muscleCard}>
               <View style={styles.muscleHeader}>
                 <View style={styles.muscleLeft}>
-                  <View style={[styles.muscleDot, { backgroundColor: muscle.color }]} />
+                  <View style={[styles.muscleDot, { backgroundColor: muscleColor }]} />
                   <Text style={styles.muscleName}>{muscle.muscle}</Text>
                 </View>
                 <View style={styles.muscleRight}>
-                  <Text style={styles.muscleSets}>{muscle.sets}/{muscle.target}</Text>
+                  <Text style={styles.muscleSets}>{muscle.sets}/{muscle.target_sets}</Text>
                   <Tag
                     label={status.label}
                     color={status.color}
@@ -101,7 +147,7 @@ export function MuscleBalanceScreen({ navigation }: Props): React.JSX.Element {
                     ]}
                   />
                   {percent > 100 && (
-                    <View style={[styles.excessIndicator, { left: `${Math.min(100, (muscle.target / muscle.sets) * 100)}%` }]}>
+                    <View style={[styles.excessIndicator, { left: `${Math.min(100, (muscle.target_sets / muscle.sets) * 100)}%` }]}>
                       <View style={[styles.excessLine, { backgroundColor: COLORS.text }]} />
                     </View>
                   )}
@@ -125,15 +171,18 @@ export function MuscleBalanceScreen({ navigation }: Props): React.JSX.Element {
               Based on your training history, consider adding more volume to:
             </Text>
             <View style={styles.focusAreas}>
-              {needsWork.map((muscle) => (
-                <View key={muscle.muscle} style={styles.focusArea}>
-                  <View style={[styles.focusDot, { backgroundColor: muscle.color }]} />
-                  <Text style={styles.focusMuscle}>{muscle.muscle}</Text>
-                  <Text style={styles.focusSets}>
-                    {muscle.target - muscle.sets} more sets needed
-                  </Text>
-                </View>
-              ))}
+              {needsWork.map((muscle) => {
+                const muscleColor = MUSCLE_COLORS[muscle.muscle] || COLORS.teal;
+                return (
+                  <View key={muscle.muscle} style={styles.focusArea}>
+                    <View style={[styles.focusDot, { backgroundColor: muscleColor }]} />
+                    <Text style={styles.focusMuscle}>{muscle.muscle}</Text>
+                    <Text style={styles.focusSets}>
+                      {muscle.target_sets - muscle.sets} more sets needed
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </Card>
         </View>
@@ -143,14 +192,18 @@ export function MuscleBalanceScreen({ navigation }: Props): React.JSX.Element {
         <SectionEyebrow color={COLORS.teal}>Balance Score</SectionEyebrow>
         <Card style={styles.scoreCard}>
           <View style={styles.scoreCircle}>
-            <Text style={styles.scoreValue}>82</Text>
+            <Text style={styles.scoreValue}>{balanceScore}</Text>
             <Text style={styles.scoreLabel}>out of 100</Text>
           </View>
           <View style={styles.scoreBar}>
-            <View style={[styles.scoreBarFill, { width: "82%", backgroundColor: COLORS.teal }]} />
+            <View style={[styles.scoreBarFill, { width: `${balanceScore}%`, backgroundColor: COLORS.teal }]} />
           </View>
           <Text style={styles.scoreDesc}>
-            Good overall balance! Focus on hamstrings and calves for optimal development.
+            {balanceScore >= 80 
+              ? "Great overall balance! Keep up the good work." 
+              : balanceScore >= 60 
+                ? "Good overall balance! Focus on underperforming muscle groups for optimal development."
+                : "Room for improvement. Prioritize underperforming muscle groups."}
           </Text>
         </Card>
       </View>
@@ -159,6 +212,25 @@ export function MuscleBalanceScreen({ navigation }: Props): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: COLORS.muted,
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: COLORS.red,
+    fontSize: 14,
+  },
   periodSelector: { flexDirection: "row", gap: 8, marginTop: 16 },
   periodChip: { flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center" },
   periodChipActive: { backgroundColor: COLORS.purple },

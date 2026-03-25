@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
@@ -8,17 +8,21 @@ import { RootStackScreenProps } from "../../types/navigation";
 import { INITIAL_WORKOUT_EXERCISES, WorkoutExercise, WorkoutSet } from "../../data";
 import { formatTime } from "../../utils";
 import { usePostHog } from "posthog-react-native";
+import { useCreateSession, useUpdateSession } from "../../hooks";
 
 type Props = RootStackScreenProps<"ActiveWorkout">;
 
 export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
   const posthog = usePostHog();
+  const createSession = useCreateSession();
+  const updateSession = useUpdateSession();
   
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [workoutName, setWorkoutName] = useState("Upper Body Push");
   const [exercises, setExercises] = useState<WorkoutExercise[]>(INITIAL_WORKOUT_EXERCISES);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [notes, setNotes] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (posthog) {
@@ -67,7 +71,17 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => !s.warmup).length, 0);
   const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
-  const handleFinishWorkout = () => {
+  const handleFinishWorkout = async () => {
+    if (sessionId) {
+      await updateSession.mutateAsync({
+        sessionId,
+        data: {
+          notes,
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        },
+      });
+    }
     if (posthog) {
       posthog.capture("workout_completed", {
         workout_name: workoutName,
@@ -77,17 +91,39 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
         total_sets: totalSets,
       });
     }
-    navigation.navigate("SessionDetail", { id: "1" });
+    const newSessionId = sessionId || "1";
+    (navigation as any).navigate("SessionDetail", { id: newSessionId });
   };
 
   const finishWorkout = () => {
     setShowFinishModal(true);
   };
 
-  const confirmFinish = () => {
+  const confirmFinish = async () => {
     setShowFinishModal(false);
-    navigation.replace("MainTabs");
+    
+    if (!sessionId) {
+      try {
+        const result = await createSession.mutateAsync({
+          name: workoutName,
+        });
+        await updateSession.mutateAsync({
+          sessionId: result.id,
+          data: {
+            notes,
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        console.error("Failed to save workout:", error);
+      }
+    }
+    
+    (navigation as any).navigate("MainTabs");
   };
+
+  const isLoading = createSession.isPending || updateSession.isPending;
 
   return (
     <Screen scroll={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
@@ -175,7 +211,17 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
       </ScrollView>
 
       <View style={styles.footer}>
-        <PrimaryButton label="Finish Workout" onPress={finishWorkout} icon={<Feather name="check" size={16} color="#000000" />} />
+        <PrimaryButton 
+          label="Finish Workout" 
+          onPress={finishWorkout} 
+          icon={<Feather name="check" size={16} color="#000000" />} 
+          disabled={isLoading}
+        />
+        {isLoading && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator color={COLORS.teal} />
+          </View>
+        )}
       </View>
 
       <Modal visible={showFinishModal} transparent animationType="slide">
@@ -216,7 +262,16 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
             </View>
 
             <View style={styles.modalActions}>
-              <PrimaryButton label="Save Workout" onPress={confirmFinish} />
+              <PrimaryButton 
+                label={isLoading ? "Saving..." : "Save Workout"} 
+                onPress={confirmFinish} 
+                disabled={isLoading}
+              />
+              {isLoading && (
+                <View style={styles.modalLoading}>
+                  <ActivityIndicator size="small" color={COLORS.teal} />
+                </View>
+              )}
               <Pressable onPress={() => setShowFinishModal(false)} style={styles.cancelButton}>
                 <Text style={styles.cancelButtonText}>Keep Training</Text>
               </Pressable>
@@ -262,6 +317,7 @@ const styles = StyleSheet.create({
   addExerciseButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: `${COLORS.teal}30`, borderStyle: "dashed" },
   addExerciseText: { color: COLORS.teal, fontSize: 14, fontWeight: "700" },
   footer: { marginTop: 16 },
+  loadingOverlay: { position: "absolute", right: 16, top: "50%" },
   modalOverlay: { flex: 1, justifyContent: "flex-end" },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.6)" },
   modalSheet: { backgroundColor: COLORS.screen, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
@@ -275,6 +331,7 @@ const styles = StyleSheet.create({
   modalNotes: { marginTop: 20 },
   notesLabel: { color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8 },
   modalActions: { marginTop: 24, gap: 12 },
+  modalLoading: { alignItems: "center", marginTop: 8 },
   cancelButton: { alignItems: "center", paddingVertical: 16 },
   cancelButtonText: { color: COLORS.muted, fontSize: 14, fontWeight: "600" },
 });

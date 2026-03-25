@@ -1,23 +1,70 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Switch, TextInput } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Switch, TextInput, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, BackHeader, SectionEyebrow } from "../../components";
+import { Screen, Card, Tag, BackHeader, SectionEyebrow, PrimaryButton } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { UNITS } from "../../data";
+import { useCurrentUser, useUserProfile, useUpdateProfile } from "../../hooks";
+import { useAuthStore } from "../../store";
 
 type Props = RootStackScreenProps<"Settings">;
 
+const UNITS = [
+  { label: "Metric (kg / cm)", value: "metric" },
+  { label: "Imperial (lbs / ft)", value: "imperial" },
+];
+
 export function SettingsScreen({ navigation }: Props): React.JSX.Element {
-  const [displayName, setDisplayName] = useState("Jordan");
-  const [email, setEmail] = useState("jordan@example.com");
-  const [unit, setUnit] = useState<"metric" | "imperial">("metric");
+  const { data: user } = useCurrentUser();
+  const { data: profile } = useUserProfile();
+  const updateProfile = useUpdateProfile();
+  const logout = useAuthStore((state) => state.logout);
+
+  const [displayName, setDisplayName] = useState(profile?.display_name || user?.username || "");
+  const [unit, setUnit] = useState<"metric" | "imperial">(profile?.units || "metric");
   const [notifications, setNotifications] = useState({
     workoutReminders: true,
     prAlerts: true,
     weeklySummary: true,
     community: false,
   });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await updateProfile.mutateAsync({
+        display_name: displayName,
+        units: unit,
+      });
+      Alert.alert("Success", "Settings saved successfully!");
+    } catch (error) {
+      Alert.alert("Error", "Failed to save settings. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Sign Out", 
+          style: "destructive",
+          onPress: async () => {
+            await logout();
+            (navigation.getParent() as any)?.reset({
+              index: 0,
+              routes: [{ name: "Login" }],
+            });
+          }
+        },
+      ]
+    );
+  };
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
@@ -38,21 +85,15 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
           <View style={styles.divider} />
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              style={styles.fieldInput}
-              keyboardType="email-address"
-              placeholderTextColor="rgba(255,255,255,0.28)"
-            />
+            <Text style={styles.fieldValue}>{user?.email || "---"}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>Password</Text>
-            <View style={styles.passwordRow}>
+            <Pressable style={styles.passwordRow}>
               <Text style={styles.passwordValue}>••••••••••</Text>
               <Feather name="chevron-right" size={16} color={COLORS.teal} />
-            </View>
+            </Pressable>
           </View>
         </Card>
       </View>
@@ -156,6 +197,15 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
       </View>
 
       <View style={styles.section}>
+        <PrimaryButton
+          label={isSaving ? "Saving..." : "Save Changes"}
+          onPress={handleSave}
+          disabled={isSaving}
+          icon={<Feather name="check" size={16} color="#000000" />}
+        />
+      </View>
+
+      <View style={styles.section}>
         <SectionEyebrow color={COLORS.red}>Danger Zone</SectionEyebrow>
         <Card style={[styles.card, { borderColor: `${COLORS.red}30` }]}>
           <Pressable style={styles.dangerRow}>
@@ -169,7 +219,7 @@ export function SettingsScreen({ navigation }: Props): React.JSX.Element {
       </View>
 
       <View style={styles.footer}>
-        <Pressable style={styles.signOutButton}>
+        <Pressable onPress={handleLogout} style={styles.signOutButton}>
           <Feather name="log-out" size={16} color={COLORS.muted} />
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
@@ -184,6 +234,7 @@ const styles = StyleSheet.create({
   fieldRow: { paddingVertical: 4 },
   fieldLabel: { color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" },
   fieldInput: { color: COLORS.text, fontSize: 15, paddingVertical: 8 },
+  fieldValue: { color: COLORS.text, fontSize: 15, paddingVertical: 8 },
   passwordRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   passwordValue: { color: COLORS.text, fontSize: 15 },
   divider: { height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: 12 },

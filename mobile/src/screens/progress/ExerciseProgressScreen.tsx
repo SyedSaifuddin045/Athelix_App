@@ -1,32 +1,65 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, Tag, BackHeader, TrendChart, ProgressBar, SectionEyebrow } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { EXERCISE_PROGRESS_SERIES, EXERCISE_PROGRESS_VOLUME, EXERCISE_PROGRESS_PERIODS, EXERCISE_OVERLOADS, EXERCISE_NAMES } from "../../data";
+import { useExerciseProgress } from "../../hooks";
 
 type Props = RootStackScreenProps<"ExerciseProgress">;
 
+const PERIODS = ["1W", "2W", "3M", "6M", "1Y"];
+
 export function ExerciseProgressScreen({ navigation, route }: Props): React.JSX.Element {
   const { id } = route.params;
-  const exerciseName = EXERCISE_NAMES[id] || { name: "Bench Press", emoji: "🏋️" };
+  const { data: progress, isLoading, error } = useExerciseProgress(id);
   const [selectedPeriod, setSelectedPeriod] = useState("3M");
 
-  const currentE1RM = EXERCISE_PROGRESS_SERIES[EXERCISE_PROGRESS_SERIES.length - 1].value;
-  const previousE1RM = EXERCISE_PROGRESS_SERIES[EXERCISE_PROGRESS_SERIES.length - 5].value;
+  if (isLoading) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.teal} />
+          <Text style={styles.loadingText}>Loading progress...</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error || !progress) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load progress data</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  const currentE1RM = progress.progressive_overload?.current_e1rm || 0;
+  const previousE1RM = progress.progressive_overload?.previous_e1rm || currentE1RM;
   const improvement = currentE1RM - previousE1RM;
-  const improvementPercent = ((improvement / previousE1RM) * 100).toFixed(1);
+  const improvementPercent = previousE1RM > 0 ? ((improvement / previousE1RM) * 100).toFixed(1) : "0";
+
+  const chartData = (progress.e1rm_history || []).map((item) => ({
+    label: new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+    value: item.value,
+  }));
+
+  const weeklyVolume = progress.weekly_volume || { current_week: { volume: 0, sets: 0 }, last_week: { volume: 0, sets: 0 }, change_percentage: 0 };
+  const overload = progress.progressive_overload || { is_overloading: false, current_e1rm: 0, previous_e1rm: 0, change: 0, change_percentage: 0 };
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-      <BackHeader title={exerciseName.name} subtitle="Exercise Progress" onBack={() => navigation.goBack()} />
+      <BackHeader title={progress.exercise_name} subtitle="Exercise Progress" onBack={() => navigation.goBack()} />
 
       <Card style={[styles.heroCard, { borderColor: `${COLORS.teal}30` }]}>
         <View style={styles.heroTop}>
-          <Text style={styles.heroEmoji}>{exerciseName.emoji}</Text>
+          <Text style={styles.heroEmoji}>{progress.exercise_emoji || "🏋️"}</Text>
           <View style={styles.heroInfo}>
-            <Text style={styles.heroName}>{exerciseName.name}</Text>
+            <Text style={styles.heroName}>{progress.exercise_name}</Text>
             <View style={styles.heroBadge}>
               <Tag label="Compound" color={COLORS.teal} />
             </View>
@@ -40,13 +73,15 @@ export function ExerciseProgressScreen({ navigation, route }: Props): React.JSX.
           </View>
           <View style={styles.heroChange}>
             <Feather name="trending-up" size={14} color={COLORS.green} />
-            <Text style={styles.changeText}>+{improvement} kg ({improvementPercent}%)</Text>
-            <Text style={styles.changePeriod}>vs 8 weeks ago</Text>
+            <Text style={styles.changeText}>
+              {improvement >= 0 ? "+" : ""}{improvement} kg ({improvementPercent}%)
+            </Text>
+            <Text style={styles.changePeriod}>vs previous period</Text>
           </View>
         </View>
 
         <View style={styles.periodSelector}>
-          {EXERCISE_PROGRESS_PERIODS.map((period) => (
+          {PERIODS.map((period) => (
             <Pressable
               key={period}
               onPress={() => setSelectedPeriod(period)}
@@ -68,7 +103,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props): React.JSX.
             <Text style={styles.chartSubtitle}>Based on working sets</Text>
           </View>
           <TrendChart
-            data={EXERCISE_PROGRESS_SERIES}
+            data={chartData}
             color={COLORS.teal}
             height={140}
             referenceValue={100}
@@ -81,67 +116,93 @@ export function ExerciseProgressScreen({ navigation, route }: Props): React.JSX.
         <Card style={styles.volumeCard}>
           <View style={styles.volumeHeader}>
             <Text style={styles.volumeTitle}>Weekly Volume</Text>
-            <Text style={styles.volumeTotal}>23,200 kg total</Text>
+            <Text style={styles.volumeTotal}>{weeklyVolume.current_week.volume.toLocaleString()} kg total</Text>
           </View>
           <View style={styles.volumeBars}>
-            {EXERCISE_PROGRESS_VOLUME.map((week, index) => (
-              <View key={index} style={styles.volumeBar}>
-                <View style={styles.volumeBarWrap}>
-                  <View
-                    style={[
-                      styles.volumeBarFill,
-                      {
-                        height: `${(week.value / 4000) * 100}%`,
-                        backgroundColor: week.highlight ? COLORS.teal : `${COLORS.teal}60`,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.volumeLabel}>{week.label}</Text>
-                {week.highlight && (
-                  <View style={styles.volumeHighlight}>
-                    <Tag label="Now" color={COLORS.teal} />
-                  </View>
-                )}
+            <View style={styles.volumeBar}>
+              <View style={styles.volumeBarWrap}>
+                <View
+                  style={[
+                    styles.volumeBarFill,
+                    {
+                      height: "50%",
+                      backgroundColor: COLORS.teal,
+                    },
+                  ]}
+                />
               </View>
-            ))}
+              <Text style={styles.volumeLabel}>Last</Text>
+            </View>
+            <View style={styles.volumeBar}>
+              <View style={styles.volumeBarWrap}>
+                <View
+                  style={[
+                    styles.volumeBarFill,
+                    {
+                      height: "80%",
+                      backgroundColor: COLORS.teal,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.volumeLabel}>Now</Text>
+              <View style={styles.volumeHighlight}>
+                <Tag label="Now" color={COLORS.teal} />
+              </View>
+            </View>
           </View>
         </Card>
       </View>
 
       <View style={styles.section}>
         <SectionEyebrow color={COLORS.orange}>Recent Overloads</SectionEyebrow>
-        {EXERCISE_OVERLOADS.map((overload, index) => (
-          <Card key={index} style={styles.overloadCard}>
+        {overload.is_overloading && (
+          <Card style={styles.overloadCard}>
             <View style={styles.overloadRow}>
               <View style={styles.overloadLeft}>
-                <Text style={[styles.overloadChange, { color: COLORS.green }]}>{overload.change}</Text>
-                <Text style={styles.overloadType}>{overload.type}</Text>
+                <Text style={[styles.overloadChange, { color: COLORS.green }]}>
+                  +{overload.change.toFixed(1)} kg
+                </Text>
+                <Text style={styles.overloadType}>e1RM Increase</Text>
               </View>
               <View style={styles.overloadRight}>
-                <Text style={styles.overloadDate}>{overload.date}</Text>
-                <Text style={styles.overloadSession}>{overload.session}</Text>
+                <Text style={styles.overloadDate}>Current</Text>
+                <Text style={styles.overloadSession}>Progressive Overload</Text>
               </View>
             </View>
           </Card>
-        ))}
+        )}
+        {!overload.is_overloading && (
+          <Card style={styles.overloadCard}>
+            <View style={styles.overloadRow}>
+              <View style={styles.overloadLeft}>
+                <Text style={[styles.overloadChange, { color: COLORS.muted }]}>
+                  Maintain
+                </Text>
+                <Text style={styles.overloadType}>No overload detected</Text>
+              </View>
+            </View>
+          </Card>
+        )}
       </View>
 
       <View style={styles.statsGrid}>
         <Card style={styles.statCard}>
           <Text style={styles.statLabel}>Best Set</Text>
-          <Text style={styles.statValue}>110 × 3</Text>
-          <Text style={styles.statSub}>@ RPE 9</Text>
+          <Text style={styles.statValue}>-</Text>
+          <Text style={styles.statSub}>@ RPE -</Text>
         </Card>
         <Card style={styles.statCard}>
           <Text style={styles.statLabel}>Total Sets</Text>
-          <Text style={styles.statValue}>156</Text>
-          <Text style={styles.statSub}>Last 8 weeks</Text>
+          <Text style={styles.statValue}>{weeklyVolume.current_week.sets + weeklyVolume.last_week.sets}</Text>
+          <Text style={styles.statSub}>Last 2 weeks</Text>
         </Card>
         <Card style={styles.statCard}>
-          <Text style={styles.statLabel}>Avg RPE</Text>
-          <Text style={styles.statValue}>7.8</Text>
-          <Text style={styles.statSub}>Last 4 weeks</Text>
+          <Text style={styles.statLabel}>Volume Change</Text>
+          <Text style={[styles.statValue, { color: weeklyVolume.change_percentage >= 0 ? COLORS.green : COLORS.red }]}>
+            {weeklyVolume.change_percentage >= 0 ? "+" : ""}{weeklyVolume.change_percentage.toFixed(0)}%
+          </Text>
+          <Text style={styles.statSub}>vs last week</Text>
         </Card>
       </View>
     </Screen>
@@ -149,6 +210,25 @@ export function ExerciseProgressScreen({ navigation, route }: Props): React.JSX.
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: COLORS.muted,
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: COLORS.red,
+    fontSize: 14,
+  },
   heroCard: { marginTop: 16, borderWidth: 1 },
   heroTop: { flexDirection: "row", alignItems: "center" },
   heroEmoji: { fontSize: 48 },

@@ -1,11 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, PrimaryButton, BackHeader, Tag, MiniInput } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
 import { DEFAULT_TEMPLATE_EXERCISES, ALL_EXERCISES, TemplateExercise } from "../../data";
+import { useWorkoutTemplate } from "../../hooks";
 
 type Props = RootStackScreenProps<"TemplateBuilder">;
 
@@ -13,9 +14,30 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
   const templateId = route.params?.id;
   const isEditing = !!templateId;
 
-  const [templateName, setTemplateName] = useState(isEditing ? "Upper Body Push" : "");
+  const { data: template, isLoading, error } = useWorkoutTemplate(templateId || "");
+  
+  const [templateName, setTemplateName] = useState(isEditing ? "" : "");
   const [exercises, setExercises] = useState<TemplateExercise[]>(DEFAULT_TEMPLATE_EXERCISES);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+
+  useEffect(() => {
+    if (isEditing && template) {
+      setTemplateName(template.name);
+      setExercises(
+        template.exercises.map((ex) => ({
+          id: ex.id,
+          name: ex.exercise_name,
+          emoji: ex.exercise_emoji || "🏋️",
+          sets: ex.sets.map((s) => ({
+            reps: String(s.reps),
+            rpe: s.rpe ? String(s.rpe) : "7",
+            rest: s.rest_seconds ? `${Math.floor(s.rest_seconds / 60)}:${String(s.rest_seconds % 60).padStart(2, "0")}` : "2:00",
+          })),
+          notes: ex.notes || "",
+        }))
+      );
+    }
+  }, [template, isEditing]);
 
   const addExercise = (exercise: typeof ALL_EXERCISES[0]) => {
     const newExercise: TemplateExercise = {
@@ -57,6 +79,29 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
   };
 
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+
+  if (isLoading) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
+        <BackHeader title={isEditing ? "Edit Template" : "New Template"} onBack={() => navigation.goBack()} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.teal} />
+          <Text style={styles.loadingText}>Loading template...</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  if (error && isEditing) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
+        <BackHeader title={isEditing ? "Edit Template" : "New Template"} onBack={() => navigation.goBack()} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load template</Text>
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
@@ -197,6 +242,25 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: COLORS.muted,
+    marginTop: 12,
+    fontSize: 14,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: COLORS.red,
+    fontSize: 14,
+  },
   nameSection: { marginTop: 16 },
   fieldLabel: { color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" },
   nameInput: { width: "100%", minHeight: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: "#ffffff", paddingHorizontal: 16, fontSize: 14 },
