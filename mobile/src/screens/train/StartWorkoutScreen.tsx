@@ -1,18 +1,48 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Tag, SectionEyebrow, ListCard } from "../../components";
+import { Screen, SectionEyebrow, ListCard } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { START_WORKOUT_TEMPLATES, TEMPLATE_LIST } from "../../data";
+import { useWorkoutTemplates, useCreateSession } from "../../hooks";
 
 type Props = RootStackScreenProps<"StartWorkout">;
 
 export function StartWorkoutScreen({ navigation, route }: Props): React.JSX.Element {
+  const { data: templatesData, isLoading } = useWorkoutTemplates();
+  const createSession = useCreateSession();
+
   const quickStartOptions = [
     { id: "empty", name: "Empty Workout", desc: "Start from scratch", emoji: "📋", color: COLORS.muted },
     { id: "quick", name: "Quick Full Body", desc: "~45 min, balanced", emoji: "⚡", color: COLORS.gold },
   ];
+
+  const handleQuickStart = async (optionId: string) => {
+    try {
+      if (optionId === "empty") {
+        await createSession.mutateAsync({ name: "New Workout" });
+        (navigation as any).replace("ActiveWorkout");
+      } else {
+        (navigation as any).replace("ActiveWorkout");
+      }
+    } catch (error) {
+      console.error("Failed to create session:", error);
+    }
+  };
+
+  const handleTemplateStart = async (templateId: string, templateName: string) => {
+    try {
+      await createSession.mutateAsync({ 
+        name: templateName,
+        template_id: templateId,
+      });
+      (navigation as any).replace("ActiveWorkout");
+    } catch (error) {
+      console.error("Failed to create session:", error);
+    }
+  };
+
+  const templates = templatesData?.data || [];
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
@@ -32,8 +62,9 @@ export function StartWorkoutScreen({ navigation, route }: Props): React.JSX.Elem
           {quickStartOptions.map((option) => (
             <Pressable
               key={option.id}
-              onPress={() => navigation.replace("ActiveWorkout")}
+              onPress={() => handleQuickStart(option.id)}
               style={({ pressed }) => [styles.quickStartCard, pressed && styles.pressed]}
+              disabled={createSession.isPending}
             >
               <Text style={styles.quickStartEmoji}>{option.emoji}</Text>
               <Text style={styles.quickStartName}>{option.name}</Text>
@@ -45,36 +76,56 @@ export function StartWorkoutScreen({ navigation, route }: Props): React.JSX.Elem
 
       <View style={styles.section}>
         <SectionEyebrow>Recent Templates</SectionEyebrow>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
-          {START_WORKOUT_TEMPLATES.slice(0, 4).map((template) => (
-            <ListCard
-              key={template.id}
-              iconEmoji="🏋️"
-              name={template.name}
-              color={template.color}
-              subtitle={`${template.exercises} exercises · ${template.duration}`}
-              onPress={() => navigation.replace("ActiveWorkout")}
-              compact
-            />
-          ))}
-        </ScrollView>
+        {isLoading ? (
+          <ActivityIndicator size="small" color={COLORS.teal} style={styles.loader} />
+        ) : templates.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
+            {templates.slice(0, 4).map((template) => (
+              <ListCard
+                key={template.id}
+                iconEmoji="🏋️"
+                name={template.name}
+                color={COLORS.teal}
+                subtitle={`${template.exercises_count} exercises`}
+                onPress={() => handleTemplateStart(template.id, template.name)}
+                compact
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No templates yet</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
         <SectionEyebrow color={COLORS.purple}>All Templates</SectionEyebrow>
-        {TEMPLATE_LIST.map((template) => (
-          <ListCard
-            key={template.id}
-            iconEmoji="🏋️"
-            name={template.name}
-            color={template.color}
-            subtitle={`${template.exercises.length} exercises · ${template.duration}`}
-            onPress={() => navigation.replace("ActiveWorkout")}
-          />
-        ))}
+        {isLoading ? (
+          <ActivityIndicator size="small" color={COLORS.teal} style={styles.loader} />
+        ) : templates.length > 0 ? (
+          templates.map((template) => (
+            <ListCard
+              key={template.id}
+              iconEmoji="🏋️"
+              name={template.name}
+              color={COLORS.teal}
+              subtitle={`${template.exercises_count} exercises`}
+              onPress={() => handleTemplateStart(template.id, template.name)}
+            />
+          ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No templates yet</Text>
+            <Text style={styles.emptySubtext}>Create your first workout template</Text>
+          </View>
+        )}
       </View>
 
-      <Pressable onPress={() => navigation.navigate("TemplateBuilder", {})} style={styles.createLink}>
+      <Pressable 
+        onPress={() => (navigation as any).navigate("TemplateBuilder", {})} 
+        style={styles.createLink}
+      >
         <Feather name="plus-circle" size={18} color={COLORS.teal} />
         <Text style={styles.createLinkText}>Create New Template</Text>
       </Pressable>
@@ -103,6 +154,10 @@ const styles = StyleSheet.create({
   quickStartName: { color: COLORS.text, fontSize: 14, fontWeight: "800", marginTop: 10 },
   quickStartDesc: { color: COLORS.muted, fontSize: 11, marginTop: 4 },
   templateScroll: { marginTop: 12 },
+  loader: { marginTop: 20 },
+  emptyState: { marginTop: 20, alignItems: "center", paddingVertical: 20 },
+  emptyText: { color: COLORS.muted, fontSize: 13 },
+  emptySubtext: { color: COLORS.muted, fontSize: 12, marginTop: 4 },
   createLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 24, paddingVertical: 16 },
   createLinkText: { color: COLORS.teal, fontSize: 14, fontWeight: "700" },
 });

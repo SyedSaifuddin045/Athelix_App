@@ -1,40 +1,96 @@
-import React from "react";
-import { View, Text, StyleSheet, SectionList, Pressable } from "react-native";
+import React, { useMemo } from "react";
+import { View, Text, StyleSheet, SectionList, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, Tag, BackHeader, SectionEyebrow } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { WORKOUT_WEEKS, WORKOUT_SESSIONS } from "../../data";
+import { useWorkoutSessions } from "../../hooks";
+import type { WorkoutSession } from "../../api/types";
 
 type Props = RootStackScreenProps<"WorkoutHistory">;
 
 type SectionData = {
   title: string;
-  data: typeof WORKOUT_SESSIONS;
+  data: WorkoutSession[];
 };
 
-const SECTIONS: SectionData[] = [
-  { title: "This Week", data: WORKOUT_SESSIONS.slice(0, 3) },
-  { title: "Last Week", data: WORKOUT_SESSIONS.slice(3, 6) },
-  { title: "2 Weeks Ago", data: WORKOUT_SESSIONS.slice(6) },
-];
-
 export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
-  const totalWorkouts = WORKOUT_SESSIONS.length;
-  const totalVolume = WORKOUT_SESSIONS.reduce((sum, s) => sum + parseFloat(s.volume), 0);
-  const totalPrs = WORKOUT_SESSIONS.reduce((sum, s) => sum + s.prs, 0);
+  const { data: sessionsData, isLoading, error } = useWorkoutSessions();
 
-  const renderSession = ({ item }: { item: typeof WORKOUT_SESSIONS[0] }) => (
-    <Pressable onPress={() => navigation.navigate("SessionDetail", { id: item.id })}>
+  const sessions = sessionsData?.data || [];
+  const totalSessions = sessionsData?.total || 0;
+
+  const sections = useMemo(() => {
+    const now = new Date();
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(now.getDate() - now.getDay() + 1);
+    thisWeekStart.setHours(0, 0, 0, 0);
+
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    const twoWeeksAgoStart = new Date(lastWeekStart);
+    twoWeeksAgoStart.setDate(twoWeeksAgoStart.getDate() - 7);
+
+    const thisWeek = sessions.filter(s => new Date(s.started_at) >= thisWeekStart);
+    const lastWeek = sessions.filter(s => {
+      const date = new Date(s.started_at);
+      return date >= lastWeekStart && date < thisWeekStart;
+    });
+    const twoWeeksAgo = sessions.filter(s => {
+      const date = new Date(s.started_at);
+      return date >= twoWeeksAgoStart && date < lastWeekStart;
+    });
+
+    const result: SectionData[] = [];
+    if (thisWeek.length > 0) result.push({ title: "This Week", data: thisWeek });
+    if (lastWeek.length > 0) result.push({ title: "Last Week", data: lastWeek });
+    if (twoWeeksAgo.length > 0) result.push({ title: "2 Weeks Ago", data: twoWeeksAgo });
+
+    return result;
+  }, [sessions]);
+
+  const totalVolume = useMemo(() => 
+    sessions.reduce((sum, s) => sum + (s.total_volume || 0), 0),
+    [sessions]
+  );
+
+  const totalPrs = useMemo(() => 
+    sessions.reduce((sum, s) => sum + (s.prs_count || 0), 0),
+    [sessions]
+  );
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { 
+      weekday: "short", 
+      month: "short", 
+      day: "numeric" 
+    });
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString("en-US", { 
+      hour: "numeric", 
+      minute: "2-digit",
+      hour12: true 
+    });
+  };
+
+  const renderSession = ({ item }: { item: WorkoutSession }) => (
+    <Pressable onPress={() => (navigation as any).navigate("SessionDetail", { id: item.id })}>
       <Card style={styles.sessionCard}>
         <View style={styles.sessionRow}>
           <View style={styles.sessionLeft}>
             <View style={styles.moodBadge}>
-              <Text style={styles.moodText}>{item.mood}</Text>
+              <Text style={styles.moodText}>{item.mood || "💪"}</Text>
             </View>
             <View style={styles.sessionInfo}>
               <Text style={styles.sessionName}>{item.name}</Text>
-              <Text style={styles.sessionDate}>{item.date} · {item.time}</Text>
+              <Text style={styles.sessionDate}>
+                {formatDate(item.started_at)} · {formatTime(item.started_at)}
+              </Text>
             </View>
           </View>
           <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
@@ -42,18 +98,28 @@ export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
         <View style={styles.sessionStats}>
           <View style={styles.sessionStat}>
             <Feather name="clock" size={12} color={COLORS.muted} />
-            <Text style={styles.sessionStatText}>{item.duration} min</Text>
+            <Text style={styles.sessionStatText}>{item.duration_minutes || 0} min</Text>
           </View>
           <View style={styles.sessionStat}>
             <Feather name="layers" size={12} color={COLORS.muted} />
-            <Text style={styles.sessionStatText}>{item.sets} sets</Text>
+            <Text style={styles.sessionStatText}>{item.total_sets || 0} sets</Text>
           </View>
           <View style={styles.sessionStat}>
             <Feather name="activity" size={12} color={COLORS.muted} />
-            <Text style={styles.sessionStatText}>{item.volume}</Text>
+            <Text style={styles.sessionStatText}>
+              {item.total_volume 
+                ? item.total_volume >= 1000 
+                  ? `${(item.total_volume / 1000).toFixed(1)}k` 
+                  : String(item.total_volume)
+                : "0"}
+            </Text>
           </View>
-          {item.prs > 0 && (
-            <Tag label={`${item.prs} PR${item.prs > 1 ? "s" : ""}`} color={COLORS.gold} backgroundColor={`${COLORS.gold}20`} />
+          {item.prs_count > 0 && (
+            <Tag 
+              label={`${item.prs_count} PR${item.prs_count > 1 ? "s" : ""}`} 
+              color={COLORS.gold} 
+              backgroundColor={`${COLORS.gold}20`} 
+            />
           )}
         </View>
       </Card>
@@ -69,15 +135,21 @@ export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
 
   return (
     <Screen scroll={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28 }}>
-      <BackHeader title="Workout History" subtitle={`${totalWorkouts} total sessions`} onBack={() => navigation.goBack()} />
+      <BackHeader 
+        title="Workout History" 
+        subtitle={`${totalSessions} total sessions`} 
+        onBack={() => navigation.goBack()} 
+      />
 
       <View style={styles.summaryRow}>
         <Card style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{totalWorkouts}</Text>
+          <Text style={styles.summaryValue}>{totalSessions}</Text>
           <Text style={styles.summaryLabel}>Sessions</Text>
         </Card>
         <Card style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{(totalVolume / 1000).toFixed(1)}k</Text>
+          <Text style={styles.summaryValue}>
+            {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}k` : totalVolume}
+          </Text>
           <Text style={styles.summaryLabel}>Total Vol.</Text>
         </Card>
         <Card style={styles.summaryCard}>
@@ -86,22 +158,30 @@ export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
         </Card>
       </View>
 
-      <SectionList
-        sections={SECTIONS}
-        keyExtractor={(item) => item.id}
-        renderItem={renderSession}
-        renderSectionHeader={renderSectionHeader}
-        showsVerticalScrollIndicator={false}
-        stickySectionHeadersEnabled={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="calendar" size={40} color="rgba(255,255,255,0.15)" />
-            <Text style={styles.emptyText}>No workouts yet</Text>
-            <Text style={styles.emptySubtext}>Start your first workout to see history</Text>
-          </View>
-        }
-      />
+      {isLoading ? (
+        <ActivityIndicator size="large" color={COLORS.teal} style={styles.loader} />
+      ) : error ? (
+        <View style={styles.errorState}>
+          <Text style={styles.errorText}>Failed to load workout history</Text>
+        </View>
+      ) : (
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.id}
+          renderItem={renderSession}
+          renderSectionHeader={renderSectionHeader}
+          showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Feather name="calendar" size={40} color="rgba(255,255,255,0.15)" />
+              <Text style={styles.emptyText}>No workouts yet</Text>
+              <Text style={styles.emptySubtext}>Start your first workout to see history</Text>
+            </View>
+          }
+        />
+      )}
     </Screen>
   );
 }
@@ -127,4 +207,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingVertical: 60 },
   emptyText: { color: COLORS.text, fontSize: 16, fontWeight: "700", marginTop: 16 },
   emptySubtext: { color: COLORS.muted, fontSize: 13, marginTop: 4 },
+  loader: { marginTop: 40 },
+  errorState: { alignItems: "center", paddingVertical: 60 },
+  errorText: { color: COLORS.red, fontSize: 13 },
 });

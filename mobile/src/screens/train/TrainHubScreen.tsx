@@ -1,15 +1,29 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Tag, ListCard, AnalyticsCard, SectionEyebrow } from "../../components";
 import { TabScreenProps } from "../../types/navigation";
-import { TRAIN_SECTIONS, START_WORKOUT_TEMPLATES } from "../../data";
+import { useUserOverview, useWorkoutTemplates } from "../../hooks";
+import { TRAIN_SECTIONS } from "../../data";
 
 type Props = TabScreenProps<"Train">;
 
+const NAVIGATION_MAP: Record<string, string> = {
+  templateList: "TemplateList",
+  workoutHistory: "WorkoutHistory",
+  mesocycleList: "MesocycleList",
+};
+
 export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
+  const { data: overview, isLoading: overviewLoading } = useUserOverview();
+  const { data: templatesData } = useWorkoutTemplates();
+
+  const templatesCount = templatesData?.total || 0;
+  const totalSessions = overview?.stats?.total_workouts || 0;
+  const currentStreak = overview?.workout_streaks?.current_streak || 0;
+
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
       <View style={styles.header}>
@@ -17,7 +31,7 @@ export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
         <Text style={styles.subtitle}>Your workout hub</Text>
       </View>
 
-      <Pressable onPress={() => navigation.navigate("StartWorkout", {})}>
+      <Pressable onPress={() => (navigation as any).navigate("StartWorkout", {})}>
         <View style={styles.startHero}>
           <View style={styles.heroBackground} />
           <View style={styles.heroContent}>
@@ -35,17 +49,17 @@ export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
           </View>
           <View style={styles.heroStats}>
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>5</Text>
+              <Text style={styles.heroStatValue}>{templatesCount}</Text>
               <Text style={styles.heroStatLabel}>Templates</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>248</Text>
+              <Text style={styles.heroStatValue}>{totalSessions}</Text>
               <Text style={styles.heroStatLabel}>Sessions</Text>
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>12</Text>
+              <Text style={styles.heroStatValue}>{currentStreak}</Text>
               <Text style={styles.heroStatLabel}>Day Streak</Text>
             </View>
           </View>
@@ -54,28 +68,63 @@ export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.section}>
         <SectionEyebrow>Quick Start Templates</SectionEyebrow>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
-          {START_WORKOUT_TEMPLATES.map((template) => (
-            <ListCard
-              key={template.id}
-              iconEmoji="🏋️"
-              name={template.name}
-              color={template.color}
-              onPress={() => navigation.navigate("StartWorkout", { id: template.id })}
-              showPlayButton={false}
-              compact
-            />
-          ))}
-        </ScrollView>
+        {templatesData?.data && templatesData.data.length > 0 ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
+            {templatesData.data.slice(0, 5).map((template) => (
+              <ListCard
+                key={template.id}
+                iconEmoji="🏋️"
+                name={template.name}
+                color={COLORS.teal}
+                onPress={() => (navigation as any).navigate("StartWorkout", { id: template.id })}
+                showPlayButton={false}
+                compact
+              />
+            ))}
+          </ScrollView>
+        ) : (
+          <View style={styles.emptyTemplates}>
+            <Text style={styles.emptyText}>No templates yet</Text>
+            <Pressable onPress={() => (navigation as any).navigate("TemplateBuilder", {})}>
+              <Text style={styles.createLink}>Create your first template</Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
         <SectionEyebrow color={COLORS.purple}>Stats Overview</SectionEyebrow>
         <View style={styles.statsGrid}>
-          <AnalyticsCard label="This Week" value="5" sub="workouts" color={COLORS.teal} />
-          <AnalyticsCard label="Volume" value="48k" sub="kg lifted" color={COLORS.green} />
-          <AnalyticsCard label="Avg Session" value="54m" sub="per workout" color={COLORS.blue} />
-          <AnalyticsCard label="PRs Hit" value="2" sub="this month" color={COLORS.gold} />
+          <AnalyticsCard 
+            label="This Week" 
+            value={String(overview?.workout_streaks?.workouts_this_week || 0)} 
+            sub="workouts" 
+            color={COLORS.teal} 
+          />
+          <AnalyticsCard 
+            label="Volume" 
+            value={overview?.stats?.total_volume 
+              ? overview.stats.total_volume >= 1000 
+                ? `${(overview.stats.total_volume / 1000).toFixed(0)}k` 
+                : String(overview.stats.total_volume)
+              : "0"} 
+            sub="kg lifted" 
+            color={COLORS.green} 
+          />
+          <AnalyticsCard 
+            label="Avg Session" 
+            value={overview?.stats?.average_duration_minutes 
+              ? `${Math.round(overview.stats.average_duration_minutes)}m` 
+              : "0m"} 
+            sub="per workout" 
+            color={COLORS.blue} 
+          />
+          <AnalyticsCard 
+            label="PRs Hit" 
+            value={String(overview?.stats?.total_prs || 0)} 
+            sub="this month" 
+            color={COLORS.gold} 
+          />
         </View>
       </View>
 
@@ -85,9 +134,10 @@ export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
           <Pressable
             key={section.path}
             onPress={() => {
-              if (section.path === "templateList") navigation.navigate("TemplateList");
-              else if (section.path === "workoutHistory") navigation.navigate("WorkoutHistory");
-              else if (section.path === "mesocycleList") navigation.navigate("MesocycleList");
+              const screenName = NAVIGATION_MAP[section.path];
+              if (screenName) {
+                (navigation as any).navigate(screenName);
+              }
             }}
           >
             <View style={[styles.sectionCard, { borderLeftColor: section.color }]}>
@@ -167,6 +217,9 @@ const styles = StyleSheet.create({
   heroStatDivider: { width: 1, backgroundColor: "rgba(255,255,255,0.08)" },
   section: { marginTop: 28 },
   templateScroll: { marginTop: 12 },
+  emptyTemplates: { marginTop: 12, alignItems: "center", paddingVertical: 20 },
+  emptyText: { color: COLORS.muted, fontSize: 13 },
+  createLink: { color: COLORS.teal, fontSize: 13, fontWeight: "600", marginTop: 8 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 10 },
   sectionCard: {
     flexDirection: "row",

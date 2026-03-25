@@ -1,16 +1,62 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, AnalyticsCard, SectionEyebrow, BackHeader } from "../../components";
+import { Screen, Card, Tag, SectionEyebrow } from "../../components";
 import { TabScreenProps } from "../../types/navigation";
-import { PROGRESS_SECTIONS, PROGRESS_QUICK_STATS, MUSCLE_DATA } from "../../data";
-import { getMuscleStatus } from "../../utils";
+import { useUserOverview, useMuscleBalance } from "../../hooks";
 
 type Props = TabScreenProps<"Progress">;
 
+const PROGRESS_SECTIONS = [
+  {
+    path: "personalRecords",
+    color: "#fbbf24",
+    title: "Personal Records",
+    desc: "All-time best lifts by exercise and record type",
+    badge: "View all",
+  },
+  {
+    path: "exerciseProgress",
+    color: "#00d4a8",
+    title: "Exercise Progress",
+    desc: "e1RM history, volume trends and overload signals",
+    badge: "Browse exercises",
+  },
+  {
+    path: "muscleBalance",
+    color: "#8b5cf6",
+    title: "Muscle Balance",
+    desc: "Weekly sets by muscle group to spot imbalances",
+    badge: "View analysis",
+  },
+];
+
 export function ProgressHubScreen({ navigation }: Props): React.JSX.Element {
+  const { data: overview, isLoading: overviewLoading } = useUserOverview();
+  const { data: muscleData } = useMuscleBalance({ weeks: 4 });
+
+  const quickStats = [
+    { label: "Total PRs", value: String(overview?.stats?.total_prs || 0), color: COLORS.gold },
+    { label: "Best e1RM", value: "---", color: COLORS.teal },
+    { label: "This Month", value: "0 PRs", color: COLORS.green },
+  ];
+
+  const handleNavigate = (path: string) => {
+    switch (path) {
+      case "personalRecords":
+        (navigation as any).navigate("PersonalRecords");
+        break;
+      case "exerciseProgress":
+        (navigation as any).navigate("ExerciseProgress", { id: "1" });
+        break;
+      case "muscleBalance":
+        (navigation as any).navigate("MuscleBalance");
+        break;
+    }
+  };
+
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
       <View style={styles.header}>
@@ -19,7 +65,7 @@ export function ProgressHubScreen({ navigation }: Props): React.JSX.Element {
       </View>
 
       <View style={styles.quickStatsRow}>
-        {PROGRESS_QUICK_STATS.map((stat, index) => (
+        {quickStats.map((stat, index) => (
           <Card key={index} style={[styles.quickStatCard, { borderColor: `${stat.color}30` }]}>
             <View style={[styles.quickStatDot, { backgroundColor: stat.color }]} />
             <Text style={[styles.quickStatValue, { color: stat.color }]}>{stat.value}</Text>
@@ -34,11 +80,7 @@ export function ProgressHubScreen({ navigation }: Props): React.JSX.Element {
         {PROGRESS_SECTIONS.map((section) => (
           <Pressable
             key={section.path}
-            onPress={() => {
-              if (section.path === "personalRecords") navigation.navigate("PersonalRecords");
-              else if (section.path === "exerciseProgress") navigation.navigate("ExerciseProgress", { id: "1" });
-              else if (section.path === "muscleBalance") navigation.navigate("MuscleBalance");
-            }}
+            onPress={() => handleNavigate(section.path)}
           >
             <Card style={[styles.sectionCard, { borderColor: `${section.color}30` }]}>
               <View style={styles.sectionRow}>
@@ -64,13 +106,14 @@ export function ProgressHubScreen({ navigation }: Props): React.JSX.Element {
         <Card style={styles.snapshotCard}>
           <View style={styles.snapshotHeader}>
             <Text style={styles.snapshotTitle}>This Week's Training</Text>
-            <Text style={styles.snapshotSubtitle}>5 of 6 days active</Text>
+            <Text style={styles.snapshotSubtitle}>
+              {overview?.workout_streaks?.workouts_this_week || 0} of 6 days active
+            </Text>
           </View>
 
-          <View style={styles.muscleOverview}>
-            {MUSCLE_DATA.slice(0, 4).map((muscle) => {
-              const status = getMuscleStatus(muscle.sets, muscle.target);
-              return (
+          {muscleData?.muscle_groups ? (
+            <View style={styles.muscleOverview}>
+              {muscleData.muscle_groups.slice(0, 4).map((muscle) => (
                 <View key={muscle.muscle} style={styles.muscleRow}>
                   <Text style={styles.muscleName}>{muscle.muscle}</Text>
                   <View style={styles.muscleBarWrap}>
@@ -78,20 +121,41 @@ export function ProgressHubScreen({ navigation }: Props): React.JSX.Element {
                       <View
                         style={[
                           styles.muscleBarFill,
-                          { width: `${(muscle.sets / muscle.target) * 100}%`, backgroundColor: status.color },
+                          {
+                            width: `${Math.min((muscle.sets / muscle.target_sets) * 100, 100)}%`,
+                            backgroundColor: muscle.status === "at_target" ? COLORS.green : muscle.status === "over" ? COLORS.gold : COLORS.red,
+                          },
                         ]}
                       />
                     </View>
                   </View>
-                  <Text style={[styles.muscleStatus, { color: status.color }]}>{status.label}</Text>
+                  <Text style={[styles.muscleStatus, { 
+                    color: muscle.status === "at_target" ? COLORS.green : muscle.status === "over" ? COLORS.gold : COLORS.red 
+                  }]}>
+                    {muscle.status === "at_target" ? "On Target" : muscle.status === "over" ? "Above" : "Below"}
+                  </Text>
                 </View>
-              );
-            })}
-          </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.muscleOverview}>
+              {["Chest", "Back", "Shoulders", "Quadriceps"].map((muscle) => (
+                <View key={muscle} style={styles.muscleRow}>
+                  <Text style={styles.muscleName}>{muscle}</Text>
+                  <View style={styles.muscleBarWrap}>
+                    <View style={styles.muscleBarBg}>
+                      <View style={[styles.muscleBarFill, { width: "50%", backgroundColor: COLORS.muted }]} />
+                    </View>
+                  </View>
+                  <Text style={styles.muscleStatus}>---</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           <Pressable
             style={styles.viewAllButton}
-            onPress={() => navigation.navigate("MuscleBalance")}
+            onPress={() => (navigation as any).navigate("MuscleBalance")}
           >
             <Text style={styles.viewAllText}>View Full Analysis</Text>
             <Feather name="arrow-right" size={14} color={COLORS.teal} />
@@ -101,30 +165,23 @@ export function ProgressHubScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.section}>
         <SectionEyebrow color={COLORS.gold}>Bodyweight Tracking</SectionEyebrow>
-        <Pressable onPress={() => navigation.navigate("BodyweightHistory")}>
+        <Pressable onPress={() => (navigation as any).navigate("BodyweightHistory")}>
           <Card style={styles.bodyweightCard}>
             <View style={styles.bodyweightMain}>
               <View>
                 <Text style={styles.bodyweightLabel}>Current</Text>
-                <Text style={styles.bodyweightValue}>82.4 kg</Text>
+                <Text style={styles.bodyweightValue}>
+                  {overview?.latest_body_weight_log?.weight 
+                    ? `${overview.latest_body_weight_log.weight.toFixed(1)} kg` 
+                    : "-- kg"}
+                </Text>
               </View>
               <View style={styles.bodyweightChange}>
                 <Feather name="trending-down" size={14} color={COLORS.green} />
-                <Text style={styles.changeValue}>-0.3 kg</Text>
+                <Text style={styles.changeValue}>---</Text>
               </View>
             </View>
-            <Text style={styles.bodyweightPeriod}>Last 30 days</Text>
-            <View style={styles.bodyweightMiniBars}>
-              {[82.4, 82.7, 83.0, 82.8, 83.3, 83.1, 83.6, 83.9, 84.1, 84.3].map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.miniBar,
-                    { height: 8 + (10 - i) * 2, backgroundColor: i < 5 ? COLORS.teal : "rgba(255,255,255,0.15)" },
-                  ]}
-                />
-              ))}
-            </View>
+            <Text style={styles.bodyweightPeriod}>Track your weight over time</Text>
           </Card>
         </Pressable>
       </View>
@@ -169,6 +226,4 @@ const styles = StyleSheet.create({
   bodyweightChange: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: `${COLORS.green}20`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   changeValue: { color: COLORS.green, fontSize: 13, fontWeight: "700" },
   bodyweightPeriod: { color: COLORS.muted, fontSize: 11, marginTop: 8 },
-  bodyweightMiniBars: { flexDirection: "row", alignItems: "flex-end", gap: 4, marginTop: 16, height: 30 },
-  miniBar: { flex: 1, borderRadius: 3 },
 });
