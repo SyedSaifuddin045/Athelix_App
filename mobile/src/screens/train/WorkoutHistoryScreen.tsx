@@ -1,96 +1,210 @@
-import React from "react";
-import { View, Text, StyleSheet, SectionList, Pressable } from "react-native";
+import React, { useMemo } from "react";
+import { Pressable, SectionList, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import { BackHeader, Card, Screen, ScreenState, SectionEyebrow, Tag } from "../../components";
+import { useWorkoutSessionsQuery } from "../../features/workouts/hooks";
+import type { WorkoutSession } from "../../features/workouts/schemas";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, BackHeader, SectionEyebrow } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { WORKOUT_WEEKS, WORKOUT_SESSIONS } from "../../data";
 
 type Props = RootStackScreenProps<"WorkoutHistory">;
 
-type SectionData = {
+type SessionSection = {
   title: string;
-  data: typeof WORKOUT_SESSIONS;
+  data: WorkoutSession[];
 };
 
-const SECTIONS: SectionData[] = [
-  { title: "This Week", data: WORKOUT_SESSIONS.slice(0, 3) },
-  { title: "Last Week", data: WORKOUT_SESSIONS.slice(3, 6) },
-  { title: "2 Weeks Ago", data: WORKOUT_SESSIONS.slice(6) },
-];
+function startOfWeek(date: Date): Date {
+  const result = new Date(date);
+  const day = result.getDay();
+  const diff = (day + 6) % 7;
+  result.setHours(0, 0, 0, 0);
+  result.setDate(result.getDate() - diff);
+  return result;
+}
+
+function groupSessions(sessions: WorkoutSession[]): SessionSection[] {
+  const now = new Date();
+  const currentWeekStart = startOfWeek(now).getTime();
+  const lastWeekStart = new Date(currentWeekStart);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+  const groups = new Map<string, WorkoutSession[]>();
+
+  for (const session of sessions) {
+    const startedAt = new Date(session.started_at);
+    const startedTime = startedAt.getTime();
+    let title = "Earlier";
+
+    if (startedTime >= currentWeekStart) {
+      title = "This Week";
+    } else if (startedTime >= lastWeekStart.getTime()) {
+      title = "Last Week";
+    } else {
+      title = startedAt.toLocaleDateString(undefined, {
+        month: "long",
+        year: "numeric",
+      });
+    }
+
+    groups.set(title, [...(groups.get(title) ?? []), session]);
+  }
+
+  return [...groups.entries()].map(([title, data]) => ({
+    title,
+    data,
+  }));
+}
+
+function formatSessionDate(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Unknown date";
+  }
+
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function getDurationMinutes(session: WorkoutSession): string {
+  if (!session.finished_at) {
+    return "In progress";
+  }
+
+  const startedAt = new Date(session.started_at).getTime();
+  const finishedAt = new Date(session.finished_at).getTime();
+  if (Number.isNaN(startedAt) || Number.isNaN(finishedAt) || finishedAt < startedAt) {
+    return "Completed";
+  }
+
+  return `${Math.round((finishedAt - startedAt) / 60000)} min`;
+}
 
 export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
-  const totalWorkouts = WORKOUT_SESSIONS.length;
-  const totalVolume = WORKOUT_SESSIONS.reduce((sum, s) => sum + parseFloat(s.volume), 0);
-  const totalPrs = WORKOUT_SESSIONS.reduce((sum, s) => sum + s.prs, 0);
+  const sessionsQuery = useWorkoutSessionsQuery();
 
-  const renderSession = ({ item }: { item: typeof WORKOUT_SESSIONS[0] }) => (
-    <Pressable onPress={() => navigation.navigate("SessionDetail", { id: item.id })}>
-      <Card style={styles.sessionCard}>
-        <View style={styles.sessionRow}>
-          <View style={styles.sessionLeft}>
-            <View style={styles.moodBadge}>
-              <Text style={styles.moodText}>{item.mood}</Text>
-            </View>
-            <View style={styles.sessionInfo}>
-              <Text style={styles.sessionName}>{item.name}</Text>
-              <Text style={styles.sessionDate}>{item.date} · {item.time}</Text>
-            </View>
-          </View>
-          <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
-        </View>
-        <View style={styles.sessionStats}>
-          <View style={styles.sessionStat}>
-            <Feather name="clock" size={12} color={COLORS.muted} />
-            <Text style={styles.sessionStatText}>{item.duration} min</Text>
-          </View>
-          <View style={styles.sessionStat}>
-            <Feather name="layers" size={12} color={COLORS.muted} />
-            <Text style={styles.sessionStatText}>{item.sets} sets</Text>
-          </View>
-          <View style={styles.sessionStat}>
-            <Feather name="activity" size={12} color={COLORS.muted} />
-            <Text style={styles.sessionStatText}>{item.volume}</Text>
-          </View>
-          {item.prs > 0 && (
-            <Tag label={`${item.prs} PR${item.prs > 1 ? "s" : ""}`} color={COLORS.gold} backgroundColor={`${COLORS.gold}20`} />
-          )}
-        </View>
-      </Card>
-    </Pressable>
+  useFocusEffect(
+    React.useCallback(() => {
+      void sessionsQuery.refetch();
+    }, [sessionsQuery]),
   );
 
-  const renderSectionHeader = ({ section }: { section: SectionData }) => (
-    <View style={styles.sectionHeader}>
-      <SectionEyebrow color={COLORS.purple}>{section.title}</SectionEyebrow>
-      <Text style={styles.sectionCount}>{section.data.length} sessions</Text>
-    </View>
+  const sections = useMemo(
+    () => groupSessions(sessionsQuery.data ?? []),
+    [sessionsQuery.data],
   );
+
+  const completedSessions = sessionsQuery.data?.filter((session) => session.is_completed) ?? [];
+  const activeSessions = sessionsQuery.data?.filter((session) => !session.is_completed) ?? [];
+
+  if (sessionsQuery.isLoading && !sessionsQuery.data) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <ScreenState title="Loading history" message="Fetching workout sessions." loading />
+      </Screen>
+    );
+  }
+
+  if (sessionsQuery.isError) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <ScreenState
+          title="History unavailable"
+          message="The app could not load workout sessions."
+          actionLabel="Retry"
+          onAction={() => {
+            void sessionsQuery.refetch();
+          }}
+        />
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28 }}>
-      <BackHeader title="Workout History" subtitle={`${totalWorkouts} total sessions`} onBack={() => navigation.goBack()} />
+      <BackHeader
+        title="Workout History"
+        subtitle={`${sessionsQuery.data?.length ?? 0} total sessions`}
+        onBack={() => navigation.goBack()}
+      />
 
       <View style={styles.summaryRow}>
         <Card style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{totalWorkouts}</Text>
+          <Text style={styles.summaryValue}>{sessionsQuery.data?.length ?? 0}</Text>
           <Text style={styles.summaryLabel}>Sessions</Text>
         </Card>
         <Card style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{(totalVolume / 1000).toFixed(1)}k</Text>
-          <Text style={styles.summaryLabel}>Total Vol.</Text>
+          <Text style={[styles.summaryValue, { color: COLORS.teal }]}>{completedSessions.length}</Text>
+          <Text style={styles.summaryLabel}>Completed</Text>
         </Card>
         <Card style={styles.summaryCard}>
-          <Text style={[styles.summaryValue, { color: COLORS.gold }]}>{totalPrs}</Text>
-          <Text style={styles.summaryLabel}>PRs</Text>
+          <Text style={[styles.summaryValue, { color: COLORS.orange }]}>{activeSessions.length}</Text>
+          <Text style={styles.summaryLabel}>Active</Text>
         </Card>
       </View>
 
       <SectionList
-        sections={SECTIONS}
-        keyExtractor={(item) => item.id}
-        renderItem={renderSession}
-        renderSectionHeader={renderSectionHeader}
+        sections={sections}
+        keyExtractor={(item) => `${item.id}`}
+        renderItem={({ item }) => (
+          <Pressable
+            onPress={() =>
+              navigation.navigate("SessionDetail", {
+                sessionId: item.id,
+              })
+            }
+          >
+            <Card style={styles.sessionCard}>
+              <View style={styles.sessionRow}>
+                <View style={styles.sessionLeft}>
+                  <View style={styles.moodBadge}>
+                    {item.mood ? (
+                      <Text style={styles.moodText}>{item.mood}</Text>
+                    ) : (
+                      <Feather name={item.is_completed ? "check-circle" : "clock"} size={16} color={item.is_completed ? COLORS.teal : COLORS.orange} />
+                    )}
+                  </View>
+                  <View style={styles.sessionInfo}>
+                    <Text style={styles.sessionName}>{item.name ?? `Workout Session #${item.id}`}</Text>
+                    <Text style={styles.sessionDate}>{formatSessionDate(item.started_at)}</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
+              </View>
+
+              <View style={styles.sessionStats}>
+                <View style={styles.sessionStat}>
+                  <Feather name="clock" size={12} color={COLORS.muted} />
+                  <Text style={styles.sessionStatText}>{getDurationMinutes(item)}</Text>
+                </View>
+                {item.template_id ? (
+                  <Tag label={`Template #${item.template_id}`} color={COLORS.teal} backgroundColor={`${COLORS.teal}18`} />
+                ) : null}
+                {item.mesocycle_id ? (
+                  <Tag label={`Mesocycle #${item.mesocycle_id}`} color={COLORS.purple} backgroundColor={`${COLORS.purple}18`} />
+                ) : null}
+                <Tag
+                  label={item.is_completed ? "Completed" : "Active"}
+                  color={item.is_completed ? COLORS.green : COLORS.orange}
+                  backgroundColor={item.is_completed ? `${COLORS.green}20` : `${COLORS.orange}20`}
+                />
+              </View>
+
+              {item.notes ? <Text style={styles.sessionNotes}>{item.notes}</Text> : null}
+            </Card>
+          </Pressable>
+        )}
+        renderSectionHeader={({ section }) => (
+          <View style={styles.sectionHeader}>
+            <SectionEyebrow color={COLORS.purple}>{section.title}</SectionEyebrow>
+            <Text style={styles.sectionCount}>{section.data.length} sessions</Text>
+          </View>
+        )}
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}
         contentContainerStyle={{ paddingBottom: 100 }}
@@ -98,7 +212,7 @@ export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
           <View style={styles.emptyState}>
             <Feather name="calendar" size={40} color="rgba(255,255,255,0.15)" />
             <Text style={styles.emptyText}>No workouts yet</Text>
-            <Text style={styles.emptySubtext}>Start your first workout to see history</Text>
+            <Text style={styles.emptySubtext}>Start your first workout to build session history.</Text>
           </View>
         }
       />
@@ -116,15 +230,23 @@ const styles = StyleSheet.create({
   sessionCard: { marginBottom: 10 },
   sessionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   sessionLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
-  moodBadge: { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" },
+  moodBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   moodText: { fontSize: 16 },
   sessionInfo: { marginLeft: 12, flex: 1 },
   sessionName: { color: COLORS.text, fontSize: 14, fontWeight: "800" },
   sessionDate: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
-  sessionStats: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
+  sessionStats: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 12 },
   sessionStat: { flexDirection: "row", alignItems: "center", gap: 4 },
   sessionStatText: { color: COLORS.muted, fontSize: 11 },
+  sessionNotes: { color: COLORS.faint, fontSize: 11, lineHeight: 18, marginTop: 12 },
   emptyState: { alignItems: "center", paddingVertical: 60 },
   emptyText: { color: COLORS.text, fontSize: 16, fontWeight: "700", marginTop: 16 },
-  emptySubtext: { color: COLORS.muted, fontSize: 13, marginTop: 4 },
+  emptySubtext: { color: COLORS.muted, fontSize: 13, marginTop: 4, textAlign: "center" },
 });

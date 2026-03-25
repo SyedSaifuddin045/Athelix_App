@@ -1,5 +1,12 @@
 import React from "react";
-import { View, ScrollView, StyleSheet, StyleProp, ViewStyle } from "react-native";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  StyleProp,
+  ViewStyle,
+  type RefreshControlProps,
+} from "react-native";
 import { Glow } from "./Glow";
 import { COLORS } from "../../theme/colors";
 
@@ -8,9 +15,16 @@ interface ScreenProps {
   glowColor?: string;
   scroll?: boolean;
   contentContainerStyle?: StyleProp<ViewStyle>;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }
 
-export function Screen({ children, glowColor = "rgba(0,180,140,0.18)", scroll = true, contentContainerStyle }: ScreenProps): React.JSX.Element {
+export function Screen({
+  children,
+  glowColor = "rgba(0,180,140,0.18)",
+  scroll = true,
+  contentContainerStyle,
+  refreshControl,
+}: ScreenProps): React.JSX.Element {
   if (!scroll) {
     return (
       <View style={styles.screen}>
@@ -27,6 +41,7 @@ export function Screen({ children, glowColor = "rgba(0,180,140,0.18)", scroll = 
         contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
       >
         {children}
       </ScrollView>

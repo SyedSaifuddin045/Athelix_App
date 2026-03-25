@@ -1,50 +1,43 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, Pressable } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
+import { BackHeader, Card, Screen, ScreenState, Tag } from "../../components";
+import { useWorkoutTemplatesQuery } from "../../features/templates/hooks";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, BackHeader, SectionEyebrow } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { TEMPLATE_LIST } from "../../data";
 
 type Props = RootStackScreenProps<"TemplateList">;
 
+function formatUpdatedAt(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return "Recently updated";
+  }
+
+  return `Updated ${parsed.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}`;
+}
+
 export function TemplateListScreen({ navigation }: Props): React.JSX.Element {
-  const renderTemplate = ({ item }: { item: typeof TEMPLATE_LIST[0] }) => (
-    <Pressable onPress={() => navigation.navigate("TemplateBuilder", { id: item.id })}>
-      <Card style={[styles.templateCard, { borderColor: `${item.color}30` }]}>
-        <View style={styles.templateHeader}>
-          <View style={[styles.templateColorDot, { backgroundColor: item.color }]} />
-          <Text style={styles.templateName}>{item.name}</Text>
-          <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
-        </View>
-        <View style={styles.templateExercises}>
-          {item.exercises.slice(0, 3).map((exercise, index) => (
-            <Text key={index} style={styles.exerciseItem}>
-              {exercise}
-            </Text>
-          ))}
-          {item.exercises.length > 3 && (
-            <Text style={styles.moreExercises}>+{item.exercises.length - 3} more</Text>
-          )}
-        </View>
-        <View style={styles.templateFooter}>
-          <View style={styles.templateStat}>
-            <Feather name="clock" size={12} color={COLORS.muted} />
-            <Text style={styles.templateStatText}>{item.duration}</Text>
-          </View>
-          <View style={styles.templateStat}>
-            <Feather name="layers" size={12} color={COLORS.muted} />
-            <Text style={styles.templateStatText}>{item.sets} sets</Text>
-          </View>
-          <Tag label={`Used ${item.lastUsed}`} color={item.color} backgroundColor={`${item.color}20`} />
-        </View>
-      </Card>
-    </Pressable>
+  const templatesQuery = useWorkoutTemplatesQuery();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void templatesQuery.refetch();
+    }, [templatesQuery]),
   );
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-      <BackHeader title="Templates" subtitle="Saved workout plans" onBack={() => navigation.goBack()} />
+      <BackHeader
+        title="Templates"
+        subtitle={`${templatesQuery.data?.length ?? 0} saved workout plans`}
+        onBack={() => navigation.goBack()}
+      />
 
       <Pressable onPress={() => navigation.navigate("TemplateBuilder", {})}>
         <Card style={styles.newTemplateCard}>
@@ -52,52 +45,134 @@ export function TemplateListScreen({ navigation }: Props): React.JSX.Element {
             <View style={styles.newTemplateIcon}>
               <Feather name="plus" size={18} color={COLORS.teal} />
             </View>
-            <View>
+            <View style={styles.newTemplateText}>
               <Text style={styles.newTemplateTitle}>Create New Template</Text>
-              <Text style={styles.newTemplateSubtitle}>Build a custom workout plan</Text>
+              <Text style={styles.newTemplateSubtitle}>
+                Build a reusable workout plan with real template exercise targets.
+              </Text>
             </View>
           </View>
         </Card>
       </Pressable>
 
-      <View style={styles.section}>
-        <SectionEyebrow>Your Templates ({TEMPLATE_LIST.length})</SectionEyebrow>
-        <FlatList
-          data={TEMPLATE_LIST}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTemplate}
-          scrollEnabled={false}
-          contentContainerStyle={{ marginTop: 12 }}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No templates yet</Text>
-              <Text style={styles.emptySubtext}>Create your first workout template</Text>
-            </View>
-          }
+      {templatesQuery.isLoading && !templatesQuery.data ? (
+        <ScreenState
+          title="Loading templates"
+          message="Fetching your workout template library."
+          loading
         />
-      </View>
+      ) : null}
+
+      {templatesQuery.isError ? (
+        <ScreenState
+          title="Template library unavailable"
+          message="The app could not load saved templates."
+          actionLabel="Retry"
+          onAction={() => {
+            void templatesQuery.refetch();
+          }}
+        />
+      ) : null}
+
+      {templatesQuery.data ? (
+        <View style={styles.section}>
+          <FlatList
+            data={templatesQuery.data}
+            keyExtractor={(item) => `${item.id}`}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() =>
+                  navigation.navigate("TemplateBuilder", {
+                    templateId: item.id,
+                  })
+                }
+              >
+                <Card style={styles.templateCard}>
+                  <View style={styles.templateHeader}>
+                    <View style={styles.templateMarker} />
+                    <View style={styles.templateInfo}>
+                      <Text style={styles.templateName}>{item.name}</Text>
+                      <Text style={styles.templateMeta}>{formatUpdatedAt(item.updated_at)}</Text>
+                    </View>
+                    <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
+                  </View>
+
+                  <Text style={styles.templateDescription}>
+                    {item.description ?? "No description yet. Open the template to add exercise targets."}
+                  </Text>
+
+                  <View style={styles.templateFooter}>
+                    <Tag
+                      label={item.is_public ? "Public" : "Private"}
+                      color={item.is_public ? COLORS.green : COLORS.teal}
+                      backgroundColor={item.is_public ? `${COLORS.green}20` : `${COLORS.teal}20`}
+                    />
+                    <Text style={styles.templateId}>Template #{item.id}</Text>
+                  </View>
+                </Card>
+              </Pressable>
+            )}
+            scrollEnabled={false}
+            contentContainerStyle={{ marginTop: 24 }}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No templates yet</Text>
+                <Text style={styles.emptySubtext}>
+                  Create your first template to save exercise targets and launch sessions faster.
+                </Text>
+              </View>
+            }
+          />
+        </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  newTemplateCard: { marginTop: 16, borderWidth: 1, borderColor: `${COLORS.teal}30`, borderStyle: "dashed" },
+  newTemplateCard: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: `${COLORS.teal}30`,
+    borderStyle: "dashed",
+  },
   newTemplateContent: { flexDirection: "row", alignItems: "center" },
-  newTemplateIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: `${COLORS.teal}20`, alignItems: "center", justifyContent: "center" },
-  newTemplateTitle: { color: COLORS.text, fontSize: 14, fontWeight: "800", marginLeft: 12 },
-  newTemplateSubtitle: { color: COLORS.muted, fontSize: 11, marginLeft: 12, marginTop: 2 },
-  section: { marginTop: 24 },
-  templateCard: { marginBottom: 12, borderWidth: 1 },
+  newTemplateIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: `${COLORS.teal}20`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  newTemplateText: { flex: 1, marginLeft: 12 },
+  newTemplateTitle: { color: COLORS.text, fontSize: 14, fontWeight: "800" },
+  newTemplateSubtitle: { color: COLORS.muted, fontSize: 11, marginTop: 2, lineHeight: 18 },
+  section: { marginTop: 8 },
+  templateCard: { marginBottom: 12, borderWidth: 1, borderColor: COLORS.border },
   templateHeader: { flexDirection: "row", alignItems: "center" },
-  templateColorDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
-  templateName: { flex: 1, color: COLORS.text, fontSize: 15, fontWeight: "800" },
-  templateExercises: { marginTop: 12, marginLeft: 20 },
-  exerciseItem: { color: COLORS.muted, fontSize: 12, marginBottom: 4 },
-  moreExercises: { color: "rgba(255,255,255,0.35)", fontSize: 11, fontStyle: "italic" },
-  templateFooter: { flexDirection: "row", alignItems: "center", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
-  templateStat: { flexDirection: "row", alignItems: "center", gap: 4, marginRight: 16 },
-  templateStatText: { color: COLORS.muted, fontSize: 11 },
-  emptyState: { alignItems: "center", paddingVertical: 40 },
-  emptyText: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
-  emptySubtext: { color: COLORS.muted, fontSize: 12, marginTop: 4 },
+  templateMarker: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+    backgroundColor: COLORS.teal,
+  },
+  templateInfo: { flex: 1 },
+  templateName: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
+  templateMeta: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
+  templateDescription: { color: COLORS.muted, fontSize: 12, lineHeight: 18, marginTop: 12 },
+  templateFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
+  },
+  templateId: { color: COLORS.faint, fontSize: 11 },
+  emptyState: { alignItems: "center", paddingVertical: 56 },
+  emptyText: { color: COLORS.text, fontSize: 15, fontWeight: "700" },
+  emptySubtext: { color: COLORS.muted, fontSize: 12, marginTop: 4, textAlign: "center", lineHeight: 18 },
 });

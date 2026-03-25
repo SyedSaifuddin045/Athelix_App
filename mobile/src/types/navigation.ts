@@ -8,17 +8,17 @@ export type RootStackParamList = {
   Register: undefined;
   ProfileSetup: undefined;
   MainTabs: undefined;
-  ExerciseDetail: { id: string };
+  ExerciseDetail: { exerciseId: string };
   TemplateList: undefined;
-  TemplateBuilder: { id?: string };
-  StartWorkout: { id?: string };
-  ActiveWorkout: undefined;
+  TemplateBuilder: { templateId?: number };
+  StartWorkout: { templateId?: number };
+  ActiveWorkout: { sessionId: number };
   WorkoutHistory: undefined;
-  SessionDetail: { id: string };
+  SessionDetail: { sessionId: number };
   MesocycleList: undefined;
-  MesocycleDetail: { id: string };
+  MesocycleDetail: { mesocycleId: number };
   PersonalRecords: undefined;
-  ExerciseProgress: { id: string };
+  ExerciseProgress: { exerciseId: string };
   MuscleBalance: undefined;
   BodyweightHistory: undefined;
   Settings: undefined;
@@ -41,5 +41,3 @@ export type TabScreenProps<T extends keyof TabParamList> = CompositeScreenProps<
   BottomTabScreenProps<TabParamList, T>,
   NativeStackScreenProps<RootStackParamList>
 >;
-
-export type { TemplateExercise, WorkoutExercise } from "../data";

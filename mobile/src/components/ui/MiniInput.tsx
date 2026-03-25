@@ -1,14 +1,23 @@
 import React from "react";
-import { TextInput, StyleSheet } from "react-native";
+import { TextInput, StyleSheet, type KeyboardTypeOptions } from "react-native";
 
 interface MiniInputProps {
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
   strike?: boolean;
+  keyboardType?: KeyboardTypeOptions;
+  onBlur?: () => void;
 }
 
-export function MiniInput({ value, onChangeText, placeholder, strike }: MiniInputProps): React.JSX.Element {
+export function MiniInput({
+  value,
+  onChangeText,
+  placeholder,
+  strike,
+  keyboardType = "default",
+  onBlur,
+}: MiniInputProps): React.JSX.Element {
   return (
     <TextInput
       value={value}
@@ -16,7 +25,8 @@ export function MiniInput({ value, onChangeText, placeholder, strike }: MiniInpu
       placeholder={placeholder}
       placeholderTextColor="rgba(255,255,255,0.25)"
       style={[styles.miniInput, strike ? { textDecorationLine: "line-through" } : null]}
-      keyboardType="default"
+      keyboardType={keyboardType}
+      onBlur={onBlur}
     />
   );
 }

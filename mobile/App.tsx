@@ -2,6 +2,7 @@ import React from "react";
 import { View, StyleSheet, StatusBar } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
+import { AppProviders } from "./src/app/providers/AppProviders";
 import { PostHogProvider } from "./src/services/analytics/PostHogProvider";
 import { AppNavigator } from "./src/navigation";
 import { COLORS } from "./src/theme/colors";
@@ -22,11 +23,13 @@ export default function App(): React.JSX.Element {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer ref={navigationRef}>
-        <PostHogProvider navigationRef={navigationRef}>
-          <AppContent />
-        </PostHogProvider>
-      </NavigationContainer>
+      <AppProviders>
+        <NavigationContainer ref={navigationRef}>
+          <PostHogProvider navigationRef={navigationRef}>
+            <AppContent />
+          </PostHogProvider>
+        </NavigationContainer>
+      </AppProviders>
     </SafeAreaProvider>
   );
 }
