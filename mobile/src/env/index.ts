@@ -1,6 +1,7 @@
 import Constants from "expo-constants";
 
 interface EnvConfig {
+  apiBaseUrl: string;
   posthogApiKey: string;
   posthogHost: string;
   enableAnalyticsInDev: boolean;
@@ -19,6 +20,7 @@ function getBooleanEnvVar(key: string, defaultValue: boolean = false): boolean {
 }
 
 export const env: EnvConfig = {
+  apiBaseUrl: getEnvVar("apiBaseUrl") || "http://10.200.66.146:8000",
   posthogApiKey: getEnvVar("posthogApiKey"),
   posthogHost: getEnvVar("posthogHost") || "https://eu.i.posthog.com",
   enableAnalyticsInDev: getBooleanEnvVar("enableAnalyticsInDev", false),

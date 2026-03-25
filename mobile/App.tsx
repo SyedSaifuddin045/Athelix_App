@@ -6,6 +6,7 @@ import { PostHogProvider } from "./src/services/analytics/PostHogProvider";
 import { AppNavigator } from "./src/navigation";
 import { COLORS } from "./src/theme/colors";
 import type { RootStackParamList } from "./src/types/navigation";
+import { QueryProvider } from "./src/contexts";
 
 function AppContent(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -22,11 +23,13 @@ export default function App(): React.JSX.Element {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer ref={navigationRef}>
-        <PostHogProvider navigationRef={navigationRef}>
-          <AppContent />
-        </PostHogProvider>
-      </NavigationContainer>
+      <QueryProvider>
+        <NavigationContainer ref={navigationRef}>
+          <PostHogProvider navigationRef={navigationRef}>
+            <AppContent />
+          </PostHogProvider>
+        </NavigationContainer>
+      </QueryProvider>
     </SafeAreaProvider>
   );
 }
