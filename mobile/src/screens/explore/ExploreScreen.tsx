@@ -1,71 +1,131 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, FlatList, Pressable } from "react-native";
+import React, { useState, useMemo, useCallback } from "react";
+import { View, Text, TextInput, StyleSheet, FlatList, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, ChipWrap, SectionEyebrow } from "../../components";
+import { Screen, Card, Tag, SectionEyebrow } from "../../components";
 import { TabScreenProps } from "../../types/navigation";
-import { ALL_EXERCISES, EXERCISE_MUSCLES, EXERCISE_EQUIPMENT, DIFFICULTY_COLORS, ExerciseItem } from "../../data";
+import { useExercises, useExerciseFilters } from "../../hooks";
+import { DIFFICULTY_COLORS } from "../../data";
+import type { ExerciseListItem } from "../../api/types";
 
 type Props = TabScreenProps<"Explore">;
 
+const DIFFICULTY_COLOR_MAP: Record<string, string> = {
+  beginner: "#22c55e",
+  intermediate: "#f59e0b",
+  advanced: "#ef4444",
+};
+
 export function ExploreScreen({ navigation }: Props): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedMuscle, setSelectedMuscle] = useState("All");
   const [selectedEquipment, setSelectedEquipment] = useState("All");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
 
-  const filteredExercises = ALL_EXERCISES.filter((exercise) => {
-    const matchesSearch = exercise.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesMuscle = selectedMuscle === "All" || exercise.primaryMuscle === selectedMuscle;
-    const matchesEquipment = selectedEquipment === "All" || exercise.equipment === selectedEquipment;
-    return matchesSearch && matchesMuscle && matchesEquipment;
+  const { data: filtersData } = useExerciseFilters();
+  const { data: exercisesData, isLoading, isFetching } = useExercises({
+    limit: PAGE_SIZE,
+    offset: page * PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    muscle: selectedMuscle !== "All" ? selectedMuscle : undefined,
+    equipment: selectedEquipment !== "All" ? selectedEquipment : undefined,
   });
 
-  const renderExerciseItem = ({ item }: { item: ExerciseItem }) => (
-    <Pressable onPress={() => navigation.navigate("ExerciseDetail", { id: item.id })}>
-      <Card style={styles.exerciseCard}>
-        <View style={styles.exerciseRow}>
-          <View style={styles.exerciseLeft}>
-            <Text style={styles.exerciseEmoji}>{item.emoji}</Text>
-            <View style={styles.exerciseInfo}>
-              <Text style={styles.exerciseName}>{item.name}</Text>
-              <View style={styles.exerciseMeta}>
-                <Text style={styles.exerciseMuscle}>{item.primaryMuscle}</Text>
-                <View style={styles.dot} />
-                <Text style={styles.exerciseEquipment}>{item.equipment}</Text>
+  const muscles = useMemo(() => {
+    return ["All", ...(filtersData?.muscles || [])];
+  }, [filtersData?.muscles]);
+
+  const equipment = useMemo(() => {
+    return ["All", ...(filtersData?.equipment || [])];
+  }, [filtersData?.equipment]);
+
+  const exercises = exercisesData?.data || [];
+  const totalExercises = exercisesData?.total || 0;
+
+  const handleSearchChange = useCallback((text: string) => {
+    setSearchQuery(text);
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(text);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  const handleMuscleSelect = useCallback((muscle: string) => {
+    setSelectedMuscle(muscle);
+    setPage(0);
+  }, []);
+
+  const handleEquipmentSelect = useCallback((equip: string) => {
+    setSelectedEquipment(equip);
+    setPage(0);
+  }, []);
+
+  const handleLoadMore = useCallback(() => {
+    if (!isFetching && exercises.length < totalExercises) {
+      setPage((p) => p + 1);
+    }
+  }, [isFetching, exercises.length, totalExercises]);
+
+  const renderExerciseItem = useCallback(({ item }: { item: ExerciseListItem }) => {
+    const difficultyColor = DIFFICULTY_COLOR_MAP[item.difficulty] || DIFFICULTY_COLORS.Intermediate;
+    
+    return (
+      <Pressable onPress={() => (navigation as any).navigate("ExerciseDetail", { id: item.id })}>
+        <Card style={styles.exerciseCard}>
+          <View style={styles.exerciseRow}>
+            <View style={styles.exerciseLeft}>
+              <Text style={styles.exerciseEmoji}>{item.emoji || "💪"}</Text>
+              <View style={styles.exerciseInfo}>
+                <Text style={styles.exerciseName}>{item.name}</Text>
+                <View style={styles.exerciseMeta}>
+                  <Text style={styles.exerciseMuscle}>{item.primary_muscle}</Text>
+                  <View style={styles.dot} />
+                  <Text style={styles.exerciseEquipment}>{item.equipment}</Text>
+                </View>
               </View>
             </View>
+            <View style={styles.exerciseRight}>
+              <Tag
+                label={item.difficulty}
+                color={difficultyColor}
+                backgroundColor={`${difficultyColor}20`}
+              />
+              <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
+            </View>
           </View>
-          <View style={styles.exerciseRight}>
-            <Tag
-              label={item.difficulty}
-              color={DIFFICULTY_COLORS[item.difficulty]}
-              backgroundColor={`${DIFFICULTY_COLORS[item.difficulty]}20`}
-            />
-            <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
-          </View>
-        </View>
-      </Card>
-    </Pressable>
-  );
+        </Card>
+      </Pressable>
+    );
+  }, [navigation]);
+
+  const keyExtractor = useCallback((item: ExerciseListItem) => item.id, []);
 
   return (
     <Screen scroll={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 28 }}>
       <View style={styles.header}>
         <Text style={styles.title}>Exercise Library</Text>
-        <Text style={styles.subtitle}>{ALL_EXERCISES.length} exercises available</Text>
+        <Text style={styles.subtitle}>{totalExercises} exercises available</Text>
       </View>
 
       <View style={styles.searchWrap}>
         <Feather name="search" size={16} color="rgba(255,255,255,0.42)" />
         <TextInput
           value={searchQuery}
-          onChangeText={setSearchQuery}
+          onChangeText={handleSearchChange}
           placeholder="Search exercises..."
           placeholderTextColor="rgba(255,255,255,0.28)"
           style={styles.searchInput}
+          autoCapitalize="none"
+          autoCorrect={false}
         />
         {searchQuery.length > 0 && (
-          <Pressable onPress={() => setSearchQuery("")}>
+          <Pressable onPress={() => {
+            setSearchQuery("");
+            setDebouncedSearch("");
+          }}>
             <Feather name="x" size={16} color="rgba(255,255,255,0.42)" />
           </Pressable>
         )}
@@ -76,12 +136,12 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
           <Text style={styles.filterLabel}>Muscle Group</Text>
           <FlatList
             horizontal
-            data={EXERCISE_MUSCLES}
+            data={muscles}
             keyExtractor={(item) => item}
             showsHorizontalScrollIndicator={false}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => setSelectedMuscle(item)}
+                onPress={() => handleMuscleSelect(item)}
                 style={[
                   styles.filterChip,
                   selectedMuscle === item && styles.filterChipActive,
@@ -104,12 +164,12 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
           <Text style={styles.filterLabel}>Equipment</Text>
           <FlatList
             horizontal
-            data={EXERCISE_EQUIPMENT}
+            data={equipment}
             keyExtractor={(item) => item}
             showsHorizontalScrollIndicator={false}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => setSelectedEquipment(item)}
+                onPress={() => handleEquipmentSelect(item)}
                 style={[
                   styles.filterChip,
                   selectedEquipment === item && styles.filterChipActive,
@@ -130,21 +190,33 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
       </View>
 
       <View style={styles.resultsHeader}>
-        <Text style={styles.resultsCount}>{filteredExercises.length} results</Text>
+        <Text style={styles.resultsCount}>{exercises.length} of {totalExercises} results</Text>
+        {isFetching && <ActivityIndicator size="small" color={COLORS.teal} />}
       </View>
 
       <FlatList
-        data={filteredExercises}
-        keyExtractor={(item) => item.id}
+        data={exercises}
+        keyExtractor={keyExtractor}
         renderItem={renderExerciseItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Feather name="search" size={40} color="rgba(255,255,255,0.15)" />
-            <Text style={styles.emptyText}>No exercises found</Text>
-            <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
-          </View>
+          !isLoading ? (
+            <View style={styles.emptyState}>
+              <Feather name="search" size={40} color="rgba(255,255,255,0.15)" />
+              <Text style={styles.emptyText}>No exercises found</Text>
+              <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+            </View>
+          ) : null
+        }
+        ListFooterComponent={
+          isLoading ? (
+            <View style={styles.loadingFooter}>
+              <ActivityIndicator size="small" color={COLORS.teal} />
+            </View>
+          ) : null
         }
       />
     </Screen>
@@ -198,4 +270,5 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 60 },
   emptyText: { color: COLORS.text, fontSize: 16, fontWeight: "700", marginTop: 16 },
   emptySubtext: { color: COLORS.muted, fontSize: 13, marginTop: 4 },
+  loadingFooter: { paddingVertical: 20, alignItems: "center" },
 });

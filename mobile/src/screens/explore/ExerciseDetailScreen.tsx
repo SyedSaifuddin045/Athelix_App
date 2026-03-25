@@ -1,17 +1,45 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, Tag, BackHeader, SectionEyebrow } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { EXERCISE_DETAILS, EXERCISE_FALLBACK, DIFFICULTY_COLORS } from "../../data";
+import { useExercise } from "../../hooks";
 
 type Props = RootStackScreenProps<"ExerciseDetail">;
 
+const DIFFICULTY_COLOR_MAP: Record<string, string> = {
+  beginner: "#22c55e",
+  intermediate: "#f59e0b",
+  advanced: "#ef4444",
+};
+
 export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.Element {
   const { id } = route.params;
-  const exercise = EXERCISE_DETAILS[id] || { ...EXERCISE_FALLBACK, name: `Exercise ${id}` };
+  const { data: exercise, isLoading, error } = useExercise(id);
+
+  if (isLoading) {
+    return (
+      <Screen contentContainerStyle={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={COLORS.teal} />
+        <Text style={styles.loadingText}>Loading exercise...</Text>
+      </Screen>
+    );
+  }
+
+  if (error || !exercise) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
+        <BackHeader title="Exercise" onBack={() => navigation.goBack()} />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Failed to load exercise details</Text>
+        </View>
+      </Screen>
+    );
+  }
+
+  const difficultyColor = DIFFICULTY_COLOR_MAP[exercise.difficulty] || DIFFICULTY_COLORS?.Intermediate || "#f59e0b";
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
@@ -19,12 +47,12 @@ export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.El
 
       <Card style={[styles.heroCard, { borderColor: `${COLORS.teal}30` }]}>
         <View style={styles.heroContent}>
-          <Text style={styles.heroEmoji}>{exercise.emoji}</Text>
+          <Text style={styles.heroEmoji}>{exercise.emoji || "💪"}</Text>
           <View style={styles.heroInfo}>
             <Text style={styles.heroName}>{exercise.name}</Text>
             <View style={styles.heroMeta}>
               <Tag label={exercise.category} color={COLORS.teal} />
-              <Tag label={exercise.difficulty} color={DIFFICULTY_COLORS[exercise.difficulty]} />
+              <Tag label={exercise.difficulty} color={difficultyColor} />
             </View>
           </View>
         </View>
@@ -43,53 +71,81 @@ export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.El
           <View style={styles.musclePrimary}>
             <View style={[styles.muscleDot, { backgroundColor: COLORS.teal }]} />
             <Text style={styles.muscleLabel}>Primary</Text>
-            <Text style={styles.muscleValue}>{exercise.primaryMuscle}</Text>
+            <Text style={styles.muscleValue}>{exercise.primary_muscle}</Text>
           </View>
-          <View style={styles.muscleDivider} />
-          <View style={styles.muscleSecondary}>
-            <Text style={styles.muscleLabel}>Secondary</Text>
-            <View style={styles.secondaryMuscles}>
-              {exercise.secondaryMuscles.map((muscle, index) => (
-                <View key={index} style={styles.secondaryMuscle}>
-                  <View style={[styles.muscleDot, { backgroundColor: COLORS.muted, width: 6, height: 6 }]} />
-                  <Text style={styles.muscleValue}>{muscle}</Text>
+          {exercise.secondary_muscles && exercise.secondary_muscles.length > 0 && (
+            <>
+              <View style={styles.muscleDivider} />
+              <View style={styles.muscleSecondary}>
+                <Text style={styles.muscleLabel}>Secondary</Text>
+                <View style={styles.secondaryMuscles}>
+                  {exercise.secondary_muscles.map((muscle, index) => (
+                    <View key={index} style={styles.secondaryMuscle}>
+                      <View style={[styles.muscleDot, { backgroundColor: COLORS.muted, width: 6, height: 6 }]} />
+                      <Text style={styles.muscleValue}>{muscle}</Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
-            </View>
-          </View>
-        </Card>
-      </View>
-
-      <View style={styles.section}>
-        <SectionEyebrow color={COLORS.blue}>Instructions</SectionEyebrow>
-        <Card style={styles.instructionsCard}>
-          {exercise.instructions.map((instruction, index) => (
-            <View key={index} style={styles.instructionRow}>
-              <View style={styles.instructionNumber}>
-                <Text style={styles.instructionNumberText}>{index + 1}</Text>
               </View>
-              <Text style={styles.instructionText}>{instruction}</Text>
-            </View>
-          ))}
+            </>
+          )}
         </Card>
       </View>
 
-      <View style={styles.section}>
-        <SectionEyebrow color={COLORS.gold}>Pro Tips</SectionEyebrow>
-        <Card style={styles.tipsCard}>
-          {exercise.tips.map((tip, index) => (
-            <View key={index} style={styles.tipRow}>
-              <Feather name="zap" size={14} color={COLORS.gold} />
-              <Text style={styles.tipText}>{tip}</Text>
-            </View>
-          ))}
-        </Card>
-      </View>
+      {exercise.instructions && exercise.instructions.length > 0 && (
+        <View style={styles.section}>
+          <SectionEyebrow color={COLORS.blue}>Instructions</SectionEyebrow>
+          <Card style={styles.instructionsCard}>
+            {exercise.instructions.map((instruction, index) => (
+              <View key={index} style={styles.instructionRow}>
+                <View style={styles.instructionNumber}>
+                  <Text style={styles.instructionNumberText}>{index + 1}</Text>
+                </View>
+                <Text style={styles.instructionText}>{instruction}</Text>
+              </View>
+            ))}
+          </Card>
+        </View>
+      )}
+
+      {exercise.tips && exercise.tips.length > 0 && (
+        <View style={styles.section}>
+          <SectionEyebrow color={COLORS.gold}>Pro Tips</SectionEyebrow>
+          <Card style={styles.tipsCard}>
+            {exercise.tips.map((tip, index) => (
+              <View key={index} style={styles.tipRow}>
+                <Feather name="zap" size={14} color={COLORS.gold} />
+                <Text style={styles.tipText}>{tip}</Text>
+              </View>
+            ))}
+          </Card>
+        </View>
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingBottom: 100,
+  },
+  loadingText: {
+    color: COLORS.muted,
+    fontSize: 14,
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorText: {
+    color: COLORS.red,
+    fontSize: 14,
+  },
   heroCard: { marginTop: 16, borderWidth: 1 },
   heroContent: { flexDirection: "row", alignItems: "center" },
   heroEmoji: { fontSize: 56 },
@@ -119,3 +175,9 @@ const styles = StyleSheet.create({
   tipRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   tipText: { flex: 1, color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 20 },
 });
+
+const DIFFICULTY_COLORS = {
+  Beginner: "#22c55e",
+  Intermediate: "#f59e0b",
+  Advanced: "#ef4444",
+};

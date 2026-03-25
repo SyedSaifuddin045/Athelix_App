@@ -1,40 +1,60 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import { View, Text, TextInput, StyleSheet, Alert } from "react-native";
 import { ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, PrimaryButton, RoundButton } from "../../components";
+import { Screen, PrimaryButton, RoundButton } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
+import { useAuthStore } from "../../store";
 import { usePostHog } from "posthog-react-native";
 
 type Props = RootStackScreenProps<"Login">;
 
 export function LoginScreen({ navigation }: Props): React.JSX.Element {
   const posthog = usePostHog();
+  const { login, isLoading, error, clearError } = useAuthStore();
   
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    if (!email || !password) {
-      setError("Please fill in all fields.");
+  const handleLogin = async () => {
+    if (!username || !password) {
+      Alert.alert("Error", "Please fill in all fields.");
       return;
     }
-    setError("");
-    setLoading(true);
-    
-    if (posthog) {
-      posthog.identify(email, { email });
-      posthog.capture("user_logged_in", { method: "email" });
-    }
-    
-    setTimeout(() => {
-      setLoading(false);
+
+    clearError();
+
+    try {
+      await login(username, password);
+      
+      if (posthog) {
+        posthog.identify(username, { username });
+        posthog.capture("user_logged_in", { method: "email" });
+      }
+      
       navigation.replace("MainTabs");
-    }, 1200);
+    } catch (err) {
+      // Error is handled by the store
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    clearError();
+
+    try {
+      await login("demo", "demo123");
+      
+      if (posthog) {
+        posthog.identify("demo_user", { username: "demo" });
+        posthog.capture("user_logged_in", { method: "demo" });
+      }
+      
+      navigation.replace("MainTabs");
+    } catch {
+      Alert.alert("Demo Login Failed", "Demo mode is not available. Please create an account or login with your credentials.");
+    }
   };
 
   return (
@@ -49,15 +69,15 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.formStack}>
         <View>
-          <Text style={styles.fieldLabel}>Email</Text>
+          <Text style={styles.fieldLabel}>Username</Text>
           <TextInput
-            value={email}
-            onChangeText={setEmail}
-            placeholder="jordan@example.com"
+            value={username}
+            onChangeText={setUsername}
+            placeholder="jordan_fitness"
             placeholderTextColor="rgba(255,255,255,0.28)"
             style={styles.input}
-            keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
           />
         </View>
         <View>
@@ -87,10 +107,10 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
           </View>
         ) : null}
         <PrimaryButton
-          label={loading ? "Signing In..." : "Sign In"}
+          label={isLoading ? "Signing In..." : "Sign In"}
           onPress={handleLogin}
-          disabled={loading}
-          icon={loading ? <ActivityIndicator color="#000000" /> : <Feather name="arrow-right" size={16} color="#000000" />}
+          disabled={isLoading}
+          icon={isLoading ? <ActivityIndicator color="#000000" /> : <Feather name="arrow-right" size={16} color="#000000" />}
         />
       </View>
 
@@ -102,8 +122,9 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
 
       <PrimaryButton
         label="Continue as Demo User"
-        onPress={() => navigation.replace("MainTabs")}
+        onPress={handleDemoLogin}
         subtle
+        disabled={isLoading}
         icon={<Feather name="user" size={16} color="rgba(255,255,255,0.7)" />}
       />
 

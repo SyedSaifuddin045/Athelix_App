@@ -3,37 +3,62 @@ import { View, Text, StyleSheet } from "react-native";
 import { COLORS } from "../../theme/colors";
 import { Screen, ProgressBar } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
+import { useAuthStore } from "../../store";
+import { usePostHog } from "posthog-react-native";
 
 type Props = RootStackScreenProps<"Splash">;
 
 export function SplashScreen({ navigation }: Props): React.JSX.Element {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Initializing...");
+  const { initialize, isAuthenticated, isInitialized } = useAuthStore();
+  const posthog = usePostHog();
 
   useEffect(() => {
-    const steps = [
-      { pct: 20, label: "Fetching app config...", delay: 400 },
-      { pct: 50, label: "Restoring session...", delay: 900 },
-      { pct: 75, label: "Syncing data...", delay: 1400 },
-      { pct: 100, label: "Ready!", delay: 1900 },
-    ];
+    const initApp = async () => {
+      try {
+        setStatus("Fetching app config...");
+        setProgress(20);
+        await new Promise((resolve) => setTimeout(resolve, 400));
 
-    const timers = steps.map(({ pct, label, delay }) =>
-      setTimeout(() => {
-        setProgress(pct);
-        setStatus(label);
-      }, delay)
-    );
+        setStatus("Restoring session...");
+        setProgress(50);
+        await initialize();
 
-    const doneTimer = setTimeout(() => {
-      navigation.replace("MainTabs");
-    }, 2400);
+        if (isAuthenticated) {
+          setStatus("Syncing data...");
+          setProgress(75);
+          await new Promise((resolve) => setTimeout(resolve, 500));
 
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer));
-      clearTimeout(doneTimer);
+          const user = useAuthStore.getState().user;
+          if (user && posthog) {
+            posthog.identify(user.email || user.username, {
+              email: user.email,
+              username: user.username,
+            });
+          }
+        }
+
+        setProgress(100);
+        setStatus("Ready!");
+
+        await new Promise((resolve) => setTimeout(resolve, 300));
+
+        if (isAuthenticated) {
+          navigation.replace("MainTabs");
+        } else {
+          navigation.replace("Login");
+        }
+      } catch {
+        setProgress(100);
+        setStatus("Ready!");
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        navigation.replace("Login");
+      }
     };
-  }, [navigation]);
+
+    initApp();
+  }, [initialize, isAuthenticated, navigation, posthog]);
 
   return (
     <Screen glowColor="rgba(0,180,140,0.24)" scroll={false} contentContainerStyle={styles.centeredContent}>

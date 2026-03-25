@@ -1,10 +1,14 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, TextInput, StyleSheet, Alert } from "react-native";
 import { ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, PrimaryButton, RoundButton } from "../../components";
+import { Screen, Card, PrimaryButton, RoundButton } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
+import { useAuthStore } from "../../store";
+import { usePostHog } from "posthog-react-native";
+import type { AxiosError } from "axios";
+import type { ApiErrorResponse } from "../../api/types";
 
 type Props = RootStackScreenProps<"Register">;
 
@@ -14,34 +18,51 @@ interface ValidationCheck {
 }
 
 export function RegisterScreen({ navigation }: Props): React.JSX.Element {
+  const posthog = usePostHog();
+  const { register, isLoading, error, clearError } = useAuthStore();
+  
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
   const validationChecks: ValidationCheck[] = [
+    { label: "At least 3 characters", valid: username.length >= 3 },
+    { label: "Valid email format", valid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) },
     { label: "At least 8 characters", valid: password.length >= 8 },
     { label: "Contains a number", valid: /\d/.test(password) },
     { label: "Contains uppercase letter", valid: /[A-Z]/.test(password) },
     { label: "Passwords match", valid: password.length > 0 && password === confirmPassword },
   ];
 
-  const isFormValid = validationChecks.every((check) => check.valid) && username.length >= 3 && email.length > 0;
+  const isFormValid = validationChecks.every((check) => check.valid);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!isFormValid) {
-      setError("Please complete all requirements and ensure passwords match.");
+      Alert.alert("Error", "Please complete all requirements and ensure passwords match.");
       return;
     }
-    setError("");
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    clearError();
+
+    try {
+      await register(username, email, password);
+      
+      if (posthog) {
+        posthog.identify(email, { email, username });
+        posthog.capture("user_registered", { method: "email" });
+      }
+      
       navigation.navigate("ProfileSetup");
-    }, 1500);
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      if (axiosError.response?.data?.field_errors) {
+        const fieldErrors = axiosError.response.data.field_errors;
+        const messages = fieldErrors.map((fe) => `${fe.field}: ${fe.message}`).join("\n");
+        Alert.alert("Validation Error", messages);
+      }
+    }
   };
 
   return (
@@ -64,6 +85,7 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
             placeholderTextColor="rgba(255,255,255,0.28)"
             style={styles.input}
             autoCapitalize="none"
+            autoCorrect={false}
           />
         </View>
 
@@ -77,6 +99,7 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
             style={styles.input}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
           />
         </View>
 
@@ -134,10 +157,10 @@ export function RegisterScreen({ navigation }: Props): React.JSX.Element {
         ) : null}
 
         <PrimaryButton
-          label={loading ? "Creating Account..." : "Create Account"}
+          label={isLoading ? "Creating Account..." : "Create Account"}
           onPress={handleRegister}
-          disabled={loading || !isFormValid}
-          icon={loading ? <ActivityIndicator color="#000000" /> : <Feather name="user-plus" size={16} color="#000000" />}
+          disabled={isLoading || !isFormValid}
+          icon={isLoading ? <ActivityIndicator color="#000000" /> : <Feather name="user-plus" size={16} color="#000000" />}
         />
       </View>
 
