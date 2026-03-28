@@ -107,7 +107,7 @@ export function ProgressHubScreen({ navigation }: Props): React.JSX.Element {
           <View style={styles.snapshotHeader}>
             <Text style={styles.snapshotTitle}>This Week's Training</Text>
             <Text style={styles.snapshotSubtitle}>
-              {overview?.workout_streaks?.workouts_this_week || 0} of 6 days active
+              {overview?.workout_streaks?.workouts_this_week || overview?.workout_streaks?.current_weekly_streak || 0} of 6 days active
             </Text>
           </View>
 

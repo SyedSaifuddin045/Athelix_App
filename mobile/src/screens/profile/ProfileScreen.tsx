@@ -77,15 +77,15 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.statsRow}>
         <Card style={styles.statCard}>
-          <Text style={styles.statValue}>{overview?.stats?.total_workouts || 0}</Text>
+          <Text style={styles.statValue}>{overview?.stats?.total_sessions || overview?.stats?.total_workouts || 0}</Text>
           <Text style={styles.statLabel}>Workouts</Text>
         </Card>
         <Card style={styles.statCard}>
-          <Text style={styles.statValue}>{overview?.workout_streaks?.current_streak || 0}</Text>
+          <Text style={styles.statValue}>{overview?.workout_streaks?.current_daily_streak || 0}</Text>
           <Text style={styles.statLabel}>Day Streak</Text>
         </Card>
         <Card style={styles.statCard}>
-          <Text style={styles.statValue}>{overview?.stats?.total_prs || 0}</Text>
+          <Text style={styles.statValue}>{overview?.stats?.personal_record_count || overview?.stats?.total_prs || 0}</Text>
           <Text style={styles.statLabel}>All-time PRs</Text>
         </Card>
       </View>
@@ -93,7 +93,7 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
       <View style={styles.section}>
         <SectionEyebrow color={COLORS.gold}>Achievements</SectionEyebrow>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.achievementsScroll}>
-          {overview?.stats?.total_prs && overview.stats.total_prs > 0 ? (
+          {(overview?.stats?.personal_record_count || overview?.stats?.total_prs || 0) > 0 ? (
             <>
               <Card style={styles.achievementCard}>
                 <Text style={styles.achievementIcon}>🏆</Text>
@@ -102,7 +102,7 @@ export function ProfileScreen({ navigation }: Props): React.JSX.Element {
               </Card>
               <Card style={styles.achievementCard}>
                 <Text style={styles.achievementIcon}>🔥</Text>
-                <Text style={styles.achievementLabel}>{overview.workout_streaks?.current_streak || 0} Day Streak</Text>
+                <Text style={styles.achievementLabel}>{overview?.workout_streaks?.current_daily_streak || 0} Day Streak</Text>
                 <Text style={styles.achievementDate}>Consistency!</Text>
               </Card>
             </>

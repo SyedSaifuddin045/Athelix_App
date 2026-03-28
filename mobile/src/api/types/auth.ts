@@ -98,19 +98,37 @@ export interface PersonalRecordSummary {
 }
 
 export interface WorkoutStreak {
-  current_streak: number;
-  longest_streak: number;
-  workouts_this_week: number;
-  workouts_last_week: number;
+  current_daily_streak: number;
+  longest_daily_streak: number;
+  current_weekly_streak: number;
+  longest_weekly_streak: number;
+  workouts_this_week?: number;
+  workouts_last_week?: number;
 }
 
 export interface UserStats {
-  total_workouts: number;
-  total_volume: number;
-  total_sets: number;
-  total_prs: number;
-  workouts_this_month: number;
-  average_duration_minutes: number;
+  total_workout_templates: number;
+  total_sessions: number;
+  completed_sessions: number;
+  personal_record_count: number;
+  total_workouts?: number;
+  total_volume?: number;
+  total_sets?: number;
+  total_prs?: number;
+  workouts_this_month?: number;
+  average_duration_minutes?: number;
+}
+
+export interface UserStats {
+  total_workout_templates: number;
+  total_sessions: number;
+  completed_sessions: number;
+  personal_record_count: number;
+  total_volume?: number;
+  total_sets?: number;
+  total_prs?: number;
+  workouts_this_month?: number;
+  average_duration_minutes?: number;
 }
 
 export interface AppConfig {

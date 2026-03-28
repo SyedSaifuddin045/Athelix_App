@@ -9,7 +9,13 @@ interface EnvConfig {
 }
 
 function getEnvVar(key: keyof EnvConfig): string {
-  return Constants.expoConfig?.extra?.[key] as string ?? "";
+  // Try Constants.expoConfig first (for production builds)
+  const fromExtra = Constants.expoConfig?.extra?.[key] as string | undefined;
+  if (fromExtra) return fromExtra;
+  
+  // Fallback to process.env for development
+  const envKey = `EXPO_PUBLIC_${key.toUpperCase()}`;
+  return (process.env as Record<string, string | undefined>)[envKey] ?? "";
 }
 
 function getBooleanEnvVar(key: string, defaultValue: boolean = false): boolean {
@@ -20,7 +26,7 @@ function getBooleanEnvVar(key: string, defaultValue: boolean = false): boolean {
 }
 
 export const env: EnvConfig = {
-  apiBaseUrl: getEnvVar("apiBaseUrl") || "http://10.200.66.146:8000",
+  apiBaseUrl: getEnvVar("apiBaseUrl") || "http://localhost:8000",
   posthogApiKey: getEnvVar("posthogApiKey"),
   posthogHost: getEnvVar("posthogHost") || "https://eu.i.posthog.com",
   enableAnalyticsInDev: getBooleanEnvVar("enableAnalyticsInDev", false),

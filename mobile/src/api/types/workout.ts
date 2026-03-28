@@ -62,12 +62,11 @@ export interface WorkoutSession {
   location: string | null;
   notes: string | null;
   is_completed: boolean;
-  exercises_count?: number;
-  total_sets?: number;
-  estimated_duration_minutes?: number;
-  duration_minutes?: number;
-  total_volume?: number;
-  prs_count?: number;
+  duration_minutes?: number | null;
+  exercises_count?: number | null;
+  total_sets?: number | null;
+  total_volume?: number | null;
+  prs_count?: number | null;
 }
 
 export interface ExerciseSetResponse {

@@ -5,8 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Tag, ListCard, AnalyticsCard, SectionEyebrow } from "../../components";
 import { TabScreenProps } from "../../types/navigation";
-import { useUserOverview, useWorkoutTemplates } from "../../hooks";
-import { TRAIN_SECTIONS } from "../../data";
+import { useUserOverview, useWorkoutTemplates, useMesocycles } from "../../hooks";
 
 type Props = TabScreenProps<"Train">;
 
@@ -16,13 +15,61 @@ const NAVIGATION_MAP: Record<string, string> = {
   mesocycleList: "MesocycleList",
 };
 
+interface TrainingSection {
+  title: string;
+  desc: string;
+  path: string;
+  color: string;
+  badge: string;
+  count?: number;
+}
+
 export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
   const { data: overview, isLoading: overviewLoading } = useUserOverview();
-  const { data: templatesData } = useWorkoutTemplates();
+  const { data: templatesData, isLoading: templatesLoading } = useWorkoutTemplates();
+  const { data: mesocyclesData } = useMesocycles();
 
-  const templatesCount = templatesData?.total || 0;
-  const totalSessions = overview?.stats?.total_workouts || 0;
-  const currentStreak = overview?.workout_streaks?.current_streak || 0;
+  console.log("[TrainHub] overview:", JSON.stringify(overview, null, 2));
+  console.log("[TrainHub] overviewLoading:", overviewLoading);
+  console.log("[TrainHub] templatesData:", JSON.stringify(templatesData, null, 2));
+  console.log("[TrainHub] templatesLoading:", templatesLoading);
+  console.log("[TrainHub] mesocyclesData:", JSON.stringify(mesocyclesData, null, 2));
+
+  // Compute counts from API data
+  const templatesCount = templatesData?.total || overview?.stats?.total_workout_templates || 0;
+  const totalSessions = overview?.stats?.total_sessions || 0;
+  const currentStreak = overview?.workout_streaks?.current_weekly_streak || 0;
+  const mesocyclesCount = mesocyclesData?.total || 0;
+
+  console.log("[TrainHub] computed values:", { templatesCount, totalSessions, currentStreak, mesocyclesCount });
+
+  // Build training sections with dynamic counts
+  const trainingSections: TrainingSection[] = [
+    {
+      title: "Templates",
+      desc: "Saved workout plans and routines",
+      path: "templateList",
+      color: COLORS.teal,
+      badge: `${templatesCount} saved`,
+      count: templatesCount,
+    },
+    {
+      title: "Workout History",
+      desc: "All past sessions and sets",
+      path: "workoutHistory",
+      color: COLORS.green,
+      badge: `${totalSessions} sessions`,
+      count: totalSessions,
+    },
+    {
+      title: "Mesocycles",
+      desc: "Advanced block planning",
+      path: "mesocycleList",
+      color: COLORS.purple,
+      badge: mesocyclesCount > 0 ? `${mesocyclesCount} plans` : "Advanced",
+      count: mesocyclesCount,
+    },
+  ];
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
@@ -97,7 +144,7 @@ export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
         <View style={styles.statsGrid}>
           <AnalyticsCard 
             label="This Week" 
-            value={String(overview?.workout_streaks?.workouts_this_week || 0)} 
+            value={String(overview?.workout_streaks?.current_weekly_streak || 0)} 
             sub="workouts" 
             color={COLORS.teal} 
           />
@@ -121,7 +168,7 @@ export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
           />
           <AnalyticsCard 
             label="PRs Hit" 
-            value={String(overview?.stats?.total_prs || 0)} 
+            value={String(overview?.stats?.personal_record_count || overview?.stats?.total_prs || 0)} 
             sub="this month" 
             color={COLORS.gold} 
           />
@@ -130,7 +177,7 @@ export function TrainHubScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.section}>
         <SectionEyebrow>Training Sections</SectionEyebrow>
-        {TRAIN_SECTIONS.map((section) => (
+        {trainingSections.map((section) => (
           <Pressable
             key={section.path}
             onPress={() => {

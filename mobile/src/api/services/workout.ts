@@ -18,12 +18,19 @@ export const sessionService = {
     data: WorkoutSession[];
     total: number;
   }> {
-    const response = await apiClient.get<WorkoutSession[]>(
+    const response = await apiClient.get<WorkoutSession[] | { items: WorkoutSession[]; total: number }>(
       "/workout-sessions",
       { params }
     );
-    const data = Array.isArray(response.data) ? response.data : [];
-    return { data, total: data.length };
+    
+    // Handle both array response and paginated response
+    if (Array.isArray(response.data)) {
+      return { data: response.data, total: response.data.length };
+    } else if (response.data && typeof response.data === 'object' && 'items' in response.data) {
+      return { data: (response.data as any).items || [], total: (response.data as any).total || 0 };
+    }
+    
+    return { data: [], total: 0 };
   },
 
   async getSession(sessionId: string): Promise<WorkoutSessionDetail> {
@@ -85,9 +92,16 @@ export const templateService = {
     data: WorkoutTemplate[];
     total: number;
   }> {
-    const response = await apiClient.get<WorkoutTemplate[]>("/workout-templates");
-    const data = Array.isArray(response.data) ? response.data : [];
-    return { data, total: data.length };
+    const response = await apiClient.get<WorkoutTemplate[] | { items: WorkoutTemplate[]; total: number }>("/workout-templates");
+    
+    // Handle both array response and paginated response
+    if (Array.isArray(response.data)) {
+      return { data: response.data, total: response.data.length };
+    } else if (response.data && typeof response.data === 'object' && 'items' in response.data) {
+      return { data: (response.data as any).items || [], total: (response.data as any).total || 0 };
+    }
+    
+    return { data: [], total: 0 };
   },
 
   async getTemplate(templateId: string): Promise<WorkoutTemplateDetail> {

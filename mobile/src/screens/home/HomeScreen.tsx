@@ -26,7 +26,9 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
   const displayName = overview?.profile?.display_name || overview?.profile?.first_name || user?.username || "Athlete";
 
   const weeklyWorkoutData = useMemo(() => {
-    const { workouts_this_week = 0, workouts_last_week = 0 } = overview?.workout_streaks || {};
+    const streaks = overview?.workout_streaks;
+    const workouts_this_week = streaks?.workouts_this_week ?? streaks?.current_weekly_streak ?? 0;
+    const workouts_last_week = streaks?.workouts_last_week ?? 0;
     const today = new Date().getDay();
     const mondayIndex = today === 0 ? 6 : today - 1;
     
@@ -115,7 +117,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
           <View style={styles.weeklyStats}>
             <CompactStatCard 
               label="Workouts" 
-              value={String(overview?.workout_streaks?.workouts_this_week || 0)} 
+              value={String(overview?.workout_streaks?.workouts_this_week || overview?.workout_streaks?.current_weekly_streak || 0)} 
               valueColor={COLORS.teal} 
             />
             <CompactStatCard 
@@ -129,7 +131,7 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
             />
             <CompactStatCard 
               label="PRs" 
-              value={String(overview?.stats?.total_prs || 0)} 
+              value={String(overview?.stats?.personal_record_count || overview?.stats?.total_prs || 0)} 
               valueColor={COLORS.gold} 
             />
           </View>
@@ -140,11 +142,11 @@ export function HomeScreen({ navigation }: Props): React.JSX.Element {
           />
           <View style={styles.weeklySummary}>
             <Text style={styles.weeklySummaryText}>
-              {overview?.workout_streaks?.workouts_this_week || 0} of 6 days completed
+              {overview?.workout_streaks?.workouts_this_week || overview?.workout_streaks?.current_weekly_streak || 0} of 6 days completed
             </Text>
             <Tag 
-              label={overview?.workout_streaks?.workouts_this_week && overview.workout_streaks.workouts_this_week >= 4 ? "On track" : "Keep going"} 
-              color={overview?.workout_streaks?.workouts_this_week && overview.workout_streaks.workouts_this_week >= 4 ? COLORS.green : COLORS.orange} 
+              label={(overview?.workout_streaks?.workouts_this_week || overview?.workout_streaks?.current_weekly_streak || 0) >= 4 ? "On track" : "Keep going"} 
+              color={(overview?.workout_streaks?.workouts_this_week || overview?.workout_streaks?.current_weekly_streak || 0) >= 4 ? COLORS.green : COLORS.orange} 
             />
           </View>
         </View>

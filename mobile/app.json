@@ -32,7 +32,11 @@
     "extra": {
       "eas": {
         "projectId": "fittrack-mobile"
-      }
+      },
+      "apiBaseUrl": "http://localhost:8000",
+      "posthogApiKey": "",
+      "posthogHost": "https://eu.i.posthog.com",
+      "enableAnalyticsInDev": false
     }
   }
 }
