@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { exerciseService, setService } from "../api/services";
+import { exerciseService } from "../api/services";
 import { queryKeys } from "./useUser";
-import type { CreateSetRequest, UpdateSetRequest } from "../api/types";
+import type { Exercise } from "../api/types";
 
 export function useExerciseFilters() {
   return useQuery({
@@ -31,59 +31,19 @@ export function useExercise(exerciseId: string) {
   return useQuery({
     queryKey: queryKeys.exercise(exerciseId),
     queryFn: () => exerciseService.getExercise(exerciseId),
+    enabled: !!exerciseId,
   });
 }
 
-export function useSets(sessionId: string) {
+export function useExercisesByIds(exerciseIds: string[]) {
   return useQuery({
-    queryKey: ["sets", sessionId] as const,
-    queryFn: () => setService.getSets(sessionId),
-    enabled: !!sessionId,
-  });
-}
-
-export function useCreateSet() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ sessionId, data }: { sessionId: string; data: CreateSetRequest }) =>
-      setService.createSet(sessionId, data),
-    onSuccess: (_, { sessionId }) => {
-      queryClient.invalidateQueries({ queryKey: ["sets", sessionId] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.session(sessionId) });
+    queryKey: ["exercises", "byIds", exerciseIds.sort().join(",")],
+    queryFn: async () => {
+      const results = await Promise.all(
+        exerciseIds.map((id) => exerciseService.getExercise(id).catch(() => null))
+      );
+      return results.filter((r): r is Exercise => r !== null);
     },
-  });
-}
-
-export function useUpdateSet() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      sessionId,
-      setId,
-      data,
-    }: {
-      sessionId: string;
-      setId: string;
-      data: UpdateSetRequest;
-    }) => setService.updateSet(sessionId, setId, data),
-    onSuccess: (_, { sessionId }) => {
-      queryClient.invalidateQueries({ queryKey: ["sets", sessionId] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.session(sessionId) });
-    },
-  });
-}
-
-export function useDeleteSet() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ sessionId, setId }: { sessionId: string; setId: string }) =>
-      setService.deleteSet(sessionId, setId),
-    onSuccess: (_, { sessionId }) => {
-      queryClient.invalidateQueries({ queryKey: ["sets", sessionId] });
-      queryClient.invalidateQueries({ queryKey: queryKeys.session(sessionId) });
-    },
+    enabled: exerciseIds.length > 0,
   });
 }

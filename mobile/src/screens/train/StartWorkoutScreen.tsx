@@ -20,8 +20,8 @@ export function StartWorkoutScreen({ navigation, route }: Props): React.JSX.Elem
   const handleQuickStart = async (optionId: string) => {
     try {
       if (optionId === "empty") {
-        await createSession.mutateAsync({ name: "New Workout" });
-        (navigation as any).replace("ActiveWorkout");
+        const result = await createSession.mutateAsync({ name: "New Workout" });
+        (navigation as any).replace("ActiveWorkout", { sessionId: String(result.id) });
       } else {
         (navigation as any).replace("ActiveWorkout");
       }
@@ -30,13 +30,16 @@ export function StartWorkoutScreen({ navigation, route }: Props): React.JSX.Elem
     }
   };
 
-  const handleTemplateStart = async (templateId: string, templateName: string) => {
+  const handleTemplateStart = async (templateId: number, templateName: string) => {
     try {
-      await createSession.mutateAsync({ 
+      const result = await createSession.mutateAsync({ 
         name: templateName,
-        template_id: templateId,
+        template_id: String(templateId),
       });
-      (navigation as any).replace("ActiveWorkout");
+      (navigation as any).replace("ActiveWorkout", { 
+        sessionId: String(result.id),
+        templateId: String(templateId),
+      });
     } catch (error) {
       console.error("Failed to create session:", error);
     }
@@ -82,11 +85,11 @@ export function StartWorkoutScreen({ navigation, route }: Props): React.JSX.Elem
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.templateScroll}>
             {templates.slice(0, 4).map((template) => (
               <ListCard
-                key={template.id}
+                key={String(template.id)}
                 iconEmoji="🏋️"
                 name={template.name}
                 color={COLORS.teal}
-                subtitle={`${template.exercises_count} exercises`}
+                subtitle={`${template.exercises_count || 0} exercises`}
                 onPress={() => handleTemplateStart(template.id, template.name)}
                 compact
               />
@@ -106,11 +109,11 @@ export function StartWorkoutScreen({ navigation, route }: Props): React.JSX.Elem
         ) : templates.length > 0 ? (
           templates.map((template) => (
             <ListCard
-              key={template.id}
+              key={String(template.id)}
               iconEmoji="🏋️"
               name={template.name}
               color={COLORS.teal}
-              subtitle={`${template.exercises_count} exercises`}
+              subtitle={`${template.exercises_count || 0} exercises`}
               onPress={() => handleTemplateStart(template.id, template.name)}
             />
           ))

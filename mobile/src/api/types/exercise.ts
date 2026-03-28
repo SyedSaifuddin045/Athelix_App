@@ -53,16 +53,20 @@ export interface ExerciseSet {
 
 export interface CreateSetRequest {
   exercise_id: string;
-  reps: number;
-  weight: number;
+  set_number: number;
+  set_type?: string;
+  reps?: number;
+  weight_kg?: number;
   rpe?: number;
-  is_warmup?: boolean;
   notes?: string;
 }
 
 export interface UpdateSetRequest {
+  exercise_id?: string;
+  set_number?: number;
+  set_type?: string;
   reps?: number;
-  weight?: number;
+  weight_kg?: number;
   rpe?: number;
   is_completed?: boolean;
   notes?: string;

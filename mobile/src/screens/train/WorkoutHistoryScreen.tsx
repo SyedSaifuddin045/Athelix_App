@@ -114,7 +114,7 @@ export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
                 : "0"}
             </Text>
           </View>
-          {item.prs_count > 0 && (
+          {item.prs_count !== undefined && item.prs_count > 0 && (
             <Tag 
               label={`${item.prs_count} PR${item.prs_count > 1 ? "s" : ""}`} 
               color={COLORS.gold} 
@@ -167,7 +167,7 @@ export function WorkoutHistoryScreen({ navigation }: Props): React.JSX.Element {
       ) : (
         <SectionList
           sections={sections}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
           renderItem={renderSession}
           renderSectionHeader={renderSectionHeader}
           showsVerticalScrollIndicator={false}

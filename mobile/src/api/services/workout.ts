@@ -6,8 +6,10 @@ import type {
   UpdateSessionRequest,
   WorkoutTemplate,
   WorkoutTemplateDetail,
+  TemplateExercise,
   CreateTemplateExerciseRequest,
   UpdateTemplateExerciseRequest,
+  ExerciseSetResponse,
 } from "../types";
 import type { PaginationParams } from "../types/base";
 
@@ -16,11 +18,12 @@ export const sessionService = {
     data: WorkoutSession[];
     total: number;
   }> {
-    const response = await apiClient.get<{ data: WorkoutSession[]; total: number }>(
+    const response = await apiClient.get<WorkoutSession[]>(
       "/workout-sessions",
       { params }
     );
-    return response.data;
+    const data = Array.isArray(response.data) ? response.data : [];
+    return { data, total: data.length };
   },
 
   async getSession(sessionId: string): Promise<WorkoutSessionDetail> {
@@ -49,18 +52,42 @@ export const sessionService = {
   async deleteSession(sessionId: string): Promise<void> {
     await apiClient.delete(`/workout-sessions/${sessionId}`);
   },
+
+  async getSessionSets(sessionId: string): Promise<ExerciseSetResponse[]> {
+    const response = await apiClient.get<ExerciseSetResponse[]>(
+      `/workout-sessions/${sessionId}/sets`
+    );
+    return response.data;
+  },
+
+  async createSet(
+    sessionId: string,
+    data: {
+      exercise_id: string;
+      set_number: number;
+      set_type?: string;
+      reps?: number;
+      weight_kg?: number;
+      rpe?: number;
+      notes?: string;
+    }
+  ): Promise<ExerciseSetResponse> {
+    const response = await apiClient.post<ExerciseSetResponse>(
+      `/workout-sessions/${sessionId}/sets`,
+      data
+    );
+    return response.data;
+  },
 };
 
 export const templateService = {
-  async getTemplates(params?: PaginationParams): Promise<{
+  async getTemplates(): Promise<{
     data: WorkoutTemplate[];
     total: number;
   }> {
-    const response = await apiClient.get<{ data: WorkoutTemplate[]; total: number }>(
-      "/workout-templates",
-      { params }
-    );
-    return response.data;
+    const response = await apiClient.get<WorkoutTemplate[]>("/workout-templates");
+    const data = Array.isArray(response.data) ? response.data : [];
+    return { data, total: data.length };
   },
 
   async getTemplate(templateId: string): Promise<WorkoutTemplateDetail> {
@@ -93,10 +120,11 @@ export const templateService = {
   async addExercise(
     templateId: string,
     data: CreateTemplateExerciseRequest
-  ): Promise<WorkoutTemplateDetail["exercises"][0]> {
-    const response = await apiClient.post<
-      WorkoutTemplateDetail["exercises"][0]
-    >(`/workout-templates/${templateId}/exercises`, data);
+  ): Promise<TemplateExercise> {
+    const response = await apiClient.post<TemplateExercise>(
+      `/workout-templates/${templateId}/exercises`,
+      data
+    );
     return response.data;
   },
 
@@ -104,8 +132,8 @@ export const templateService = {
     templateId: string,
     exerciseId: string,
     data: UpdateTemplateExerciseRequest
-  ): Promise<WorkoutTemplateDetail["exercises"][0]> {
-    const response = await apiClient.patch<WorkoutTemplateDetail["exercises"][0]>(
+  ): Promise<TemplateExercise> {
+    const response = await apiClient.patch<TemplateExercise>(
       `/workout-templates/${templateId}/exercises/${exerciseId}`,
       data
     );

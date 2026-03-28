@@ -1,14 +1,16 @@
 import type { ExerciseSet } from "./exercise";
 
 export interface WorkoutTemplate {
-  id: string;
+  id: number;
+  user_id: number;
   name: string;
-  description?: string;
-  estimated_duration_minutes?: number;
-  exercises_count: number;
-  total_sets: number;
+  description: string | null;
+  is_public: boolean;
   created_at: string;
   updated_at: string;
+  exercises_count?: number;
+  total_sets?: number;
+  estimated_duration_minutes?: number;
 }
 
 export interface WorkoutTemplateDetail extends WorkoutTemplate {
@@ -16,56 +18,76 @@ export interface WorkoutTemplateDetail extends WorkoutTemplate {
 }
 
 export interface TemplateExercise {
-  id: string;
+  id: number;
+  template_id: number;
   exercise_id: string;
-  exercise_name: string;
-  exercise_emoji?: string;
   order_index: number;
-  sets: TemplateExerciseSet[];
-  notes?: string;
-}
-
-export interface TemplateExerciseSet {
-  id: string;
-  reps: number;
-  rpe?: number;
-  rest_seconds?: number;
-  order_index: number;
+  target_sets: number | null;
+  target_reps: number | null;
+  target_rpe: number | null;
+  rest_seconds: number | null;
+  notes: string | null;
 }
 
 export interface CreateTemplateExerciseRequest {
   exercise_id: string;
-  order_index?: number;
-  sets: Omit<TemplateExerciseSet, "id">[];
+  order_index: number;
+  target_sets?: number;
+  target_reps?: number;
+  target_rpe?: number;
+  rest_seconds?: number;
   notes?: string;
 }
 
 export interface UpdateTemplateExerciseRequest {
+  exercise_id?: string;
   order_index?: number;
-  sets?: Omit<TemplateExerciseSet, "id">[];
+  target_sets?: number;
+  target_reps?: number;
+  target_rpe?: number;
+  rest_seconds?: number;
   notes?: string;
 }
 
 export interface WorkoutSession {
-  id: string;
-  name: string;
-  template_id?: string;
-  mesocycle_id?: string;
-  status: "in_progress" | "completed" | "cancelled";
+  id: number;
+  user_id: number;
+  template_id: number | null;
+  mesocycle_id: number | null;
+  name: string | null;
   started_at: string;
-  completed_at?: string;
+  finished_at: string | null;
+  perceived_exertion: number | null;
+  mood: string | null;
+  location: string | null;
+  notes: string | null;
+  is_completed: boolean;
+  exercises_count?: number;
+  total_sets?: number;
+  estimated_duration_minutes?: number;
   duration_minutes?: number;
-  mood?: string;
-  location?: string;
-  notes?: string;
-  total_sets: number;
-  completed_sets: number;
-  total_volume: number;
-  prs_count: number;
+  total_volume?: number;
+  prs_count?: number;
+}
+
+export interface ExerciseSetResponse {
+  id: number;
+  session_id: number;
+  exercise_id: string;
+  set_number: number;
+  set_type: string;
+  reps: number | null;
+  weight_kg: number | null;
+  duration_sec: number | null;
+  distance_m: number | null;
+  rpe: number | null;
+  is_pr: boolean;
+  notes: string | null;
+  logged_at: string;
 }
 
 export interface WorkoutSessionDetail extends WorkoutSession {
-  exercises: SessionExercise[];
+  sets: ExerciseSetResponse[];
 }
 
 export interface SessionExercise {
@@ -91,6 +113,7 @@ export interface UpdateSessionRequest {
   mood?: string;
   location?: string;
   notes?: string;
+  is_completed?: boolean;
   status?: "in_progress" | "completed" | "cancelled";
   completed_at?: string;
 }

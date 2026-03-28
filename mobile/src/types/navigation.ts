@@ -11,8 +11,8 @@ export type RootStackParamList = {
   ExerciseDetail: { id: string };
   TemplateList: undefined;
   TemplateBuilder: { id?: string };
-  StartWorkout: { id?: string };
-  ActiveWorkout: undefined;
+  StartWorkout: undefined;
+  ActiveWorkout: { sessionId?: string; templateId?: string };
   WorkoutHistory: undefined;
   SessionDetail: { id: string };
   MesocycleList: undefined;

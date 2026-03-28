@@ -67,10 +67,10 @@ export function useDeleteSession() {
   });
 }
 
-export function useWorkoutTemplates(params?: { limit?: number; offset?: number }) {
+export function useWorkoutTemplates() {
   return useQuery({
-    queryKey: queryKeys.templates(params),
-    queryFn: () => templateService.getTemplates(params),
+    queryKey: queryKeys.templates(),
+    queryFn: () => templateService.getTemplates(),
     placeholderData: (previousData) => previousData,
   });
 }
@@ -137,6 +137,7 @@ export function useAddTemplateExercise() {
     }) => templateService.addExercise(templateId, data),
     onSuccess: (_, { templateId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.template(templateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates() });
     },
   });
 }
@@ -156,6 +157,7 @@ export function useUpdateTemplateExercise() {
     }) => templateService.updateExercise(templateId, exerciseId, data),
     onSuccess: (_, { templateId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.template(templateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates() });
     },
   });
 }
@@ -168,6 +170,7 @@ export function useDeleteTemplateExercise() {
       templateService.deleteExercise(templateId, exerciseId),
     onSuccess: (_, { templateId }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.template(templateId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates() });
     },
   });
 }

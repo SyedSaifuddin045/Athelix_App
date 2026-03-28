@@ -1,17 +1,89 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, BackHeader, CompactStatCard, SectionEyebrow } from "../../components";
+import { Screen, Card, BackHeader, CompactStatCard, SectionEyebrow } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { useWorkoutSession } from "../../hooks";
+import { useWorkoutSession, useExercisesByIds } from "../../hooks";
 
 type Props = RootStackScreenProps<"SessionDetail">;
+
+interface GroupedExercise {
+  exercise_id: string;
+  sets: {
+    id: number;
+    set_number: number;
+    set_type: string;
+    reps: number | null;
+    weight_kg: number | null;
+    rpe: number | null;
+  }[];
+}
 
 export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Element {
   const { id } = route.params;
   const { data: session, isLoading, error } = useWorkoutSession(id);
+
+  console.log("[SessionDetail] session:", JSON.stringify(session, null, 2));
+  console.log("[SessionDetail] session.sets:", session?.sets);
+  console.log("[SessionDetail] sets count:", session?.sets?.length || 0);
+
+  const uniqueExerciseIds = useMemo(() => {
+    if (!session?.sets || session.sets.length === 0) {
+      console.log("[SessionDetail] No sets found, returning empty array");
+      return [];
+    }
+    const ids = [...new Set(session.sets.map((set) => set.exercise_id))];
+    console.log("[SessionDetail] uniqueExerciseIds:", ids);
+    return ids;
+  }, [session?.sets]);
+
+  const { data: exerciseDetails, isLoading: isLoadingExercises } = useExercisesByIds(uniqueExerciseIds);
+  console.log("[SessionDetail] exerciseDetails:", exerciseDetails?.length || 0);
+
+  const exerciseNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    exerciseDetails?.forEach((ex) => {
+      map[ex.id] = ex.name;
+    });
+    console.log("[SessionDetail] exerciseNameMap:", map);
+    return map;
+  }, [exerciseDetails]);
+
+  const groupedExercises = useMemo(() => {
+    if (!session?.sets || session.sets.length === 0) {
+      console.log("[SessionDetail] No sets to group");
+      return [];
+    }
+    
+    const grouped: Record<string, GroupedExercise> = {};
+    
+    session.sets.forEach((set) => {
+      if (!grouped[set.exercise_id]) {
+        grouped[set.exercise_id] = {
+          exercise_id: set.exercise_id,
+          sets: [],
+        };
+      }
+      grouped[set.exercise_id].sets.push({
+        id: set.id,
+        set_number: set.set_number,
+        set_type: set.set_type,
+        reps: set.reps,
+        weight_kg: set.weight_kg,
+        rpe: set.rpe,
+      });
+    });
+    
+    const result = Object.values(grouped);
+    console.log("[SessionDetail] groupedExercises:", result.length);
+    return result;
+  }, [session?.sets]);
+
+  const totalVolume = useMemo(() => {
+    if (!session?.sets) return 0;
+    return session.sets.reduce((sum, set) => sum + (set.weight_kg || 0) * (set.reps || 0), 0);
+  }, [session?.sets]);
 
   if (isLoading) {
     return (
@@ -36,17 +108,17 @@ export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Ele
     );
   }
 
-  const completedAt = session.completed_at 
-    ? new Date(session.completed_at).toLocaleDateString() 
+  const completedAt = session.finished_at 
+    ? new Date(session.finished_at).toLocaleDateString() 
     : new Date(session.started_at).toLocaleDateString();
 
-  const duration = session.duration_minutes || 0;
+  const duration = session.duration_minutes || Math.round((new Date(session.finished_at || session.started_at).getTime() - new Date(session.started_at).getTime()) / 60000);
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
       <BackHeader 
-        title={session.name} 
-        subtitle={completedAt} 
+        title={session.name || "Workout Session"} 
+        subtitle={completedAt}
         onBack={() => navigation.goBack()} 
       />
 
@@ -55,8 +127,8 @@ export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Ele
           <Text style={styles.moodEmoji}>{session.mood || "💪"}</Text>
           <View style={styles.headerStats}>
             <CompactStatCard label="Duration" value={`${duration}m`} valueColor={COLORS.teal} />
-            <CompactStatCard label="Volume" value={`${session.total_volume || 0}kg`} valueColor={COLORS.green} />
-            <CompactStatCard label="PRs" value={`${session.prs_count}`} valueColor={COLORS.gold} />
+            <CompactStatCard label="Volume" value={`${Math.round(totalVolume)}kg`} valueColor={COLORS.green} />
+            <CompactStatCard label="PRs" value={`0`} valueColor={COLORS.gold} />
           </View>
         </View>
         {session.notes && (
@@ -68,17 +140,24 @@ export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Ele
       </Card>
 
       <View style={styles.section}>
-        <SectionEyebrow color={COLORS.purple}>Exercises ({session.exercises?.length || 0})</SectionEyebrow>
+        <SectionEyebrow color={COLORS.purple}>Exercises ({groupedExercises.length})</SectionEyebrow>
 
-        {(session.exercises || []).map((exercise, index) => (
-          <Card key={exercise.id || index} style={styles.exerciseCard}>
+        {isLoadingExercises && groupedExercises.length === 0 && (
+          <ActivityIndicator size="small" color={COLORS.teal} style={{ marginTop: 20 }} />
+        )}
+
+        {groupedExercises.length === 0 && !isLoadingExercises && (
+          <Text style={styles.emptyText}>No exercises logged</Text>
+        )}
+
+        {groupedExercises.map((exercise, index) => (
+          <Card key={exercise.exercise_id} style={styles.exerciseCard}>
             <View style={styles.exerciseHeader}>
-              <Text style={styles.exerciseEmoji}>{exercise.exercise_emoji || "🏋️"}</Text>
               <View style={styles.exerciseInfo}>
                 <View style={styles.exerciseNameRow}>
-                  <Text style={styles.exerciseName}>{exercise.exercise_name}</Text>
+                  <Text style={styles.exerciseName}>{exerciseNameMap[exercise.exercise_id] || exercise.exercise_id}</Text>
                 </View>
-                <Text style={styles.exerciseSets}>{exercise.sets?.length || 0} sets</Text>
+                <Text style={styles.exerciseSets}>{exercise.sets.length} sets</Text>
               </View>
             </View>
 
@@ -90,15 +169,15 @@ export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Ele
                 <Text style={[styles.tableHeaderText, { flex: 1 }]}>RPE</Text>
               </View>
 
-              {(exercise.sets || []).map((set, setIndex) => (
-                <View key={set.id || setIndex} style={[styles.tableRow, set.is_warmup && styles.warmupRow]}>
-                  <View style={[styles.setTypeBadge, set.is_warmup && styles.warmupBadge]}>
-                    <Text style={[styles.setTypeText, set.is_warmup && styles.warmupText]}>
-                      {set.is_warmup ? "W" : set.set_number}
+              {exercise.sets.map((set, setIndex) => (
+                <View key={set.id || setIndex} style={[styles.tableRow, set.set_type === "warmup" && styles.warmupRow]}>
+                  <View style={[styles.setTypeBadge, set.set_type === "warmup" && styles.warmupBadge]}>
+                    <Text style={[styles.setTypeText, set.set_type === "warmup" && styles.warmupText]}>
+                      {set.set_type === "warmup" ? "W" : set.set_number}
                     </Text>
                   </View>
-                  <Text style={styles.tableCell}>{set.weight}</Text>
-                  <Text style={styles.tableCell}>{set.reps}</Text>
+                  <Text style={styles.tableCell}>{set.weight_kg || 0}</Text>
+                  <Text style={styles.tableCell}>{set.reps || 0}</Text>
                   <Text style={styles.tableCell}>{set.rpe || "-"}</Text>
                 </View>
               ))}
@@ -137,9 +216,9 @@ const styles = StyleSheet.create({
   notesSection: { flexDirection: "row", alignItems: "flex-start", gap: 8, marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)" },
   notesText: { flex: 1, color: "rgba(255,255,255,0.7)", fontSize: 13, lineHeight: 20 },
   section: { marginTop: 24 },
+  emptyText: { color: COLORS.muted, fontSize: 14, textAlign: "center", marginTop: 20 },
   exerciseCard: { marginTop: 12 },
   exerciseHeader: { flexDirection: "row", alignItems: "center" },
-  exerciseEmoji: { fontSize: 28 },
   exerciseInfo: { flex: 1, marginLeft: 12 },
   exerciseNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   exerciseName: { color: COLORS.text, fontSize: 15, fontWeight: "800" },

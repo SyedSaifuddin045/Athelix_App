@@ -1,28 +1,60 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useMemo } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, Tag, PrimaryButton, MiniInput, ProgressBar } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { INITIAL_WORKOUT_EXERCISES, WorkoutExercise, WorkoutSet } from "../../data";
 import { formatTime } from "../../utils";
 import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
-import { useCreateSession, useUpdateSession } from "../../hooks";
+import { useWorkoutSession, useWorkoutTemplate, useExercisesByIds, useUpdateSession } from "../../hooks";
+import { setService } from "../../api/services";
 
 type Props = RootStackScreenProps<"ActiveWorkout">;
 
-export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
+interface LocalSet {
+  id: string;
+  reps: string;
+  weight: string;
+  done: boolean;
+  warmup: boolean;
+  setNumber: number;
+}
+
+interface LocalExercise {
+  id: string;
+  exercise_id: string;
+  name: string;
+  sets: LocalSet[];
+}
+
+export function ActiveWorkoutScreen({ navigation, route }: Props): React.JSX.Element {
+  const { sessionId, templateId } = route.params || {};
   const posthog = useSafePostHog();
-  const createSession = useCreateSession();
+  
+  const { data: session, isLoading: isLoadingSession } = useWorkoutSession(sessionId || "");
+  const { data: template } = useWorkoutTemplate(templateId || "");
   const updateSession = useUpdateSession();
   
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [workoutName, setWorkoutName] = useState("Upper Body Push");
-  const [exercises, setExercises] = useState<WorkoutExercise[]>(INITIAL_WORKOUT_EXERCISES);
+  const [workoutName, setWorkoutName] = useState("New Workout");
+  const [exercises, setExercises] = useState<LocalExercise[]>([]);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [notes, setNotes] = useState("");
-  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  const uniqueExerciseIds = useMemo(() => {
+    return [...new Set(exercises.map((ex) => ex.exercise_id))];
+  }, [exercises]);
+
+  const { data: exerciseDetails } = useExercisesByIds(uniqueExerciseIds);
+
+  const exerciseNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    exerciseDetails?.forEach((ex) => {
+      map[ex.id] = ex.name;
+    });
+    return map;
+  }, [exerciseDetails]);
 
   useEffect(() => {
     if (posthog) {
@@ -36,6 +68,67 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (session) {
+      setWorkoutName(session.name || "New Workout");
+      
+      if (session.sets && session.sets.length > 0) {
+        const groupedSets = groupSetsByExercise(session.sets);
+        setExercises(groupedSets);
+      } else if (session.template_id && template) {
+        const templateExercises = loadTemplateExercises(template.exercises);
+        setExercises(templateExercises);
+      } else {
+        setExercises([]);
+      }
+    } else if (template && !sessionId) {
+      setWorkoutName(template.name);
+      const templateExercises = loadTemplateExercises(template.exercises);
+      setExercises(templateExercises);
+    }
+  }, [session, template]);
+
+  const loadTemplateExercises = (templateExercises: { exercise_id: string; target_sets: number | null; target_reps: number | null }[]) => {
+    return templateExercises.map((ex, index) => ({
+      id: `template-${index}`,
+      exercise_id: ex.exercise_id,
+      name: ex.exercise_id,
+      sets: Array.from({ length: ex.target_sets || 3 }, (_, setIdx) => ({
+        id: `new-${ex.exercise_id}-${setIdx}`,
+        reps: String(ex.target_reps || 8),
+        weight: "0",
+        done: false,
+        warmup: false,
+        setNumber: setIdx + 1,
+      })),
+    }));
+  };
+
+  const groupSetsByExercise = (sets: { id: number; exercise_id: string; reps: number | null; weight_kg: number | null; set_type: string; set_number: number }[]) => {
+    const grouped: Record<string, LocalExercise> = {};
+    
+    sets.forEach((set) => {
+      if (!grouped[set.exercise_id]) {
+        grouped[set.exercise_id] = {
+          id: String(set.id),
+          exercise_id: set.exercise_id,
+          name: set.exercise_id,
+          sets: [],
+        };
+      }
+      grouped[set.exercise_id].sets.push({
+        id: String(set.id),
+        reps: String(set.reps || 0),
+        weight: String(set.weight_kg || 0),
+        done: false,
+        warmup: set.set_type === "warmup",
+        setNumber: set.set_number,
+      });
+    });
+    
+    return Object.values(grouped);
+  };
 
   const toggleSet = (exerciseIndex: number, setIndex: number) => {
     const updated = [...exercises];
@@ -71,17 +164,58 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets.filter((s) => !s.warmup).length, 0);
   const progress = totalSets > 0 ? (completedSets / totalSets) * 100 : 0;
 
-  const handleFinishWorkout = async () => {
+  const finishWorkout = () => {
+    setShowFinishModal(true);
+  };
+
+  const saveAllSets = async () => {
+    if (!sessionId) return;
+    
+    const setsToSave: Array<{
+      exercise_id: string;
+      set_number: number;
+      set_type: string;
+      reps: number;
+      weight_kg: number;
+    }> = [];
+
+    exercises.forEach((exercise) => {
+      exercise.sets.forEach((set) => {
+        if (set.done || set.warmup) {
+          setsToSave.push({
+            exercise_id: exercise.exercise_id,
+            set_number: set.setNumber,
+            set_type: set.warmup ? "warmup" : "working",
+            reps: parseInt(set.reps, 10) || 0,
+            weight_kg: parseFloat(set.weight) || 0,
+          });
+        }
+      });
+    });
+
+    for (const setData of setsToSave) {
+      try {
+        await setService.createSet(sessionId, setData);
+      } catch (error) {
+        console.error("Failed to save set:", error);
+      }
+    }
+  };
+
+  const confirmFinish = async () => {
+    setShowFinishModal(false);
+    
     if (sessionId) {
+      await saveAllSets();
+      
       await updateSession.mutateAsync({
         sessionId,
-        data: {
-          notes,
-          status: "completed",
-          completed_at: new Date().toISOString(),
-        },
+        data: { is_completed: true },
       });
+      
+      (navigation as any).navigate("SessionDetail", { id: sessionId });
     }
+    
     if (posthog) {
       posthog.capture("workout_completed", {
         workout_name: workoutName,
@@ -91,39 +225,22 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
         total_sets: totalSets,
       });
     }
-    const newSessionId = sessionId || "1";
-    (navigation as any).navigate("SessionDetail", { id: newSessionId });
-  };
-
-  const finishWorkout = () => {
-    setShowFinishModal(true);
-  };
-
-  const confirmFinish = async () => {
-    setShowFinishModal(false);
     
     if (!sessionId) {
-      try {
-        const result = await createSession.mutateAsync({
-          name: workoutName,
-        });
-        await updateSession.mutateAsync({
-          sessionId: result.id,
-          data: {
-            notes,
-            status: "completed",
-            completed_at: new Date().toISOString(),
-          },
-        });
-      } catch (error) {
-        console.error("Failed to save workout:", error);
-      }
+      (navigation as any).navigate("MainTabs");
     }
-    
-    (navigation as any).navigate("MainTabs");
   };
 
-  const isLoading = createSession.isPending || updateSession.isPending;
+  if (isLoadingSession && sessionId) {
+    return (
+      <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.teal} />
+          <Text style={styles.loadingText}>Loading workout...</Text>
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen scroll={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}>
@@ -149,60 +266,66 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.exerciseList}>
-        {exercises.map((exercise, exerciseIndex) => (
-          <Card key={`${exercise.id}-${exerciseIndex}`} style={styles.exerciseCard}>
-            <View style={styles.exerciseHeader}>
-              <Text style={styles.exerciseEmoji}>{exercise.emoji}</Text>
-              <View style={styles.exerciseInfo}>
-                <Text style={styles.exerciseName}>{exercise.name}</Text>
-                <Text style={styles.exerciseSets}>
-                  {exercise.sets.filter((s) => s.done && !s.warmup).length}/{exercise.sets.filter((s) => !s.warmup).length} sets
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.setsHeader}>
-              <Text style={[styles.setHeaderText, { width: 28 }]}>Type</Text>
-              <Text style={[styles.setHeaderText, { flex: 1 }]}>Weight</Text>
-              <Text style={[styles.setHeaderText, { flex: 1 }]}>Reps</Text>
-              <Text style={[styles.setHeaderText, { width: 44 }]}>Done</Text>
-            </View>
-
-            {exercise.sets.map((set, setIndex) => (
-              <View
-                key={set.id}
-                style={[styles.setRow, set.done && styles.setRowDone]}
-              >
-                <View style={[styles.setTypeBadge, set.warmup && styles.warmupBadge]}>
-                  <Text style={[styles.setTypeText, set.warmup && styles.warmupText]}>
-                    {set.warmup ? "W" : setIndex - exercise.sets.filter((s) => s.warmup).length + 1}
+        {exercises.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No exercises in this workout</Text>
+            <Text style={styles.emptySubtext}>Tap "Add Exercise" to get started</Text>
+          </View>
+        ) : (
+          exercises.map((exercise, exerciseIndex) => (
+            <Card key={`${exercise.id}-${exerciseIndex}`} style={styles.exerciseCard}>
+              <View style={styles.exerciseHeader}>
+                <View style={styles.exerciseInfo}>
+                  <Text style={styles.exerciseName}>{exerciseNameMap[exercise.exercise_id] || exercise.exercise_id}</Text>
+                  <Text style={styles.exerciseSets}>
+                    {exercise.sets.filter((s) => s.done && !s.warmup).length}/{exercise.sets.filter((s) => !s.warmup).length} sets
                   </Text>
                 </View>
-                <View style={styles.weightInputWrap}>
+              </View>
+
+              <View style={styles.setsHeader}>
+                <Text style={[styles.setHeaderText, { width: 28 }]}>Type</Text>
+                <Text style={[styles.setHeaderText, { flex: 1 }]}>Weight</Text>
+                <Text style={[styles.setHeaderText, { flex: 1 }]}>Reps</Text>
+                <Text style={[styles.setHeaderText, { width: 44 }]}>Done</Text>
+              </View>
+
+              {exercise.sets.map((set, setIndex) => (
+                <View
+                  key={set.id}
+                  style={[styles.setRow, set.done && styles.setRowDone]}
+                >
+                  <View style={[styles.setTypeBadge, set.warmup && styles.warmupBadge]}>
+                    <Text style={[styles.setTypeText, set.warmup && styles.warmupText]}>
+                      {set.warmup ? "W" : set.setNumber}
+                    </Text>
+                  </View>
+                  <View style={styles.weightInputWrap}>
+                    <MiniInput
+                      value={set.weight}
+                      onChangeText={(v) => updateSetWeight(exerciseIndex, setIndex, v)}
+                      placeholder="0"
+                      strike={set.done}
+                    />
+                    <Text style={styles.unitText}>kg</Text>
+                  </View>
                   <MiniInput
-                    value={set.weight}
-                    onChangeText={(v) => updateSetWeight(exerciseIndex, setIndex, v)}
+                    value={set.reps}
+                    onChangeText={(v) => updateSetReps(exerciseIndex, setIndex, v)}
                     placeholder="0"
                     strike={set.done}
                   />
-                  <Text style={styles.unitText}>kg</Text>
+                  <Pressable
+                    onPress={() => toggleSet(exerciseIndex, setIndex)}
+                    style={[styles.checkButton, set.done && styles.checkButtonDone]}
+                  >
+                    {set.done && <Feather name="check" size={16} color="#000000" />}
+                  </Pressable>
                 </View>
-                <MiniInput
-                  value={set.reps}
-                  onChangeText={(v) => updateSetReps(exerciseIndex, setIndex, v)}
-                  placeholder="0"
-                  strike={set.done}
-                />
-                <Pressable
-                  onPress={() => toggleSet(exerciseIndex, setIndex)}
-                  style={[styles.checkButton, set.done && styles.checkButtonDone]}
-                >
-                  {set.done && <Feather name="check" size={16} color="#000000" />}
-                </Pressable>
-              </View>
-            ))}
-          </Card>
-        ))}
+              ))}
+            </Card>
+          ))
+        )}
 
         <Pressable style={styles.addExerciseButton}>
           <Feather name="plus" size={18} color={COLORS.teal} />
@@ -215,13 +338,7 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
           label="Finish Workout" 
           onPress={finishWorkout} 
           icon={<Feather name="check" size={16} color="#000000" />} 
-          disabled={isLoading}
         />
-        {isLoading && (
-          <View style={styles.loadingOverlay}>
-            <ActivityIndicator color={COLORS.teal} />
-          </View>
-        )}
       </View>
 
       <Modal visible={showFinishModal} transparent animationType="slide">
@@ -263,15 +380,9 @@ export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
 
             <View style={styles.modalActions}>
               <PrimaryButton 
-                label={isLoading ? "Saving..." : "Save Workout"} 
+                label="Save Workout" 
                 onPress={confirmFinish} 
-                disabled={isLoading}
               />
-              {isLoading && (
-                <View style={styles.modalLoading}>
-                  <ActivityIndicator size="small" color={COLORS.teal} />
-                </View>
-              )}
               <Pressable onPress={() => setShowFinishModal(false)} style={styles.cancelButton}>
                 <Text style={styles.cancelButtonText}>Keep Training</Text>
               </Pressable>
@@ -298,8 +409,7 @@ const styles = StyleSheet.create({
   exerciseList: { flex: 1 },
   exerciseCard: { marginBottom: 16 },
   exerciseHeader: { flexDirection: "row", alignItems: "center" },
-  exerciseEmoji: { fontSize: 28 },
-  exerciseInfo: { marginLeft: 12 },
+  exerciseInfo: { flex: 1 },
   exerciseName: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
   exerciseSets: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
   setsHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 16, marginBottom: 8, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" },
@@ -314,10 +424,14 @@ const styles = StyleSheet.create({
   unitText: { color: COLORS.muted, fontSize: 11 },
   checkButton: { width: 44, height: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
   checkButtonDone: { backgroundColor: COLORS.teal },
-  addExerciseButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: `${COLORS.teal}30`, borderStyle: "dashed" },
+  addExerciseButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 16, borderWidth: 1, borderColor: `${COLORS.teal}30`, borderStyle: "dashed", marginBottom: 100 },
   addExerciseText: { color: COLORS.teal, fontSize: 14, fontWeight: "700" },
   footer: { marginTop: 16 },
-  loadingOverlay: { position: "absolute", right: 16, top: "50%" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingText: { color: COLORS.muted, fontSize: 14, marginTop: 12 },
+  emptyState: { alignItems: "center", paddingVertical: 40 },
+  emptyText: { color: COLORS.text, fontSize: 16, fontWeight: "700" },
+  emptySubtext: { color: COLORS.muted, fontSize: 13, marginTop: 4 },
   modalOverlay: { flex: 1, justifyContent: "flex-end" },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.6)" },
   modalSheet: { backgroundColor: COLORS.screen, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 },
@@ -331,7 +445,6 @@ const styles = StyleSheet.create({
   modalNotes: { marginTop: 20 },
   notesLabel: { color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8 },
   modalActions: { marginTop: 24, gap: 12 },
-  modalLoading: { alignItems: "center", marginTop: 8 },
   cancelButton: { alignItems: "center", paddingVertical: 16 },
   cancelButtonText: { color: COLORS.muted, fontSize: 14, fontWeight: "600" },
 });

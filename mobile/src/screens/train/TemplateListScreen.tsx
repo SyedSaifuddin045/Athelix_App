@@ -77,7 +77,7 @@ export function TemplateListScreen({ navigation }: Props): React.JSX.Element {
             <SectionEyebrow>Your Templates ({templatesData.total})</SectionEyebrow>
             <FlatList
               data={templatesData.data}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item) => String(item.id)}
               renderItem={renderTemplate}
               scrollEnabled={false}
               contentContainerStyle={{ marginTop: 12 }}
