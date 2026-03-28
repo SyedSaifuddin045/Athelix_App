@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, FlatList, Alert, Modal } from "react-native";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator, Alert } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, PrimaryButton, BackHeader, MiniInput } from "../../components";
+import { Screen, Card, PrimaryButton, BackHeader, MiniInput, ExercisePicker } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
-import { useWorkoutTemplate, useCreateTemplate, useUpdateTemplate, useAddTemplateExercise, useExercises, useExerciseFilters } from "../../hooks";
+import { useWorkoutTemplate, useCreateTemplate, useUpdateTemplate, useAddTemplateExercise } from "../../hooks";
 import type { ExerciseListItem } from "../../api/types";
 
 type Props = RootStackScreenProps<"TemplateBuilder">;
@@ -32,23 +32,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
   const [description, setDescription] = useState("");
   const [exercises, setExercises] = useState<LocalExercise[]>([]);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedBodyPart, setSelectedBodyPart] = useState("All");
-  const [selectedEquipment, setSelectedEquipment] = useState("All");
   const [isSaving, setIsSaving] = useState(false);
-
-  const { data: filtersData, isLoading: isLoadingFilters } = useExerciseFilters();
-  const { data: exercisesData, isLoading: isLoadingExercises } = useExercises({
-    q: debouncedSearch || undefined,
-    body_part: selectedBodyPart !== "All" ? selectedBodyPart : undefined,
-    equipment: selectedEquipment !== "All" ? selectedEquipment : undefined,
-    limit: 100,
-  });
-
-  const bodyParts = useMemo(() => ["All", ...(filtersData?.body_parts || [])], [filtersData?.body_parts]);
-  const equipmentOptions = useMemo(() => ["All", ...(filtersData?.equipment || [])], [filtersData?.equipment]);
-  const availableExercises = exercisesData?.data || [];
 
   useEffect(() => {
     if (isEditing && template) {
@@ -68,13 +52,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
     }
   }, [template, isEditing]);
 
-  const handleSearchChange = useCallback((text: string) => {
-    setSearchQuery(text);
-    const timeoutId = setTimeout(() => setDebouncedSearch(text), 300);
-    return () => clearTimeout(timeoutId);
-  }, []);
-
-  const addExercise = useCallback((exercise: ExerciseListItem) => {
+  const handleSelectExercise = useCallback((exercise: ExerciseListItem) => {
     const newExercise: LocalExercise = {
       id: exercise.id,
       name: exercise.name,
@@ -86,10 +64,6 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
     };
     setExercises(prev => [...prev, newExercise]);
     setShowExercisePicker(false);
-    setSearchQuery("");
-    setDebouncedSearch("");
-    setSelectedBodyPart("All");
-    setSelectedEquipment("All");
   }, []);
 
   const updateSet = useCallback((exerciseIndex: number, setIndex: number, field: "reps" | "rpe" | "rest", value: string) => {
@@ -196,14 +170,6 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
       setIsSaving(false);
     }
   };
-
-  const closeExercisePicker = useCallback(() => {
-    setShowExercisePicker(false);
-    setSearchQuery("");
-    setDebouncedSearch("");
-    setSelectedBodyPart("All");
-    setSelectedEquipment("All");
-  }, []);
 
   if (isLoadingTemplate && isEditing) {
     return (
@@ -337,101 +303,12 @@ export function TemplateBuilderScreen({ navigation, route }: Props): React.JSX.E
         />
       </View>
 
-      <Modal
+      <ExercisePicker
         visible={showExercisePicker}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeExercisePicker}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalSheet}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Add Exercise</Text>
-              <Pressable onPress={closeExercisePicker}>
-                <Feather name="x" size={24} color={COLORS.text} />
-              </Pressable>
-            </View>
-
-            <View style={styles.pickerSearchWrap}>
-              <Feather name="search" size={16} color="rgba(255,255,255,0.42)" />
-              <TextInput
-                value={searchQuery}
-                onChangeText={handleSearchChange}
-                placeholder="Search exercises..."
-                placeholderTextColor="rgba(255,255,255,0.28)"
-                style={styles.pickerSearchInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <View style={styles.pickerFilters}>
-              <Text style={styles.filterLabel}>Body Part</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.filterRow}>
-                  {bodyParts.map((bp) => (
-                    <Pressable
-                      key={bp}
-                      onPress={() => setSelectedBodyPart(bp)}
-                      style={[styles.filterChip, selectedBodyPart === bp && styles.filterChipActive]}
-                    >
-                      <Text style={[styles.filterChipText, selectedBodyPart === bp && styles.filterChipTextActive]}>
-                        {bp}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            <View style={styles.pickerFilters}>
-              <Text style={styles.filterLabel}>Equipment</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.filterRow}>
-                  {equipmentOptions.map((eq) => (
-                    <Pressable
-                      key={eq}
-                      onPress={() => setSelectedEquipment(eq)}
-                      style={[styles.filterChip, selectedEquipment === eq && styles.filterChipActive]}
-                    >
-                      <Text style={[styles.filterChipText, selectedEquipment === eq && styles.filterChipTextActive]}>
-                        {eq}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            {isLoadingFilters || isLoadingExercises ? (
-              <View style={styles.loadingPicker}>
-                <ActivityIndicator size="small" color={COLORS.teal} />
-              </View>
-            ) : (
-              <FlatList
-                data={availableExercises}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <Pressable onPress={() => addExercise(item)} style={styles.pickerItem}>
-                    <View style={styles.pickerInfo}>
-                      <Text style={styles.pickerName}>{item.name}</Text>
-                      <Text style={styles.pickerMuscle}>{item.body_part || "Various"} · {item.equipment || "None"}</Text>
-                    </View>
-                    <Feather name="plus-circle" size={24} color={COLORS.teal} />
-                  </Pressable>
-                )}
-                style={styles.pickerList}
-                ListEmptyComponent={
-                  <View style={styles.emptyPickerState}>
-                    <Text style={styles.emptyPickerText}>No exercises found</Text>
-                    <Text style={styles.emptyPickerSubtext}>Try adjusting your filters</Text>
-                  </View>
-                }
-              />
-            )}
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setShowExercisePicker(false)}
+        onSelect={handleSelectExercise}
+        title="Add Exercise"
+      />
     </View>
   );
 }
@@ -490,35 +367,4 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.08)",
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalSheet: {
-    backgroundColor: COLORS.screen,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    height: "90%",
-  },
-  pickerHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 24, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" },
-  pickerTitle: { color: COLORS.text, fontSize: 17, fontWeight: "800" },
-  pickerSearchWrap: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 12, paddingHorizontal: 14, marginHorizontal: 16, marginTop: 16, minHeight: 44 },
-  pickerSearchInput: { flex: 1, color: "#ffffff", fontSize: 14 },
-  pickerFilters: { paddingHorizontal: 16, marginBottom: 8 },
-  filterLabel: { color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" },
-  filterRow: { flexDirection: "row", gap: 8, paddingBottom: 4 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.06)" },
-  filterChipActive: { backgroundColor: `${COLORS.teal}20`, borderColor: `${COLORS.teal}40` },
-  filterChipText: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600" },
-  filterChipTextActive: { color: COLORS.teal },
-  pickerList: { paddingHorizontal: 16, flex: 1, marginBottom: 120 },
-  pickerItem: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" },
-  pickerInfo: { flex: 1 },
-  pickerName: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
-  pickerMuscle: { color: COLORS.muted, fontSize: 11, marginTop: 2 },
-  loadingPicker: { padding: 40, alignItems: "center" },
-  emptyPickerState: { padding: 40, alignItems: "center" },
-  emptyPickerText: { color: COLORS.text, fontSize: 14, fontWeight: "600" },
-  emptyPickerSubtext: { color: COLORS.muted, fontSize: 12, marginTop: 4 },
 });

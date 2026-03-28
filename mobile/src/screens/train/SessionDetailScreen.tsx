@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
 import { Screen, Card, BackHeader, CompactStatCard, SectionEyebrow } from "../../components";
@@ -103,6 +103,9 @@ export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Ele
         <BackHeader title="Session" onBack={() => navigation.goBack()} />
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Failed to load session</Text>
+          <Pressable onPress={() => (navigation as any).navigate("MainTabs")} style={styles.doneButton}>
+            <Text style={styles.doneButtonText}>Go to Home</Text>
+          </Pressable>
         </View>
       </Screen>
     );
@@ -116,11 +119,19 @@ export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Ele
 
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
-      <BackHeader 
-        title={session.name || "Workout Session"} 
-        subtitle={completedAt}
-        onBack={() => navigation.goBack()} 
-      />
+      <View style={styles.headerRow}>
+        <BackHeader 
+          title={session.name || "Workout Session"} 
+          subtitle={completedAt}
+          onBack={() => navigation.goBack()} 
+        />
+        <Pressable 
+          onPress={() => (navigation as any).navigate("MainTabs")}
+          style={styles.doneButton}
+        >
+          <Text style={styles.doneButtonText}>Done</Text>
+        </Pressable>
+      </View>
 
       <Card style={[styles.headerCard, { borderColor: `${COLORS.teal}30` }]}>
         <View style={styles.moodRow}>
@@ -190,6 +201,23 @@ export function SessionDetailScreen({ navigation, route }: Props): React.JSX.Ele
 }
 
 const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  doneButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: COLORS.teal,
+  },
+  doneButtonText: {
+    color: COLORS.root,
+    fontSize: 14,
+    fontWeight: "700",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -208,6 +236,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: COLORS.red,
     fontSize: 14,
+    marginBottom: 16,
   },
   headerCard: { marginTop: 16, borderWidth: 1 },
   moodRow: { flexDirection: "row", alignItems: "center" },

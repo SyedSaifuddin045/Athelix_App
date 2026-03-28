@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, Modal, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, PrimaryButton, MiniInput, ProgressBar } from "../../components";
+import { Screen, Card, PrimaryButton, MiniInput, ProgressBar, ExercisePicker } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
 import { formatTime } from "../../utils";
 import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
 import { useWorkoutSession, useWorkoutTemplate, useExercisesByIds, useUpdateSession } from "../../hooks";
 import { setService } from "../../api/services";
+import type { ExerciseListItem } from "../../api/types";
 
 type Props = RootStackScreenProps<"ActiveWorkout">;
 
@@ -40,6 +41,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props): React.JSX.Ele
   const [workoutName, setWorkoutName] = useState("New Workout");
   const [exercises, setExercises] = useState<LocalExercise[]>([]);
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [notes, setNotes] = useState("");
 
   const uniqueExerciseIds = useMemo(() => {
@@ -155,6 +157,26 @@ export function ActiveWorkoutScreen({ navigation, route }: Props): React.JSX.Ele
     const updated = [...exercises];
     updated[exerciseIndex].sets[setIndex].reps = reps;
     setExercises(updated);
+  };
+
+  const handleSelectExercise = (exercise: ExerciseListItem) => {
+    const newExercise: LocalExercise = {
+      id: `local-${Date.now()}`,
+      exercise_id: exercise.id,
+      name: exercise.name,
+      sets: [
+        {
+          id: `set-${Date.now()}-1`,
+          reps: "8",
+          weight: "0",
+          done: false,
+          warmup: false,
+          setNumber: 1,
+        },
+      ],
+    };
+    setExercises((prev) => [...prev, newExercise]);
+    setShowExercisePicker(false);
   };
 
   const completedSets = exercises.reduce(
@@ -327,7 +349,10 @@ export function ActiveWorkoutScreen({ navigation, route }: Props): React.JSX.Ele
           ))
         )}
 
-        <Pressable style={styles.addExerciseButton}>
+        <Pressable 
+          style={styles.addExerciseButton}
+          onPress={() => setShowExercisePicker(true)}
+        >
           <Feather name="plus" size={18} color={COLORS.teal} />
           <Text style={styles.addExerciseText}>Add Exercise</Text>
         </Pressable>
@@ -390,6 +415,13 @@ export function ActiveWorkoutScreen({ navigation, route }: Props): React.JSX.Ele
           </View>
         </View>
       </Modal>
+
+      <ExercisePicker
+        visible={showExercisePicker}
+        onClose={() => setShowExercisePicker(false)}
+        onSelect={handleSelectExercise}
+        title="Add Exercise"
+      />
     </Screen>
   );
 }
