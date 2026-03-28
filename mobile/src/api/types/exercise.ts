@@ -1,30 +1,38 @@
 export interface Exercise {
   id: string;
   name: string;
-  primary_muscle: string;
-  secondary_muscles: string[];
-  equipment: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
-  category: string;
-  instructions: string[];
-  tips: string[];
-  emoji?: string;
+  body_part: string | null;
+  equipment: string | null;
+  gif_url: string | null;
+  target: string | null;
+  instructions: ExerciseInstruction[];
+  secondary_muscles: ExerciseSecondaryMuscle[];
+}
+
+export interface ExerciseInstruction {
+  id: number;
+  step_number: number | null;
+  instruction: string | null;
+}
+
+export interface ExerciseSecondaryMuscle {
+  id: number;
+  muscle: string;
 }
 
 export interface ExerciseListItem {
   id: string;
   name: string;
-  primary_muscle: string;
-  equipment: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
-  emoji?: string;
+  body_part: string | null;
+  equipment: string | null;
+  gif_url: string | null;
+  target: string | null;
 }
 
 export interface ExerciseFilters {
-  muscles: string[];
+  body_parts: string[];
   equipment: string[];
-  difficulties: string[];
-  categories: string[];
+  targets: string[];
 }
 
 export interface ExerciseSet {

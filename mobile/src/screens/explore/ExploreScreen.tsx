@@ -2,25 +2,19 @@ import React, { useState, useMemo, useCallback } from "react";
 import { View, Text, TextInput, StyleSheet, FlatList, Pressable, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
-import { Screen, Card, Tag, SectionEyebrow } from "../../components";
+import { Screen, Card } from "../../components";
 import { TabScreenProps } from "../../types/navigation";
 import { useExercises, useExerciseFilters } from "../../hooks";
-import { DIFFICULTY_COLORS } from "../../data";
 import type { ExerciseListItem } from "../../api/types";
 
 type Props = TabScreenProps<"Explore">;
 
-const DIFFICULTY_COLOR_MAP: Record<string, string> = {
-  beginner: "#22c55e",
-  intermediate: "#f59e0b",
-  advanced: "#ef4444",
-};
-
 export function ExploreScreen({ navigation }: Props): React.JSX.Element {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedMuscle, setSelectedMuscle] = useState("All");
+  const [selectedBodyPart, setSelectedBodyPart] = useState("All");
   const [selectedEquipment, setSelectedEquipment] = useState("All");
+  const [selectedTarget, setSelectedTarget] = useState("All");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
 
@@ -28,18 +22,23 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
   const { data: exercisesData, isLoading, isFetching } = useExercises({
     limit: PAGE_SIZE,
     offset: page * PAGE_SIZE,
-    search: debouncedSearch || undefined,
-    muscle: selectedMuscle !== "All" ? selectedMuscle : undefined,
+    q: debouncedSearch || undefined,
+    body_part: selectedBodyPart !== "All" ? selectedBodyPart : undefined,
     equipment: selectedEquipment !== "All" ? selectedEquipment : undefined,
+    target: selectedTarget !== "All" ? selectedTarget : undefined,
   });
 
-  const muscles = useMemo(() => {
-    return ["All", ...(filtersData?.muscles || [])];
-  }, [filtersData?.muscles]);
+  const bodyParts = useMemo(() => {
+    return ["All", ...(filtersData?.body_parts || [])];
+  }, [filtersData?.body_parts]);
 
   const equipment = useMemo(() => {
     return ["All", ...(filtersData?.equipment || [])];
   }, [filtersData?.equipment]);
+
+  const targets = useMemo(() => {
+    return ["All", ...(filtersData?.targets || [])];
+  }, [filtersData?.targets]);
 
   const exercises = exercisesData?.data || [];
   const totalExercises = exercisesData?.total || 0;
@@ -53,13 +52,18 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
     return () => clearTimeout(timeoutId);
   }, []);
 
-  const handleMuscleSelect = useCallback((muscle: string) => {
-    setSelectedMuscle(muscle);
+  const handleBodyPartSelect = useCallback((bodyPart: string) => {
+    setSelectedBodyPart(bodyPart);
     setPage(0);
   }, []);
 
   const handleEquipmentSelect = useCallback((equip: string) => {
     setSelectedEquipment(equip);
+    setPage(0);
+  }, []);
+
+  const handleTargetSelect = useCallback((target: string) => {
+    setSelectedTarget(target);
     setPage(0);
   }, []);
 
@@ -70,29 +74,23 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
   }, [isFetching, exercises.length, totalExercises]);
 
   const renderExerciseItem = useCallback(({ item }: { item: ExerciseListItem }) => {
-    const difficultyColor = DIFFICULTY_COLOR_MAP[item.difficulty] || DIFFICULTY_COLORS.Intermediate;
-    
     return (
       <Pressable onPress={() => (navigation as any).navigate("ExerciseDetail", { id: item.id })}>
         <Card style={styles.exerciseCard}>
           <View style={styles.exerciseRow}>
             <View style={styles.exerciseLeft}>
-              <Text style={styles.exerciseEmoji}>{item.emoji || "💪"}</Text>
               <View style={styles.exerciseInfo}>
                 <Text style={styles.exerciseName}>{item.name}</Text>
                 <View style={styles.exerciseMeta}>
-                  <Text style={styles.exerciseMuscle}>{item.primary_muscle}</Text>
+                  <Text style={styles.exerciseMuscle}>{item.body_part || "Various"}</Text>
                   <View style={styles.dot} />
-                  <Text style={styles.exerciseEquipment}>{item.equipment}</Text>
+                  <Text style={styles.exerciseEquipment}>{item.equipment || "None"}</Text>
+                  <View style={styles.dot} />
+                  <Text style={styles.exerciseEquipment}>{item.target || "Various"}</Text>
                 </View>
               </View>
             </View>
             <View style={styles.exerciseRight}>
-              <Tag
-                label={item.difficulty}
-                color={difficultyColor}
-                backgroundColor={`${difficultyColor}20`}
-              />
               <Feather name="chevron-right" size={16} color="rgba(255,255,255,0.28)" />
             </View>
           </View>
@@ -133,24 +131,24 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.filters}>
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>Muscle Group</Text>
+          <Text style={styles.filterLabel}>Body Part</Text>
           <FlatList
             horizontal
-            data={muscles}
+            data={bodyParts}
             keyExtractor={(item) => item}
             showsHorizontalScrollIndicator={false}
             renderItem={({ item }) => (
               <Pressable
-                onPress={() => handleMuscleSelect(item)}
+                onPress={() => handleBodyPartSelect(item)}
                 style={[
                   styles.filterChip,
-                  selectedMuscle === item && styles.filterChipActive,
+                  selectedBodyPart === item && styles.filterChipActive,
                 ]}
               >
                 <Text
                   style={[
                     styles.filterChipText,
-                    selectedMuscle === item && styles.filterChipTextActive,
+                    selectedBodyPart === item && styles.filterChipTextActive,
                   ]}
                 >
                   {item}
@@ -187,6 +185,34 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
             )}
           />
         </View>
+
+        <View style={styles.filterSection}>
+          <Text style={styles.filterLabel}>Target Muscle</Text>
+          <FlatList
+            horizontal
+            data={targets}
+            keyExtractor={(item) => item}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => handleTargetSelect(item)}
+                style={[
+                  styles.filterChip,
+                  selectedTarget === item && styles.filterChipActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedTarget === item && styles.filterChipTextActive,
+                  ]}
+                >
+                  {item}
+                </Text>
+              </Pressable>
+            )}
+          />
+        </View>
       </View>
 
       <View style={styles.resultsHeader}>
@@ -194,31 +220,33 @@ export function ExploreScreen({ navigation }: Props): React.JSX.Element {
         {isFetching && <ActivityIndicator size="small" color={COLORS.teal} />}
       </View>
 
-      <FlatList
-        data={exercises}
-        keyExtractor={keyExtractor}
-        renderItem={renderExerciseItem}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        onEndReached={handleLoadMore}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          !isLoading ? (
-            <View style={styles.emptyState}>
-              <Feather name="search" size={40} color="rgba(255,255,255,0.15)" />
-              <Text style={styles.emptyText}>No exercises found</Text>
-              <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
-            </View>
-          ) : null
-        }
-        ListFooterComponent={
-          isLoading ? (
-            <View style={styles.loadingFooter}>
-              <ActivityIndicator size="small" color={COLORS.teal} />
-            </View>
-          ) : null
-        }
-      />
+      <View style={styles.listContainer}>
+        <FlatList
+          data={exercises}
+          keyExtractor={keyExtractor}
+          renderItem={renderExerciseItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
+            !isLoading ? (
+              <View style={styles.emptyState}>
+                <Feather name="search" size={40} color="rgba(255,255,255,0.15)" />
+                <Text style={styles.emptyText}>No exercises found</Text>
+                <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+              </View>
+            ) : null
+          }
+          ListFooterComponent={
+            isLoading ? (
+              <View style={styles.loadingFooter}>
+                <ActivityIndicator size="small" color={COLORS.teal} />
+              </View>
+            ) : null
+          }
+        />
+      </View>
     </Screen>
   );
 }
@@ -256,13 +284,13 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: COLORS.teal },
   resultsHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 16, marginBottom: 12 },
   resultsCount: { color: COLORS.muted, fontSize: 12 },
+  listContainer: { flex: 1, minHeight: 200 },
   exerciseCard: { marginBottom: 10 },
   exerciseRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   exerciseLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
-  exerciseEmoji: { fontSize: 28, marginRight: 12 },
   exerciseInfo: { flex: 1 },
   exerciseName: { color: COLORS.text, fontSize: 14, fontWeight: "700" },
-  exerciseMeta: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  exerciseMeta: { flexDirection: "row", alignItems: "center", marginTop: 4, flexWrap: "wrap" },
   exerciseMuscle: { color: COLORS.muted, fontSize: 11 },
   dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.28)", marginHorizontal: 6 },
   exerciseEquipment: { color: COLORS.muted, fontSize: 11 },

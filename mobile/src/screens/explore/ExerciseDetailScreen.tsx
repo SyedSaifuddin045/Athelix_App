@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS } from "../../theme/colors";
@@ -8,12 +8,6 @@ import { RootStackScreenProps } from "../../types/navigation";
 import { useExercise } from "../../hooks";
 
 type Props = RootStackScreenProps<"ExerciseDetail">;
-
-const DIFFICULTY_COLOR_MAP: Record<string, string> = {
-  beginner: "#22c55e",
-  intermediate: "#f59e0b",
-  advanced: "#ef4444",
-};
 
 export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.Element {
   const { id } = route.params;
@@ -39,20 +33,17 @@ export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.El
     );
   }
 
-  const difficultyColor = DIFFICULTY_COLOR_MAP[exercise.difficulty] || DIFFICULTY_COLORS?.Intermediate || "#f59e0b";
-
   return (
     <Screen contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
       <BackHeader title={exercise.name} onBack={() => navigation.goBack()} />
 
       <Card style={[styles.heroCard, { borderColor: `${COLORS.teal}30` }]}>
         <View style={styles.heroContent}>
-          <Text style={styles.heroEmoji}>{exercise.emoji || "💪"}</Text>
           <View style={styles.heroInfo}>
             <Text style={styles.heroName}>{exercise.name}</Text>
             <View style={styles.heroMeta}>
-              <Tag label={exercise.category} color={COLORS.teal} />
-              <Tag label={exercise.difficulty} color={difficultyColor} />
+              {exercise.body_part && <Tag label={exercise.body_part} color={COLORS.teal} />}
+              {exercise.target && <Tag label={exercise.target} color={COLORS.blue} />}
             </View>
           </View>
         </View>
@@ -60,7 +51,17 @@ export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.El
           <View style={styles.heroDetailItem}>
             <Ionicons name="barbell-outline" size={18} color={COLORS.muted} />
             <Text style={styles.heroDetailLabel}>Equipment</Text>
-            <Text style={styles.heroDetailValue}>{exercise.equipment}</Text>
+            <Text style={styles.heroDetailValue}>{exercise.equipment || "None"}</Text>
+          </View>
+          <View style={styles.heroDetailItem}>
+            <Ionicons name="body-outline" size={18} color={COLORS.muted} />
+            <Text style={styles.heroDetailLabel}>Body Part</Text>
+            <Text style={styles.heroDetailValue}>{exercise.body_part || "Various"}</Text>
+          </View>
+          <View style={styles.heroDetailItem}>
+            <Ionicons name="fitness-outline" size={18} color={COLORS.muted} />
+            <Text style={styles.heroDetailLabel}>Target</Text>
+            <Text style={styles.heroDetailValue}>{exercise.target || "Various"}</Text>
           </View>
         </View>
       </Card>
@@ -70,8 +71,8 @@ export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.El
         <Card style={styles.musclesCard}>
           <View style={styles.musclePrimary}>
             <View style={[styles.muscleDot, { backgroundColor: COLORS.teal }]} />
-            <Text style={styles.muscleLabel}>Primary</Text>
-            <Text style={styles.muscleValue}>{exercise.primary_muscle}</Text>
+            <Text style={styles.muscleLabel}>Primary Target</Text>
+            <Text style={styles.muscleValue}>{exercise.target || "Various"}</Text>
           </View>
           {exercise.secondary_muscles && exercise.secondary_muscles.length > 0 && (
             <>
@@ -82,7 +83,7 @@ export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.El
                   {exercise.secondary_muscles.map((muscle, index) => (
                     <View key={index} style={styles.secondaryMuscle}>
                       <View style={[styles.muscleDot, { backgroundColor: COLORS.muted, width: 6, height: 6 }]} />
-                      <Text style={styles.muscleValue}>{muscle}</Text>
+                      <Text style={styles.muscleValue}>{muscle.muscle}</Text>
                     </View>
                   ))}
                 </View>
@@ -97,27 +98,26 @@ export function ExerciseDetailScreen({ navigation, route }: Props): React.JSX.El
           <SectionEyebrow color={COLORS.blue}>Instructions</SectionEyebrow>
           <Card style={styles.instructionsCard}>
             {exercise.instructions.map((instruction, index) => (
-              <View key={index} style={styles.instructionRow}>
+              <View key={instruction.id || index} style={styles.instructionRow}>
                 <View style={styles.instructionNumber}>
                   <Text style={styles.instructionNumberText}>{index + 1}</Text>
                 </View>
-                <Text style={styles.instructionText}>{instruction}</Text>
+                <Text style={styles.instructionText}>{instruction.instruction || ""}</Text>
               </View>
             ))}
           </Card>
         </View>
       )}
 
-      {exercise.tips && exercise.tips.length > 0 && (
+      {exercise.gif_url && (
         <View style={styles.section}>
-          <SectionEyebrow color={COLORS.gold}>Pro Tips</SectionEyebrow>
-          <Card style={styles.tipsCard}>
-            {exercise.tips.map((tip, index) => (
-              <View key={index} style={styles.tipRow}>
-                <Feather name="zap" size={14} color={COLORS.gold} />
-                <Text style={styles.tipText}>{tip}</Text>
-              </View>
-            ))}
+          <SectionEyebrow color={COLORS.purple}>Demo</SectionEyebrow>
+          <Card style={styles.gifCard}>
+            <View style={styles.gifPlaceholder}>
+              <Ionicons name="videocam-outline" size={40} color={COLORS.muted} />
+              <Text style={styles.gifText}>GIF demonstration</Text>
+              <Text style={styles.gifSubtext}>Available in full app</Text>
+            </View>
           </Card>
         </View>
       )}
@@ -148,14 +148,13 @@ const styles = StyleSheet.create({
   },
   heroCard: { marginTop: 16, borderWidth: 1 },
   heroContent: { flexDirection: "row", alignItems: "center" },
-  heroEmoji: { fontSize: 56 },
-  heroInfo: { flex: 1, marginLeft: 16 },
+  heroInfo: { flex: 1 },
   heroName: { color: COLORS.text, fontSize: 22, fontWeight: "900" },
-  heroMeta: { flexDirection: "row", gap: 8, marginTop: 10 },
+  heroMeta: { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
   heroDetails: { flexDirection: "row", marginTop: 20, paddingTop: 16, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)" },
   heroDetailItem: { alignItems: "center", flex: 1 },
   heroDetailLabel: { color: COLORS.muted, fontSize: 10, marginTop: 6 },
-  heroDetailValue: { color: COLORS.text, fontSize: 12, fontWeight: "700", marginTop: 2 },
+  heroDetailValue: { color: COLORS.text, fontSize: 12, fontWeight: "700", marginTop: 2, textAlign: "center" },
   section: { marginTop: 24 },
   musclesCard: { marginTop: 10 },
   musclePrimary: { flexDirection: "row", alignItems: "center" },
@@ -171,13 +170,8 @@ const styles = StyleSheet.create({
   instructionNumber: { width: 24, height: 24, borderRadius: 12, backgroundColor: `${COLORS.teal}20`, alignItems: "center", justifyContent: "center" },
   instructionNumberText: { color: COLORS.teal, fontSize: 12, fontWeight: "800" },
   instructionText: { flex: 1, color: "rgba(255,255,255,0.8)", fontSize: 13, lineHeight: 20 },
-  tipsCard: { marginTop: 10, gap: 12 },
-  tipRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
-  tipText: { flex: 1, color: "rgba(255,255,255,0.75)", fontSize: 13, lineHeight: 20 },
+  gifCard: { marginTop: 10 },
+  gifPlaceholder: { alignItems: "center", justifyContent: "center", paddingVertical: 40 },
+  gifText: { color: COLORS.text, fontSize: 14, fontWeight: "600", marginTop: 12 },
+  gifSubtext: { color: COLORS.muted, fontSize: 12, marginTop: 4 },
 });
-
-const DIFFICULTY_COLORS = {
-  Beginner: "#22c55e",
-  Intermediate: "#f59e0b",
-  Advanced: "#ef4444",
-};

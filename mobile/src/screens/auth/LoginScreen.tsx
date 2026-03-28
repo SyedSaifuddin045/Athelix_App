@@ -7,6 +7,7 @@ import { Screen, PrimaryButton, RoundButton } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
 import { useAuthStore } from "../../store";
 import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
+import { isAxiosError } from "axios";
 
 type Props = RootStackScreenProps<"Login">;
 
@@ -36,7 +37,11 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
       
       navigation.replace("MainTabs");
     } catch (err) {
-      // Error is handled by the store
+      if (isAxiosError(err) && err.code === "ECONNABORTED") {
+        Alert.alert("Connection Error", "The request timed out. Please check if the API server is running.");
+      } else if (isAxiosError(err) && !err.response) {
+        Alert.alert("Connection Error", "Could not connect to the server. Please check if the API server is running.");
+      }
     }
   };
 

@@ -10,17 +10,22 @@ import type {
 import type { PaginationParams } from "../types/base";
 
 export const exerciseService = {
-  async getExercises(params?: PaginationParams & {
-    muscle?: string;
+  async getExercises(params?: {
+    q?: string;
+    body_part?: string;
     equipment?: string;
-    difficulty?: string;
-    search?: string;
+    target?: string;
+    limit?: number;
+    offset?: number;
   }): Promise<{ data: ExerciseListItem[]; total: number }> {
-    const response = await apiClient.get<{ data: ExerciseListItem[]; total: number }>(
+    const response = await apiClient.get<{ items: ExerciseListItem[]; total: number; limit: number; offset: number }>(
       "/exercises",
       { params }
     );
-    return response.data;
+    return {
+      data: response.data.items,
+      total: response.data.total,
+    };
   },
 
   async getFilters(): Promise<ExerciseFilters> {

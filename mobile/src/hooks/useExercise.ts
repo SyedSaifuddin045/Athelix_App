@@ -13,12 +13,12 @@ export function useExerciseFilters() {
 }
 
 export function useExercises(params?: {
+  q?: string;
+  body_part?: string;
+  equipment?: string;
+  target?: string;
   limit?: number;
   offset?: number;
-  muscle?: string;
-  equipment?: string;
-  difficulty?: string;
-  search?: string;
 }) {
   return useQuery({
     queryKey: queryKeys.exercises(params),

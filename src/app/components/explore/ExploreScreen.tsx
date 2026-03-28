@@ -1,56 +1,98 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { Search, SlidersHorizontal, ChevronRight, X } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronRight, X, Loader2 } from "lucide-react";
+import { exerciseService } from "../../../api/services/exercise";
+import type { Exercise, ExerciseFiltersResponse } from "../../../api/types";
 
-interface Exercise {
-  id: string;
-  name: string;
-  primaryMuscle: string;
-  equipment: string;
-  difficulty: "Beginner" | "Intermediate" | "Advanced";
-  emoji: string;
-}
-
-const ALL_EXERCISES: Exercise[] = [
-  { id: "1", name: "Bench Press", primaryMuscle: "Chest", equipment: "Barbell", difficulty: "Intermediate", emoji: "🏋️" },
-  { id: "2", name: "Back Squat", primaryMuscle: "Quadriceps", equipment: "Barbell", difficulty: "Intermediate", emoji: "🦵" },
-  { id: "3", name: "Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Advanced", emoji: "💪" },
-  { id: "4", name: "Overhead Press", primaryMuscle: "Shoulders", equipment: "Barbell", difficulty: "Intermediate", emoji: "🙌" },
-  { id: "5", name: "Pull-up", primaryMuscle: "Back", equipment: "Bodyweight", difficulty: "Intermediate", emoji: "⬆️" },
-  { id: "6", name: "Barbell Row", primaryMuscle: "Back", equipment: "Barbell", difficulty: "Intermediate", emoji: "🏋️" },
-  { id: "7", name: "Romanian Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Intermediate", emoji: "🔃" },
-  { id: "8", name: "Dumbbell Curl", primaryMuscle: "Biceps", equipment: "Dumbbell", difficulty: "Beginner", emoji: "💪" },
-  { id: "9", name: "Tricep Dips", primaryMuscle: "Triceps", equipment: "Bodyweight", difficulty: "Beginner", emoji: "👇" },
-  { id: "10", name: "Leg Press", primaryMuscle: "Quadriceps", equipment: "Machine", difficulty: "Beginner", emoji: "🦵" },
-  { id: "11", name: "Lateral Raise", primaryMuscle: "Shoulders", equipment: "Dumbbell", difficulty: "Beginner", emoji: "🙆" },
-  { id: "12", name: "Cable Row", primaryMuscle: "Back", equipment: "Cable", difficulty: "Beginner", emoji: "🔗" },
-  { id: "13", name: "Incline DB Press", primaryMuscle: "Chest", equipment: "Dumbbell", difficulty: "Intermediate", emoji: "📐" },
-  { id: "14", name: "Face Pull", primaryMuscle: "Rear Delts", equipment: "Cable", difficulty: "Beginner", emoji: "😤" },
-  { id: "15", name: "Bulgarian Split Squat", primaryMuscle: "Quadriceps", equipment: "Dumbbell", difficulty: "Advanced", emoji: "🦵" },
-  { id: "16", name: "Hip Thrust", primaryMuscle: "Glutes", equipment: "Barbell", difficulty: "Intermediate", emoji: "🍑" },
-];
-
-const MUSCLES = ["All", "Chest", "Back", "Shoulders", "Quadriceps", "Hamstrings", "Biceps", "Triceps", "Glutes"];
-const EQUIPMENT = ["All", "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"];
 const DIFFICULTY_COLORS: Record<string, string> = { Beginner: "#22c55e", Intermediate: "#f59e0b", Advanced: "#ef4444" };
+const EMOJI_MAP: Record<string, string> = {
+  chest: "💪", back: "🔙", shoulders: "🙌", arms: "💪", legs: "🦵", core: "🎯",
+  cardio: "🏃", default: "🏋️"
+};
+
+function getEmojiForMuscle(muscle: string): string {
+  const lower = muscle.toLowerCase();
+  for (const [key, emoji] of Object.entries(EMOJI_MAP)) {
+    if (lower.includes(key)) return emoji;
+  }
+  return EMOJI_MAP.default;
+}
 
 export function ExploreScreen() {
   const navigate = useNavigate();
+  
+  const [filters, setFilters] = useState<ExerciseFiltersResponse | null>(null);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingFilters, setLoadingFilters] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const [query, setQuery] = useState("");
-  const [muscle, setMuscle] = useState("All");
-  const [equip, setEquip] = useState("All");
+  const [selectedBodyPart, setSelectedBodyPart] = useState<string>("");
+  const [selectedEquipment, setSelectedEquipment] = useState<string>("");
+  const [selectedTarget, setSelectedTarget] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const filtered = ALL_EXERCISES.filter(e => {
-    const q = query.toLowerCase();
-    return (
-      (e.name.toLowerCase().includes(q) || e.primaryMuscle.toLowerCase().includes(q)) &&
-      (muscle === "All" || e.primaryMuscle === muscle) &&
-      (equip === "All" || e.equipment === equip)
-    );
-  });
+  const fetchFilters = useCallback(async () => {
+    try {
+      setLoadingFilters(true);
+      const data = await exerciseService.getFilters();
+      setFilters(data);
+    } catch (err) {
+      console.error("Failed to fetch filters:", err);
+    } finally {
+      setLoadingFilters(false);
+    }
+  }, []);
 
-  const activeFilters = [muscle !== "All" && muscle, equip !== "All" && equip].filter(Boolean) as string[];
+  const fetchExercises = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await exerciseService.getExercises({
+        q: query || undefined,
+        body_part: selectedBodyPart || undefined,
+        equipment: selectedEquipment || undefined,
+        target: selectedTarget || undefined,
+        limit: 50,
+      });
+      setExercises(data.items);
+      setTotal(data.total);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load exercises");
+      setExercises([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [query, selectedBodyPart, selectedEquipment, selectedTarget]);
+
+  useEffect(() => {
+    fetchFilters();
+  }, [fetchFilters]);
+
+  useEffect(() => {
+    fetchExercises();
+  }, [fetchExercises]);
+
+  const activeFilters = [
+    selectedBodyPart && { type: "body_part" as const, value: selectedBodyPart },
+    selectedEquipment && { type: "equipment" as const, value: selectedEquipment },
+    selectedTarget && { type: "target" as const, value: selectedTarget },
+  ].filter(Boolean) as { type: "body_part" | "equipment" | "target"; value: string }[];
+
+  const clearFilter = (type: "body_part" | "equipment" | "target") => {
+    if (type === "body_part") setSelectedBodyPart("");
+    if (type === "equipment") setSelectedEquipment("");
+    if (type === "target") setSelectedTarget("");
+  };
+
+  const clearAllFilters = () => {
+    setSelectedBodyPart("");
+    setSelectedEquipment("");
+    setSelectedTarget("");
+    setQuery("");
+  };
 
   return (
     <div className="min-h-full pb-6"
@@ -58,14 +100,12 @@ export function ExploreScreen() {
       <div className="absolute top-0 left-0 right-0 h-52 pointer-events-none"
         style={{ background: "radial-gradient(ellipse 80% 55% at 50% -10%, rgba(0,120,180,0.14) 0%, transparent 70%)" }} />
 
-      {/* Header */}
       <div className="relative px-5 pt-13 pb-4">
         <h1 className="text-white text-2xl font-extrabold">Exercise Library</h1>
         <p className="text-[12px] mt-0.5" style={{ color: "rgba(255,255,255,0.38)" }}>
-          {ALL_EXERCISES.length} exercises · Search, filter, explore
+          {loading ? "Loading..." : `${total} exercises`} · Search, filter, explore
         </p>
 
-        {/* Search */}
         <div className="flex gap-2 mt-4">
           <div className="flex-1 flex items-center gap-2.5 px-3.5 py-3 rounded-2xl"
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}>
@@ -96,102 +136,170 @@ export function ExploreScreen() {
           </button>
         </div>
 
-        {/* Active Filters */}
         {activeFilters.length > 0 && (
-          <div className="flex gap-2 mt-2.5">
+          <div className="flex items-center gap-2 mt-2.5 flex-wrap">
             {activeFilters.map(f => (
-              <div key={f}
+              <div key={f.type}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
                 style={{ background: "rgba(0,212,168,0.15)", border: "1px solid rgba(0,212,168,0.3)", color: "#00d4a8" }}>
-                {f}
-                <button onClick={() => { if (muscle === f) setMuscle("All"); if (equip === f) setEquip("All"); }}>
+                {f.value}
+                <button onClick={() => clearFilter(f.type)}>
                   <X size={10} />
                 </button>
               </div>
             ))}
+            {activeFilters.length > 1 && (
+              <button onClick={clearAllFilters} className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.5)" }}>
+                Clear all
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Filter Drawer */}
       {showFilters && (
         <div className="px-4 mb-3">
           <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>Muscle Group</p>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {MUSCLES.map(m => (
-                <button key={m} onClick={() => setMuscle(m)}
-                  className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
-                  style={{
-                    background: muscle === m ? "rgba(0,212,168,0.2)" : "rgba(255,255,255,0.06)",
-                    border: muscle === m ? "1px solid rgba(0,212,168,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                    color: muscle === m ? "#00d4a8" : "rgba(255,255,255,0.5)",
-                  }}>
-                  {m}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>Equipment</p>
-            <div className="flex flex-wrap gap-2">
-              {EQUIPMENT.map(eq => (
-                <button key={eq} onClick={() => setEquip(eq)}
-                  className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all"
-                  style={{
-                    background: equip === eq ? "rgba(0,212,168,0.2)" : "rgba(255,255,255,0.06)",
-                    border: equip === eq ? "1px solid rgba(0,212,168,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                    color: equip === eq ? "#00d4a8" : "rgba(255,255,255,0.5)",
-                  }}>
-                  {eq}
-                </button>
-              ))}
-            </div>
+            {loadingFilters ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 size={20} className="animate-spin" style={{ color: "#00d4a8" }} />
+              </div>
+            ) : filters ? (
+              <>
+                <div className="mb-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    Body Part
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {filters.body_parts.map(part => (
+                      <button key={part} onClick={() => setSelectedBodyPart(selectedBodyPart === part ? "" : part)}
+                        className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all capitalize"
+                        style={{
+                          background: selectedBodyPart === part ? "rgba(0,212,168,0.2)" : "rgba(255,255,255,0.06)",
+                          border: selectedBodyPart === part ? "1px solid rgba(0,212,168,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                          color: selectedBodyPart === part ? "#00d4a8" : "rgba(255,255,255,0.5)",
+                        }}>
+                        {part.replace("_", " ")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    Equipment
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {filters.equipment.map(eq => (
+                      <button key={eq} onClick={() => setSelectedEquipment(selectedEquipment === eq ? "" : eq)}
+                        className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all capitalize"
+                        style={{
+                          background: selectedEquipment === eq ? "rgba(0,212,168,0.2)" : "rgba(255,255,255,0.06)",
+                          border: selectedEquipment === eq ? "1px solid rgba(0,212,168,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                          color: selectedEquipment === eq ? "#00d4a8" : "rgba(255,255,255,0.5)",
+                        }}>
+                        {eq.replace("_", " ")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest mb-2.5" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    Target Muscle
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {filters.targets.map(t => (
+                      <button key={t} onClick={() => setSelectedTarget(selectedTarget === t ? "" : t)}
+                        className="px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all capitalize"
+                        style={{
+                          background: selectedTarget === t ? "rgba(0,212,168,0.2)" : "rgba(255,255,255,0.06)",
+                          border: selectedTarget === t ? "1px solid rgba(0,212,168,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                          color: selectedTarget === t ? "#00d4a8" : "rgba(255,255,255,0.5)",
+                        }}>
+                        {t.replace("_", " ")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       )}
 
-      {/* Results */}
       <div className="px-4">
         <p className="text-[11px] mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>
-          {filtered.length} results
+          {loading ? "Loading exercises..." : `${exercises.length} results`}
         </p>
-        <div className="flex flex-col gap-2">
-          {filtered.map(ex => (
-            <button
-              key={ex.id}
-              onClick={() => navigate(`/explore/${ex.id}`)}
-              className="flex items-center gap-3 p-3.5 rounded-2xl text-left transition-all active:scale-[0.98]"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+        
+        {error && (
+          <div className="rounded-xl p-4 text-center" style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)" }}>
+            <p className="text-[13px]" style={{ color: "#f87171" }}>{error}</p>
+            <button 
+              onClick={fetchExercises}
+              className="mt-2 text-[12px] font-semibold"
+              style={{ color: "#00d4a8" }}
             >
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ background: "rgba(255,255,255,0.06)" }}>
-                {ex.emoji}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-[13px] font-semibold truncate">{ex.name}</p>
-                <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  {ex.primaryMuscle} · {ex.equipment}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-1.5">
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                  style={{ background: `${DIFFICULTY_COLORS[ex.difficulty]}18`, color: DIFFICULTY_COLORS[ex.difficulty] }}>
-                  {ex.difficulty}
-                </span>
-                <ChevronRight size={14} color="rgba(255,255,255,0.2)" />
-              </div>
+              Try again
             </button>
-          ))}
+          </div>
+        )}
 
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center py-12 gap-3">
-              <span className="text-4xl">🔍</span>
-              <p className="text-white text-[15px] font-semibold">No exercises found</p>
-              <p className="text-[13px] text-center" style={{ color: "rgba(255,255,255,0.4)" }}>
-                Try different search terms or filters
-              </p>
-            </div>
-          )}
-        </div>
+        {!error && (
+          <div className="flex flex-col gap-2">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 p-3.5 rounded-2xl animate-pulse"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                  <div className="w-11 h-11 rounded-xl" style={{ background: "rgba(255,255,255,0.06)" }} />
+                  <div className="flex-1">
+                    <div className="h-4 rounded w-32 mb-1" style={{ background: "rgba(255,255,255,0.06)" }} />
+                    <div className="h-3 rounded w-24" style={{ background: "rgba(255,255,255,0.04)" }} />
+                  </div>
+                </div>
+              ))
+            ) : exercises.length > 0 ? (
+              exercises.map(ex => (
+                <button
+                  key={ex.id}
+                  onClick={() => navigate(`/explore/${ex.id}`)}
+                  className="flex items-center gap-3 p-3.5 rounded-2xl text-left transition-all active:scale-[0.98]"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)" }}
+                >
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
+                    style={{ background: "rgba(255,255,255,0.06)" }}>
+                    {getEmojiForMuscle(ex.target || ex.body_part)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-[13px] font-semibold truncate">{ex.name}</p>
+                    <p className="text-[11px] mt-0.5 capitalize" style={{ color: "rgba(255,255,255,0.4)" }}>
+                      {ex.body_part?.replace("_", " ")} · {ex.equipment?.replace("_", " ")}
+                    </p>
+                  </div>
+                  <ChevronRight size={14} color="rgba(255,255,255,0.2)" />
+                </button>
+              ))
+            ) : (
+              <div className="flex flex-col items-center py-12 gap-3">
+                <span className="text-4xl">🔍</span>
+                <p className="text-white text-[15px] font-semibold">No exercises found</p>
+                <p className="text-[13px] text-center" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  Try different search terms or filters
+                </p>
+                {activeFilters.length > 0 && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-[12px] font-semibold mt-2"
+                    style={{ color: "#00d4a8" }}
+                  >
+                    Clear all filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
