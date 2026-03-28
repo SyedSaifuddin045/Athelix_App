@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { usePostHog, useFeatureFlag as usePostHogFeatureFlag } from "posthog-react-native";
+import { useSafePostHog, useSafeFeatureFlag } from "./usePostHogSafe";
 
 export function useAnalytics() {
   const navigation = useNavigation();
   const route = useRoute();
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export function useAnalytics() {
 }
 
 export function useScreenAnalytics(screenName: string) {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   const isFirstRender = useRef(true);
 
   useEffect(() => {
@@ -99,7 +99,7 @@ export function useScreenAnalytics(screenName: string) {
 }
 
 export function useIdentifyUser(userId: string, userProperties?: Record<string, unknown>) {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
 
   useEffect(() => {
     if (posthog && userId) {
@@ -109,40 +109,39 @@ export function useIdentifyUser(userId: string, userProperties?: Record<string, 
 }
 
 export function useFeatureFlag(flagKey: string): boolean | undefined {
-  const result = usePostHogFeatureFlag(flagKey);
-  return typeof result === "boolean" ? result : undefined;
+  return useSafeFeatureFlag(flagKey);
 }
 
 export function captureEvent(eventName: string, properties?: Record<string, unknown>): void {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   if (posthog) {
     posthog.capture(eventName, properties as any);
   }
 }
 
 export function identifyUser(userId: string, userProperties?: Record<string, unknown>): void {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   if (posthog) {
     posthog.identify(userId, userProperties as any);
   }
 }
 
 export function resetUser(): void {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   if (posthog) {
     posthog.reset();
   }
 }
 
 export function setUserProperties(properties: Record<string, unknown>): void {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   if (posthog) {
     posthog.setPersonProperties(properties as any);
   }
 }
 
 export function screenView(screenName: string, properties?: Record<string, unknown>): void {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   if (posthog) {
     posthog.screen(screenName, properties as any);
   }

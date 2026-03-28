@@ -6,7 +6,7 @@ import { COLORS } from "../../theme/colors";
 import { Screen, Card, PrimaryButton, RoundButton } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
 import { useAuthStore } from "../../store";
-import { usePostHog } from "posthog-react-native";
+import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
 import type { AxiosError } from "axios";
 import type { ApiErrorResponse } from "../../api/types";
 
@@ -18,7 +18,7 @@ interface ValidationCheck {
 }
 
 export function RegisterScreen({ navigation }: Props): React.JSX.Element {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   const { register, isLoading, error, clearError } = useAuthStore();
   
   const [username, setUsername] = useState("");

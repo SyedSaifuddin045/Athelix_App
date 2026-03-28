@@ -6,20 +6,20 @@ import { COLORS } from "../../theme/colors";
 import { Screen, PrimaryButton, RoundButton } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
 import { useAuthStore } from "../../store";
-import { usePostHog } from "posthog-react-native";
+import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
 
 type Props = RootStackScreenProps<"Login">;
 
 export function LoginScreen({ navigation }: Props): React.JSX.Element {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   const { login, isLoading, error, clearError } = useAuthStore();
   
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
-    if (!username || !password) {
+    if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
     }
@@ -27,10 +27,10 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
     clearError();
 
     try {
-      await login(username, password);
+      await login(email, password);
       
       if (posthog) {
-        posthog.identify(username, { username });
+        posthog.identify(email, { email });
         posthog.capture("user_logged_in", { method: "email" });
       }
       
@@ -69,15 +69,16 @@ export function LoginScreen({ navigation }: Props): React.JSX.Element {
 
       <View style={styles.formStack}>
         <View>
-          <Text style={styles.fieldLabel}>Username</Text>
+          <Text style={styles.fieldLabel}>Email</Text>
           <TextInput
-            value={username}
-            onChangeText={setUsername}
-            placeholder="jordan_fitness"
+            value={email}
+            onChangeText={setEmail}
+            placeholder="jordan@example.com"
             placeholderTextColor="rgba(255,255,255,0.28)"
             style={styles.input}
             autoCapitalize="none"
             autoCorrect={false}
+            keyboardType="email-address"
           />
         </View>
         <View>
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   input: { width: "100%", minHeight: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: "#ffffff", paddingHorizontal: 16, fontSize: 14 },
   inputWrap: { position: "relative" },
   inputWithRight: { paddingRight: 46 },
-  inputRightIcon: { position: "absolute", right: 14, top: 18 },
+  inputRightIcon: { position: "absolute", right: 8, top: 8 },
   linkText: { color: COLORS.teal, fontSize: 12, fontWeight: "600" },
   errorBox: { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)" },
   errorText: { color: COLORS.red, fontSize: 12 },

@@ -4,7 +4,7 @@ import { COLORS } from "../../theme/colors";
 import { Screen, ProgressBar } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
 import { useAuthStore } from "../../store";
-import { usePostHog } from "posthog-react-native";
+import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
 
 type Props = RootStackScreenProps<"Splash">;
 
@@ -12,7 +12,7 @@ export function SplashScreen({ navigation }: Props): React.JSX.Element {
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState("Initializing...");
   const { initialize, isAuthenticated, isInitialized } = useAuthStore();
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
 
   useEffect(() => {
     const initApp = async () => {
@@ -58,7 +58,7 @@ export function SplashScreen({ navigation }: Props): React.JSX.Element {
     };
 
     initApp();
-  }, [initialize, isAuthenticated, navigation, posthog]);
+  }, [initialize, isAuthenticated, navigation]);
 
   return (
     <Screen glowColor="rgba(0,180,140,0.24)" scroll={false} contentContainerStyle={styles.centeredContent}>

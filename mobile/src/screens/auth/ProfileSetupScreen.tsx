@@ -6,7 +6,7 @@ import { COLORS } from "../../theme/colors";
 import { Screen, PrimaryButton, ChipWrap } from "../../components";
 import { RootStackScreenProps } from "../../types/navigation";
 import { useUpdateProfile, useCreateBodyWeightLog } from "../../hooks";
-import { usePostHog } from "posthog-react-native";
+import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
 
 type Props = RootStackScreenProps<"ProfileSetup">;
 
@@ -25,7 +25,7 @@ const UNITS = [
 ];
 
 export function ProfileSetupScreen({ navigation }: Props): React.JSX.Element {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   const updateProfile = useUpdateProfile();
   const createBodyWeightLog = useCreateBodyWeightLog();
   

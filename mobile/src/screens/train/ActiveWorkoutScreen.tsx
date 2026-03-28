@@ -7,13 +7,13 @@ import { Screen, Card, Tag, PrimaryButton, MiniInput, ProgressBar } from "../../
 import { RootStackScreenProps } from "../../types/navigation";
 import { INITIAL_WORKOUT_EXERCISES, WorkoutExercise, WorkoutSet } from "../../data";
 import { formatTime } from "../../utils";
-import { usePostHog } from "posthog-react-native";
+import { useSafePostHog } from "../../services/analytics/usePostHogSafe";
 import { useCreateSession, useUpdateSession } from "../../hooks";
 
 type Props = RootStackScreenProps<"ActiveWorkout">;
 
 export function ActiveWorkoutScreen({ navigation }: Props): React.JSX.Element {
-  const posthog = usePostHog();
+  const posthog = useSafePostHog();
   const createSession = useCreateSession();
   const updateSession = useUpdateSession();
   

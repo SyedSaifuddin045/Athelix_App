@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import { Platform } from "react-native";
 import type { NavigationContainerRef } from "@react-navigation/native";
 import { PostHogProvider as PosthogReactNativeProvider, usePostHog } from "posthog-react-native";
 import { env } from "../../env";
@@ -53,7 +54,9 @@ function NavigationTracker({ navigationRef }: NavigationTrackerProps): null {
 }
 
 export function PostHogProvider({ children, navigationRef }: PostHogProviderProps): React.JSX.Element {
-  if (!env.posthogApiKey) {
+  const isWeb = Platform.OS === "web";
+  
+  if (!env.posthogApiKey || isWeb) {
     return <>{children}</>;
   }
 
