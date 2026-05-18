@@ -11,6 +11,7 @@ import type { PersonalRecordResponse } from './personalRecordResponse';
 import type { UserOverviewStatsResponse } from './userOverviewStatsResponse';
 import type { UserProfileResponse } from './userProfileResponse';
 import type { UserResponse } from './userResponse';
+import type { WeeklyActivityDayResponse } from './weeklyActivityDayResponse';
 import type { WorkoutSessionResponse } from './workoutSessionResponse';
 import type { WorkoutStreaksResponse } from './workoutStreaksResponse';
 
@@ -24,4 +25,5 @@ export interface UserOverviewResponse {
   recent_personal_records: PersonalRecordResponse[];
   workout_streaks: WorkoutStreaksResponse;
   stats: UserOverviewStatsResponse;
+  weekly_activity: WeeklyActivityDayResponse[];
 }

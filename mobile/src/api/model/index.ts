@@ -57,6 +57,7 @@ export * from './userResponse';
 export * from './userUpdate';
 export * from './validationError';
 export * from './validationErrorCtx';
+export * from './weeklyActivityDayResponse';
 export * from './weeklyEffortResponse';
 export * from './weeklyVolumeProgressPointResponse';
 export * from './workoutSessionCreate';

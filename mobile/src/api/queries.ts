@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { ApiError } from "./client";
 import { getMuscleBalanceReportAnalyticsMuscleBalanceGet } from "./endpoints/analytics/analytics";
@@ -126,7 +126,7 @@ export function useExercisesQuery(params: ListExercisesExercisesGetParams, enabl
     queryKey: queryKeys.exercises(params),
     queryFn: async () => dataOf(await listExercisesExercisesGet(params)),
     enabled,
-    placeholderData: (previous) => previous,
+    placeholderData: keepPreviousData,
   });
 }
 

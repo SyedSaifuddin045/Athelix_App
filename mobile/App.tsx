@@ -42,7 +42,6 @@ import {
   RECORD_TYPES,
   TRAIN_SECTIONS,
   UNITS,
-  WEEKLY_BARS,
   type ExerciseDetail,
   type ExerciseItem,
   type TemplateExercise,
@@ -73,6 +72,7 @@ import {
   useTemplatesQuery,
 } from "./src/api/queries";
 import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
+import { ExercisePicker } from "./src/components/ExercisePicker";
 import {
   createBodyWeightLogUsersMeBodyWeightLogsPost,
   deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete,
@@ -1288,10 +1288,12 @@ function HomeScreen({ navigation }: { navigation: any }) {
       <Card style={styles.inlineSection}>
         <View style={styles.rowBetween}>
           <Text style={styles.sectionCardTitle}>This Week</Text>
-          <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>6 / 7 days</Text>
+          <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>
+            {data?.weekly_activity.reduce((sum, d) => sum + d.value, 0) ?? 0} / 7 days
+          </Text>
         </View>
         <View style={{ marginTop: 16 }}>
-          <VerticalBars data={WEEKLY_BARS.map((item, index) => ({ day: item.day, value: item.value, highlight: index === 6 }))} />
+          <VerticalBars data={data?.weekly_activity.map((item, index) => ({ day: item.day, value: item.value, highlight: index === 6 })) ?? []} />
         </View>
         <View style={styles.statRowDivider} />
         <View style={styles.threeUp}>
@@ -1406,135 +1408,13 @@ function HomeScreen({ navigation }: { navigation: any }) {
 
 function ExploreScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
-  const [query, setQuery] = useState("");
-  const [muscle, setMuscle] = useState("All");
-  const [equipment, setEquipment] = useState("All");
-  const [showFilters, setShowFilters] = useState(false);
-  const filters = useExerciseFiltersQuery(auth.isAuthenticated);
-  const exerciseParams = useMemo(
-    () => ({
-      q: query.trim() || undefined,
-      target: muscle !== "All" ? muscle : undefined,
-      equipment: equipment !== "All" ? equipment : undefined,
-      limit: 100,
-      offset: 0,
-    }),
-    [equipment, muscle, query],
-  );
-  const exercisesQuery = useExercisesQuery(exerciseParams, auth.isAuthenticated);
-
-  const filtered = (exercisesQuery.data?.items ?? []).map(mapExerciseItem);
-  const muscleOptions = ["All", ...(filters.data?.targets ?? EXERCISE_MUSCLES.filter((item) => item !== "All"))];
-  const equipmentOptions = ["All", ...(filters.data?.equipment ?? EXERCISE_EQUIPMENT.filter((item) => item !== "All"))];
-
-  const activeFilters = [muscle !== "All" ? muscle : null, equipment !== "All" ? equipment : null].filter(Boolean) as string[];
-
   return (
     <Screen glowColor="rgba(0,120,180,0.16)" scroll={false} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.tabIntro}>
-        <Text style={styles.tabTitle}>Exercise Library</Text>
-        <Text style={styles.tabSubtitle}>{exercisesQuery.data?.total ?? 0} exercises</Text>
-      </View>
-
-      <View style={[styles.rowGap, { marginTop: 18 }]}>
-        <View style={styles.searchWrap}>
-          <Feather name="search" size={15} color="rgba(255,255,255,0.4)" />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search exercises..."
-            placeholderTextColor="rgba(255,255,255,0.32)"
-            style={styles.searchInput}
-          />
-          {query ? (
-            <Pressable onPress={() => setQuery("")}>
-              <Feather name="x" size={14} color="rgba(255,255,255,0.42)" />
-            </Pressable>
-          ) : null}
-        </View>
-        <Pressable
-          onPress={() => setShowFilters((value) => !value)}
-          style={[
-            styles.filterButton,
-            showFilters ? { backgroundColor: "rgba(0,212,168,0.2)", borderColor: "rgba(0,212,168,0.35)" } : null,
-          ]}
-        >
-          <Feather name="sliders" size={15} color={showFilters ? COLORS.teal : "rgba(255,255,255,0.6)"} />
-        </Pressable>
-      </View>
-
-      {activeFilters.length > 0 ? (
-        <View style={styles.filterTagRow}>
-          {activeFilters.map((filter) => (
-            <Pressable
-              key={filter}
-              onPress={() => {
-                if (filter === muscle) setMuscle("All");
-                if (filter === equipment) setEquipment("All");
-              }}
-              style={styles.activeFilterTag}
-            >
-              <Text style={styles.activeFilterText}>{filter}</Text>
-              <Feather name="x" size={10} color={COLORS.teal} />
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-
-      {showFilters ? (
-        <Card style={{ marginTop: 16 }}>
-          <SectionEyebrow>Muscle Group</SectionEyebrow>
-          <ChipWrap
-            items={muscleOptions}
-            selected={muscle}
-            onSelect={setMuscle}
-            activeColor={COLORS.teal}
-            style={{ marginTop: 10 }}
-          />
-          <SectionEyebrow color="rgba(255,255,255,0.35)">Equipment</SectionEyebrow>
-          <ChipWrap
-            items={equipmentOptions}
-            selected={equipment}
-            onSelect={setEquipment}
-            activeColor={COLORS.teal}
-            style={{ marginTop: 10 }}
-          />
-        </Card>
-      ) : null}
-
-      <Text style={[styles.resultsText, { marginTop: 18 }]}>{filtered.length} results</Text>
-      {exercisesQuery.isError ? <ErrorCard error={exercisesQuery.error} onRetry={() => exercisesQuery.refetch()} /> : null}
-      <FlatList
-        data={filtered}
-        keyExtractor={(exercise) => exercise.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ gap: 10, paddingBottom: 34 }}
-        ListEmptyComponent={
-          exercisesQuery.isPending ? (
-            <LoadingCard label="Loading exercises..." />
-          ) : (
-            <EmptyCard title="No exercises found" text="Try different search terms" />
-          )
-        }
-        renderItem={({ item: exercise }) => (
-          <Pressable onPress={() => navigation.navigate("ExerciseDetail", { id: exercise.id })}>
-            <Card style={styles.listRowCard}>
-              <View style={styles.exerciseEmojiWrap}>
-                <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
-              </View>
-              <View style={styles.listRowBody}>
-                <Text style={styles.listRowTitle}>{exercise.name}</Text>
-                <Text style={styles.detailLabel}>
-                  {exercise.primaryMuscle} - {exercise.equipment}
-                </Text>
-              </View>
-              <View style={{ alignItems: "flex-end", gap: 6 }}>
-                <Tag label={exercise.difficulty} color={DIFFICULTY_COLORS[exercise.difficulty]} />
-                <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.22)" />
-              </View>
-            </Card>
-          </Pressable>
-        )}
+      <ExercisePicker
+        variant="browse"
+        title="Exercise Library"
+        enabled={auth.isAuthenticated}
+        onNavigate={(exerciseId) => navigation.navigate("ExerciseDetail", { id: exerciseId })}
       />
     </Screen>
   );
@@ -1683,38 +1563,48 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
       </View>
 
       <View style={{ marginTop: 18, gap: 12 }}>
-        {TRAIN_SECTIONS.map((section) => (
-          <Pressable
-            key={section.title}
-            onPress={() => {
-              if (section.title === "Templates") navigation.navigate("TemplateList");
-              else if (section.title === "Workout History") navigation.navigate("WorkoutHistory");
-              else if (section.title === "Mesocycles") navigation.navigate("MesocycleList");
-            }}
-          >
-            <Card style={{ borderColor: "advanced" in section && section.advanced ? "rgba(139,92,246,0.2)" : COLORS.border }}>
-              <View style={styles.rowBetween}>
-                <View style={[styles.rowGap, { flexShrink: 1 }]}>
-                  <View style={[styles.sectionIconWrapSmall, { backgroundColor: `${section.color}18` }]}>
-                    {section.title === "Templates" ? <Feather name="book-open" size={18} color={section.color} /> : null}
-                    {section.title === "Workout History" ? (
-                      <MaterialCommunityIcons name="history" size={18} color={section.color} />
-                    ) : null}
-                    {section.title === "Mesocycles" ? <Feather name="trending-up" size={18} color={section.color} /> : null}
+        {TRAIN_SECTIONS.map((section) => {
+          let badgeLabel = "badge" in section ? section.badge : "";
+          if ("badgeKey" in section) {
+            if (section.badgeKey === "templates") {
+              badgeLabel = `${overview.data?.stats.total_workout_templates ?? 0} saved`;
+            } else if (section.badgeKey === "sessions") {
+              badgeLabel = `${overview.data?.stats.completed_sessions ?? 0} sessions`;
+            }
+          }
+          return (
+            <Pressable
+              key={section.title}
+              onPress={() => {
+                if (section.title === "Templates") navigation.navigate("TemplateList");
+                else if (section.title === "Workout History") navigation.navigate("WorkoutHistory");
+                else if (section.title === "Mesocycles") navigation.navigate("MesocycleList");
+              }}
+            >
+              <Card style={{ borderColor: "advanced" in section && section.advanced ? "rgba(139,92,246,0.2)" : COLORS.border }}>
+                <View style={styles.rowBetween}>
+                  <View style={[styles.rowGap, { flexShrink: 1 }]}>
+                    <View style={[styles.sectionIconWrapSmall, { backgroundColor: `${section.color}18` }]}>
+                      {section.title === "Templates" ? <Feather name="book-open" size={18} color={section.color} /> : null}
+                      {section.title === "Workout History" ? (
+                        <MaterialCommunityIcons name="history" size={18} color={section.color} />
+                      ) : null}
+                      {section.title === "Mesocycles" ? <Feather name="trending-up" size={18} color={section.color} /> : null}
+                    </View>
+                    <View style={{ flex: 1, flexShrink: 1 }}>
+                      <Text style={styles.cardTitle}>{section.title}</Text>
+                      <Text style={styles.detailLabel}>{section.desc}</Text>
+                    </View>
                   </View>
-                  <View style={{ flex: 1, flexShrink: 1 }}>
-                    <Text style={styles.cardTitle}>{section.title}</Text>
-                    <Text style={styles.detailLabel}>{section.desc}</Text>
+                  <View style={{ alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                    <Tag label={badgeLabel} color={"advanced" in section && section.advanced ? COLORS.purple : section.color} />
+                    <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
                   </View>
                 </View>
-                <View style={{ alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
-                  <Tag label={section.badge} color={"advanced" in section && section.advanced ? COLORS.purple : section.color} />
-                  <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
-                </View>
-              </View>
-            </Card>
-          </Pressable>
-        ))}
+              </Card>
+            </Pressable>
+          );
+        })}
       </View>
     </Screen>
   );
@@ -1818,11 +1708,9 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
   const [name, setName] = useState("");
   const [exercises, setExercises] = useState<TemplateDraftExercise[]>([]);
   const [expanded, setExpanded] = useState<string | null>(isEdit ? "1" : null);
-  const [exerciseSearch, setExerciseSearch] = useState("");
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [saveError, setSaveError] = useState("");
   const detail = useTemplateDetailQuery(templateId, auth.isAuthenticated && isEdit);
-  const catalog = useExercisesQuery({ q: exerciseSearch.trim() || undefined, limit: 50, offset: 0 }, auth.isAuthenticated && showExercisePicker);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
 
@@ -1897,7 +1785,6 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
     setExercises((current) => [...current, nextExercise]);
     setExpanded(nextId);
     setShowExercisePicker(false);
-    setExerciseSearch("");
   };
 
   const addSet = (exerciseId: string) => {
@@ -2055,50 +1942,14 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
         ) : null}
       </View>
 
-      <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => setShowExercisePicker(false)}>
-        <View style={styles.modalScrim}>
-          <Pressable style={styles.modalBackdrop} onPress={() => setShowExercisePicker(false)} />
-          <View style={styles.bottomSheet}>
-            <View style={styles.rowBetween}>
-              <Text style={styles.sheetTitle}>Add Exercise</Text>
-              <Pressable onPress={() => setShowExercisePicker(false)}>
-                <Feather name="x" size={18} color="rgba(255,255,255,0.5)" />
-              </Pressable>
-            </View>
-            <View style={[styles.searchWrap, { marginTop: 18 }]}>
-              <Feather name="search" size={14} color="rgba(255,255,255,0.35)" />
-              <TextInput
-                value={exerciseSearch}
-                onChangeText={setExerciseSearch}
-                placeholder="Search exercises..."
-                placeholderTextColor="rgba(255,255,255,0.32)"
-                style={styles.searchInput}
-              />
-            </View>
-            <View style={{ maxHeight: 360, marginTop: 14 }}>
-              {catalog.isPending ? <LoadingCard label="Searching..." /> : null}
-              {catalog.isError ? <ErrorCard error={catalog.error} onRetry={() => catalog.refetch()} /> : null}
-              <ScrollView contentContainerStyle={{ gap: 10 }}>
-                {(catalog.data?.items ?? []).map((exercise) => (
-                  <Pressable key={exercise.id} onPress={() => addExercise(exercise)}>
-                    <Card style={styles.listRowCard}>
-                      <View style={styles.exerciseEmojiWrap}>
-                        <Text style={{ fontSize: 18 }}>{exerciseEmoji(exercise)}</Text>
-                      </View>
-                      <View style={styles.listRowBody}>
-                        <Text style={styles.listRowTitle}>{exercise.name}</Text>
-                        <Text style={styles.detailLabel}>
-                          {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
-                        </Text>
-                      </View>
-                    </Card>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ExercisePicker
+        variant="pick"
+        visible={showExercisePicker}
+        title="Add Exercise"
+        enabled={auth.isAuthenticated}
+        onSelect={(exercise) => addExercise(exercise)}
+        onClose={() => setShowExercisePicker(false)}
+      />
     </Screen>
   );
 }
@@ -2242,11 +2093,9 @@ function ActiveWorkoutScreen({
   const [showFinish, setShowFinish] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
-  const [exerciseSearch, setExerciseSearch] = useState("");
   const [error, setError] = useState("");
   const template = useTemplateDetailQuery(templateId, auth.isAuthenticated && !!templateId);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
-  const pickerCatalog = useExercisesQuery({ q: exerciseSearch.trim() || undefined, limit: 50, offset: 0 }, auth.isAuthenticated && showExercisePicker);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
 
   useEffect(() => {
@@ -2367,7 +2216,6 @@ function ActiveWorkoutScreen({
     setExercises((current) => [...current, nextExercise]);
     setExpanded(nextId);
     setShowExercisePicker(false);
-    setExerciseSearch("");
   };
 
   const discardWorkout = () => {
@@ -2579,50 +2427,14 @@ function ActiveWorkoutScreen({
           </View>
         </Modal>
 
-        <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => setShowExercisePicker(false)}>
-          <View style={styles.modalScrim}>
-            <Pressable style={styles.modalBackdrop} onPress={() => setShowExercisePicker(false)} />
-            <View style={styles.bottomSheet}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.sheetTitle}>Add Exercise</Text>
-                <Pressable onPress={() => setShowExercisePicker(false)}>
-                  <Feather name="x" size={18} color="rgba(255,255,255,0.5)" />
-                </Pressable>
-              </View>
-              <View style={[styles.searchWrap, { marginTop: 18 }]}>
-                <Feather name="search" size={14} color="rgba(255,255,255,0.35)" />
-                <TextInput
-                  value={exerciseSearch}
-                  onChangeText={setExerciseSearch}
-                  placeholder="Search exercises..."
-                  placeholderTextColor="rgba(255,255,255,0.32)"
-                  style={styles.searchInput}
-                />
-              </View>
-              <View style={{ maxHeight: 360, marginTop: 14 }}>
-                {pickerCatalog.isPending ? <LoadingCard label="Searching..." /> : null}
-                {pickerCatalog.isError ? <ErrorCard error={pickerCatalog.error} onRetry={() => pickerCatalog.refetch()} /> : null}
-                <ScrollView contentContainerStyle={{ gap: 10 }}>
-                  {(pickerCatalog.data?.items ?? []).map((exercise) => (
-                    <Pressable key={exercise.id} onPress={() => addExercise(exercise)}>
-                      <Card style={styles.listRowCard}>
-                        <View style={styles.exerciseEmojiWrap}>
-                          <Text style={{ fontSize: 18 }}>{exerciseEmoji(exercise)}</Text>
-                        </View>
-                        <View style={styles.listRowBody}>
-                          <Text style={styles.listRowTitle}>{exercise.name}</Text>
-                          <Text style={styles.detailLabel}>
-                            {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
-                          </Text>
-                        </View>
-                      </Card>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        <ExercisePicker
+          variant="pick"
+          visible={showExercisePicker}
+          title="Add Exercise"
+          enabled={auth.isAuthenticated}
+          onSelect={(exercise) => addExercise(exercise)}
+          onClose={() => setShowExercisePicker(false)}
+        />
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -4326,7 +4138,7 @@ const styles = StyleSheet.create({
   templateGridRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   templateSetIndex: { width: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
   gridHeaderText: { flex: 1, color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 },
-  miniInput: { flex: 1, minHeight: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: COLORS.text, textAlign: "center", fontSize: 13, paddingHorizontal: 4 },
+  miniInput: { flex: 1, minWidth: 0, minHeight: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: COLORS.text, textAlign: "center", fontSize: 13, paddingHorizontal: 4 },
   dashedButton: { marginTop: 10, minHeight: 42, borderRadius: 14, borderWidth: 1, borderStyle: "dashed", borderColor: "rgba(0,212,168,0.25)", backgroundColor: "rgba(0,212,168,0.08)", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 6 },
   dashedButtonText: { color: COLORS.teal, fontSize: 12, fontWeight: "700" },
   selectableRow: { minHeight: 54, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: "rgba(255,255,255,0.03)", justifyContent: "center", paddingHorizontal: 14 },

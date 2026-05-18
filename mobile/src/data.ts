@@ -66,16 +66,6 @@ export const MAIN_TABS = [
   { key: "profile", label: "Profile" },
 ] as const;
 
-export const WEEKLY_BARS = [
-  { day: "M", value: 1 },
-  { day: "T", value: 1 },
-  { day: "W", value: 0 },
-  { day: "T", value: 1 },
-  { day: "F", value: 1 },
-  { day: "S", value: 1 },
-  { day: "S", value: 1 },
-];
-
 export const RECENT_PRS = [
   { exercise: "Bench Press", value: "110 kg", date: "3 days ago", color: "#00d4a8" },
   { exercise: "Squat", value: "145 kg", date: "1 week ago", color: "#22c55e" },
@@ -215,14 +205,14 @@ export const TRAIN_SECTIONS = [
     desc: "Saved workout plans and routines",
     path: "templateList",
     color: "#00d4a8",
-    badge: "12 saved",
+    badgeKey: "templates" as const,
   },
   {
     title: "Workout History",
     desc: "All past sessions and sets",
     path: "workoutHistory",
     color: "#22c55e",
-    badge: "248 sessions",
+    badgeKey: "sessions" as const,
   },
   {
     title: "Mesocycles",
