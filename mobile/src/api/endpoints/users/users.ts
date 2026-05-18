@@ -5,6 +5,21 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   BodyWeightLogCreate,
   BodyWeightLogResponse,
@@ -16,6 +31,12 @@ import type {
   UserResponse,
   UserUpdate
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type getCurrentUserDetailsUsersMeGetResponse200 = {
@@ -43,21 +64,91 @@ export const getGetCurrentUserDetailsUsersMeGetUrl = () => {
  */
 export const getCurrentUserDetailsUsersMeGet = async ( options?: RequestInit): Promise<getCurrentUserDetailsUsersMeGetResponse> => {
 
-  const res = await fetch(getGetCurrentUserDetailsUsersMeGetUrl(),
+  return apiMutator<getCurrentUserDetailsUsersMeGetResponse>(getGetCurrentUserDetailsUsersMeGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getCurrentUserDetailsUsersMeGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getCurrentUserDetailsUsersMeGetResponse
+
+
+export const getGetCurrentUserDetailsUsersMeGetQueryKey = () => {
+    return [
+    `/users/me`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserDetailsUsersMeGetQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserDetailsUsersMeGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>> = ({ signal }) => getCurrentUserDetailsUsersMeGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetCurrentUserDetailsUsersMeGetQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>>
+export type GetCurrentUserDetailsUsersMeGetQueryError = unknown
+
+
+export function useGetCurrentUserDetailsUsersMeGet<TData = Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentUserDetailsUsersMeGet<TData = Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentUserDetailsUsersMeGet<TData = Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Current User Details
+ */
+
+export function useGetCurrentUserDetailsUsersMeGet<TData = Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserDetailsUsersMeGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCurrentUserDetailsUsersMeGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type updateCurrentUserUsersMePatchResponse200 = {
@@ -92,21 +183,91 @@ export const getUpdateCurrentUserUsersMePatchUrl = () => {
  */
 export const updateCurrentUserUsersMePatch = async (userUpdate: UserUpdate, options?: RequestInit): Promise<updateCurrentUserUsersMePatchResponse> => {
 
-  const res = await fetch(getUpdateCurrentUserUsersMePatchUrl(),
+  return apiMutator<updateCurrentUserUsersMePatchResponse>(getUpdateCurrentUserUsersMePatchUrl(),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(userUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateCurrentUserUsersMePatchResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateCurrentUserUsersMePatchResponse
+
+
+export const getUpdateCurrentUserUsersMePatchQueryKey = (userUpdate?: UserUpdate,) => {
+    return [
+    'PATCH', `/users/me`, userUpdate
+    ] as const;
+    }
+
+
+export const getUpdateCurrentUserUsersMePatchQueryOptions = <TData = Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError = HTTPValidationError>(userUpdate: UserUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateCurrentUserUsersMePatchQueryKey(userUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>> = ({ signal }) => updateCurrentUserUsersMePatch(userUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpdateCurrentUserUsersMePatchQueryResult = NonNullable<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>>
+export type UpdateCurrentUserUsersMePatchQueryError = HTTPValidationError
+
+
+export function useUpdateCurrentUserUsersMePatch<TData = Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError = HTTPValidationError>(
+ userUpdate: UserUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateCurrentUserUsersMePatch<TData = Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError = HTTPValidationError>(
+ userUpdate: UserUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateCurrentUserUsersMePatch<TData = Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError = HTTPValidationError>(
+ userUpdate: UserUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Update Current User
+ */
+
+export function useUpdateCurrentUserUsersMePatch<TData = Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError = HTTPValidationError>(
+ userUpdate: UserUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateCurrentUserUsersMePatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateCurrentUserUsersMePatchQueryOptions(userUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getCurrentUserOverviewUsersMeOverviewGetResponse200 = {
@@ -134,21 +295,91 @@ export const getGetCurrentUserOverviewUsersMeOverviewGetUrl = () => {
  */
 export const getCurrentUserOverviewUsersMeOverviewGet = async ( options?: RequestInit): Promise<getCurrentUserOverviewUsersMeOverviewGetResponse> => {
 
-  const res = await fetch(getGetCurrentUserOverviewUsersMeOverviewGetUrl(),
+  return apiMutator<getCurrentUserOverviewUsersMeOverviewGetResponse>(getGetCurrentUserOverviewUsersMeOverviewGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getCurrentUserOverviewUsersMeOverviewGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getCurrentUserOverviewUsersMeOverviewGetResponse
+
+
+export const getGetCurrentUserOverviewUsersMeOverviewGetQueryKey = () => {
+    return [
+    `/users/me/overview`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserOverviewUsersMeOverviewGetQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserOverviewUsersMeOverviewGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>> = ({ signal }) => getCurrentUserOverviewUsersMeOverviewGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetCurrentUserOverviewUsersMeOverviewGetQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>>
+export type GetCurrentUserOverviewUsersMeOverviewGetQueryError = unknown
+
+
+export function useGetCurrentUserOverviewUsersMeOverviewGet<TData = Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentUserOverviewUsersMeOverviewGet<TData = Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentUserOverviewUsersMeOverviewGet<TData = Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Current User Overview
+ */
+
+export function useGetCurrentUserOverviewUsersMeOverviewGet<TData = Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserOverviewUsersMeOverviewGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCurrentUserOverviewUsersMeOverviewGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getCurrentUserProfileUsersMeProfileGetResponse200 = {
@@ -176,21 +407,91 @@ export const getGetCurrentUserProfileUsersMeProfileGetUrl = () => {
  */
 export const getCurrentUserProfileUsersMeProfileGet = async ( options?: RequestInit): Promise<getCurrentUserProfileUsersMeProfileGetResponse> => {
 
-  const res = await fetch(getGetCurrentUserProfileUsersMeProfileGetUrl(),
+  return apiMutator<getCurrentUserProfileUsersMeProfileGetResponse>(getGetCurrentUserProfileUsersMeProfileGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getCurrentUserProfileUsersMeProfileGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getCurrentUserProfileUsersMeProfileGetResponse
+
+
+export const getGetCurrentUserProfileUsersMeProfileGetQueryKey = () => {
+    return [
+    `/users/me/profile`
+    ] as const;
+    }
+
+
+export const getGetCurrentUserProfileUsersMeProfileGetQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentUserProfileUsersMeProfileGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>> = ({ signal }) => getCurrentUserProfileUsersMeProfileGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetCurrentUserProfileUsersMeProfileGetQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>>
+export type GetCurrentUserProfileUsersMeProfileGetQueryError = unknown
+
+
+export function useGetCurrentUserProfileUsersMeProfileGet<TData = Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentUserProfileUsersMeProfileGet<TData = Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentUserProfileUsersMeProfileGet<TData = Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Current User Profile
+ */
+
+export function useGetCurrentUserProfileUsersMeProfileGet<TData = Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getCurrentUserProfileUsersMeProfileGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetCurrentUserProfileUsersMeProfileGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type upsertCurrentUserProfileUsersMeProfilePutResponse200 = {
@@ -225,21 +526,91 @@ export const getUpsertCurrentUserProfileUsersMeProfilePutUrl = () => {
  */
 export const upsertCurrentUserProfileUsersMeProfilePut = async (userProfileUpdate: UserProfileUpdate, options?: RequestInit): Promise<upsertCurrentUserProfileUsersMeProfilePutResponse> => {
 
-  const res = await fetch(getUpsertCurrentUserProfileUsersMeProfilePutUrl(),
+  return apiMutator<upsertCurrentUserProfileUsersMeProfilePutResponse>(getUpsertCurrentUserProfileUsersMeProfilePutUrl(),
   {
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(userProfileUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: upsertCurrentUserProfileUsersMeProfilePutResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as upsertCurrentUserProfileUsersMeProfilePutResponse
+
+
+export const getUpsertCurrentUserProfileUsersMeProfilePutQueryKey = (userProfileUpdate?: UserProfileUpdate,) => {
+    return [
+    'PUT', `/users/me/profile`, userProfileUpdate
+    ] as const;
+    }
+
+
+export const getUpsertCurrentUserProfileUsersMeProfilePutQueryOptions = <TData = Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError = HTTPValidationError>(userProfileUpdate: UserProfileUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpsertCurrentUserProfileUsersMeProfilePutQueryKey(userProfileUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>> = ({ signal }) => upsertCurrentUserProfileUsersMeProfilePut(userProfileUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpsertCurrentUserProfileUsersMeProfilePutQueryResult = NonNullable<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>>
+export type UpsertCurrentUserProfileUsersMeProfilePutQueryError = HTTPValidationError
+
+
+export function useUpsertCurrentUserProfileUsersMeProfilePut<TData = Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError = HTTPValidationError>(
+ userProfileUpdate: UserProfileUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>,
+          TError,
+          Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpsertCurrentUserProfileUsersMeProfilePut<TData = Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError = HTTPValidationError>(
+ userProfileUpdate: UserProfileUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>,
+          TError,
+          Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpsertCurrentUserProfileUsersMeProfilePut<TData = Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError = HTTPValidationError>(
+ userProfileUpdate: UserProfileUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Upsert Current User Profile
+ */
+
+export function useUpsertCurrentUserProfileUsersMeProfilePut<TData = Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError = HTTPValidationError>(
+ userProfileUpdate: UserProfileUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof upsertCurrentUserProfileUsersMeProfilePut>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpsertCurrentUserProfileUsersMeProfilePutQueryOptions(userProfileUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type listBodyWeightLogsUsersMeBodyWeightLogsGetResponse200 = {
@@ -267,21 +638,91 @@ export const getListBodyWeightLogsUsersMeBodyWeightLogsGetUrl = () => {
  */
 export const listBodyWeightLogsUsersMeBodyWeightLogsGet = async ( options?: RequestInit): Promise<listBodyWeightLogsUsersMeBodyWeightLogsGetResponse> => {
 
-  const res = await fetch(getListBodyWeightLogsUsersMeBodyWeightLogsGetUrl(),
+  return apiMutator<listBodyWeightLogsUsersMeBodyWeightLogsGetResponse>(getListBodyWeightLogsUsersMeBodyWeightLogsGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listBodyWeightLogsUsersMeBodyWeightLogsGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listBodyWeightLogsUsersMeBodyWeightLogsGetResponse
+
+
+export const getListBodyWeightLogsUsersMeBodyWeightLogsGetQueryKey = () => {
+    return [
+    `/users/me/body-weight-logs`
+    ] as const;
+    }
+
+
+export const getListBodyWeightLogsUsersMeBodyWeightLogsGetQueryOptions = <TData = Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBodyWeightLogsUsersMeBodyWeightLogsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>> = ({ signal }) => listBodyWeightLogsUsersMeBodyWeightLogsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListBodyWeightLogsUsersMeBodyWeightLogsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>>
+export type ListBodyWeightLogsUsersMeBodyWeightLogsGetQueryError = unknown
+
+
+export function useListBodyWeightLogsUsersMeBodyWeightLogsGet<TData = Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBodyWeightLogsUsersMeBodyWeightLogsGet<TData = Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListBodyWeightLogsUsersMeBodyWeightLogsGet<TData = Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Body Weight Logs
+ */
+
+export function useListBodyWeightLogsUsersMeBodyWeightLogsGet<TData = Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listBodyWeightLogsUsersMeBodyWeightLogsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListBodyWeightLogsUsersMeBodyWeightLogsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type createBodyWeightLogUsersMeBodyWeightLogsPostResponse201 = {
@@ -316,21 +757,91 @@ export const getCreateBodyWeightLogUsersMeBodyWeightLogsPostUrl = () => {
  */
 export const createBodyWeightLogUsersMeBodyWeightLogsPost = async (bodyWeightLogCreate: BodyWeightLogCreate, options?: RequestInit): Promise<createBodyWeightLogUsersMeBodyWeightLogsPostResponse> => {
 
-  const res = await fetch(getCreateBodyWeightLogUsersMeBodyWeightLogsPostUrl(),
+  return apiMutator<createBodyWeightLogUsersMeBodyWeightLogsPostResponse>(getCreateBodyWeightLogUsersMeBodyWeightLogsPostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(bodyWeightLogCreate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: createBodyWeightLogUsersMeBodyWeightLogsPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createBodyWeightLogUsersMeBodyWeightLogsPostResponse
+
+
+export const getCreateBodyWeightLogUsersMeBodyWeightLogsPostQueryKey = (bodyWeightLogCreate?: BodyWeightLogCreate,) => {
+    return [
+    'POST', `/users/me/body-weight-logs`, bodyWeightLogCreate
+    ] as const;
+    }
+
+
+export const getCreateBodyWeightLogUsersMeBodyWeightLogsPostQueryOptions = <TData = Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError = HTTPValidationError>(bodyWeightLogCreate: BodyWeightLogCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateBodyWeightLogUsersMeBodyWeightLogsPostQueryKey(bodyWeightLogCreate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>> = ({ signal }) => createBodyWeightLogUsersMeBodyWeightLogsPost(bodyWeightLogCreate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type CreateBodyWeightLogUsersMeBodyWeightLogsPostQueryResult = NonNullable<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>>
+export type CreateBodyWeightLogUsersMeBodyWeightLogsPostQueryError = HTTPValidationError
+
+
+export function useCreateBodyWeightLogUsersMeBodyWeightLogsPost<TData = Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError = HTTPValidationError>(
+ bodyWeightLogCreate: BodyWeightLogCreate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>,
+          TError,
+          Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateBodyWeightLogUsersMeBodyWeightLogsPost<TData = Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError = HTTPValidationError>(
+ bodyWeightLogCreate: BodyWeightLogCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>,
+          TError,
+          Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateBodyWeightLogUsersMeBodyWeightLogsPost<TData = Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError = HTTPValidationError>(
+ bodyWeightLogCreate: BodyWeightLogCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Create Body Weight Log
+ */
+
+export function useCreateBodyWeightLogUsersMeBodyWeightLogsPost<TData = Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError = HTTPValidationError>(
+ bodyWeightLogCreate: BodyWeightLogCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createBodyWeightLogUsersMeBodyWeightLogsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateBodyWeightLogUsersMeBodyWeightLogsPostQueryOptions(bodyWeightLogCreate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getBodyWeightLogUsersMeBodyWeightLogsLogIdGetResponse200 = {
@@ -365,21 +876,91 @@ export const getGetBodyWeightLogUsersMeBodyWeightLogsLogIdGetUrl = (logId: numbe
  */
 export const getBodyWeightLogUsersMeBodyWeightLogsLogIdGet = async (logId: number, options?: RequestInit): Promise<getBodyWeightLogUsersMeBodyWeightLogsLogIdGetResponse> => {
 
-  const res = await fetch(getGetBodyWeightLogUsersMeBodyWeightLogsLogIdGetUrl(logId),
+  return apiMutator<getBodyWeightLogUsersMeBodyWeightLogsLogIdGetResponse>(getGetBodyWeightLogUsersMeBodyWeightLogsLogIdGetUrl(logId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getBodyWeightLogUsersMeBodyWeightLogsLogIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getBodyWeightLogUsersMeBodyWeightLogsLogIdGetResponse
+
+
+export const getGetBodyWeightLogUsersMeBodyWeightLogsLogIdGetQueryKey = (logId: number,) => {
+    return [
+    `/users/me/body-weight-logs/${logId}`
+    ] as const;
+    }
+
+
+export const getGetBodyWeightLogUsersMeBodyWeightLogsLogIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError = HTTPValidationError>(logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBodyWeightLogUsersMeBodyWeightLogsLogIdGetQueryKey(logId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>> = ({ signal }) => getBodyWeightLogUsersMeBodyWeightLogsLogIdGet(logId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: logId !== null && logId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetBodyWeightLogUsersMeBodyWeightLogsLogIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>>
+export type GetBodyWeightLogUsersMeBodyWeightLogsLogIdGetQueryError = HTTPValidationError
+
+
+export function useGetBodyWeightLogUsersMeBodyWeightLogsLogIdGet<TData = Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError = HTTPValidationError>(
+ logId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBodyWeightLogUsersMeBodyWeightLogsLogIdGet<TData = Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError = HTTPValidationError>(
+ logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetBodyWeightLogUsersMeBodyWeightLogsLogIdGet<TData = Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError = HTTPValidationError>(
+ logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Body Weight Log
+ */
+
+export function useGetBodyWeightLogUsersMeBodyWeightLogsLogIdGet<TData = Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError = HTTPValidationError>(
+ logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getBodyWeightLogUsersMeBodyWeightLogsLogIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetBodyWeightLogUsersMeBodyWeightLogsLogIdGetQueryOptions(logId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchResponse200 = {
@@ -415,21 +996,97 @@ export const getUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchUrl = (logId: 
 export const updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch = async (logId: number,
     bodyWeightLogUpdate: BodyWeightLogUpdate, options?: RequestInit): Promise<updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchResponse> => {
 
-  const res = await fetch(getUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchUrl(logId),
+  return apiMutator<updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchResponse>(getUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchUrl(logId),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(bodyWeightLogUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchResponse
+
+
+export const getUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchQueryKey = (logId: number,
+    bodyWeightLogUpdate?: BodyWeightLogUpdate,) => {
+    return [
+    'PATCH', `/users/me/body-weight-logs/${logId}`, bodyWeightLogUpdate
+    ] as const;
+    }
+
+
+export const getUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchQueryOptions = <TData = Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError = HTTPValidationError>(logId: number,
+    bodyWeightLogUpdate: BodyWeightLogUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchQueryKey(logId,bodyWeightLogUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>> = ({ signal }) => updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch(logId,bodyWeightLogUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: logId !== null && logId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchQueryResult = NonNullable<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>>
+export type UpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchQueryError = HTTPValidationError
+
+
+export function useUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch<TData = Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError = HTTPValidationError>(
+ logId: number,
+    bodyWeightLogUpdate: BodyWeightLogUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch<TData = Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError = HTTPValidationError>(
+ logId: number,
+    bodyWeightLogUpdate: BodyWeightLogUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch<TData = Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError = HTTPValidationError>(
+ logId: number,
+    bodyWeightLogUpdate: BodyWeightLogUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Update Body Weight Log
+ */
+
+export function useUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch<TData = Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError = HTTPValidationError>(
+ logId: number,
+    bodyWeightLogUpdate: BodyWeightLogUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateBodyWeightLogUsersMeBodyWeightLogsLogIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateBodyWeightLogUsersMeBodyWeightLogsLogIdPatchQueryOptions(logId,bodyWeightLogUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteResponse204 = {
@@ -464,20 +1121,90 @@ export const getDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteUrl = (logId:
  */
 export const deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete = async (logId: number, options?: RequestInit): Promise<deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteResponse> => {
 
-  const res = await fetch(getDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteUrl(logId),
+  return apiMutator<deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteResponse>(getDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteUrl(logId),
   {
     ...options,
     method: 'DELETE'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteResponse
+
+
+export const getDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteQueryKey = (logId: number,) => {
+    return [
+    'DELETE', `/users/me/body-weight-logs/${logId}`
+    ] as const;
+    }
+
+
+export const getDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteQueryOptions = <TData = Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError = HTTPValidationError>(logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteQueryKey(logId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>> = ({ signal }) => deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete(logId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: logId !== null && logId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type DeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteQueryResult = NonNullable<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>>
+export type DeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteQueryError = HTTPValidationError
+
+
+export function useDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete<TData = Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError = HTTPValidationError>(
+ logId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete<TData = Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError = HTTPValidationError>(
+ logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete<TData = Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError = HTTPValidationError>(
+ logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delete Body Weight Log
+ */
+
+export function useDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete<TData = Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError = HTTPValidationError>(
+ logId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteBodyWeightLogUsersMeBodyWeightLogsLogIdDeleteQueryOptions(logId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

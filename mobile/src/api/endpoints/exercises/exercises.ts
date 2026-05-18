@@ -5,6 +5,21 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   ExerciseDetailResponse,
   ExerciseFiltersResponse,
@@ -12,6 +27,12 @@ import type {
   HTTPValidationError,
   ListExercisesExercisesGetParams
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type listExercisesExercisesGetResponse200 = {
@@ -53,21 +74,91 @@ export const getListExercisesExercisesGetUrl = (params?: ListExercisesExercisesG
  */
 export const listExercisesExercisesGet = async (params?: ListExercisesExercisesGetParams, options?: RequestInit): Promise<listExercisesExercisesGetResponse> => {
 
-  const res = await fetch(getListExercisesExercisesGetUrl(params),
+  return apiMutator<listExercisesExercisesGetResponse>(getListExercisesExercisesGetUrl(params),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listExercisesExercisesGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listExercisesExercisesGetResponse
+
+
+export const getListExercisesExercisesGetQueryKey = (params?: ListExercisesExercisesGetParams,) => {
+    return [
+    `/exercises`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListExercisesExercisesGetQueryOptions = <TData = Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError = HTTPValidationError>(params?: ListExercisesExercisesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListExercisesExercisesGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExercisesExercisesGet>>> = ({ signal }) => listExercisesExercisesGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListExercisesExercisesGetQueryResult = NonNullable<Awaited<ReturnType<typeof listExercisesExercisesGet>>>
+export type ListExercisesExercisesGetQueryError = HTTPValidationError
+
+
+export function useListExercisesExercisesGet<TData = Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError = HTTPValidationError>(
+ params: undefined |  ListExercisesExercisesGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listExercisesExercisesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listExercisesExercisesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListExercisesExercisesGet<TData = Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError = HTTPValidationError>(
+ params?: ListExercisesExercisesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listExercisesExercisesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listExercisesExercisesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListExercisesExercisesGet<TData = Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError = HTTPValidationError>(
+ params?: ListExercisesExercisesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Exercises
+ */
+
+export function useListExercisesExercisesGet<TData = Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError = HTTPValidationError>(
+ params?: ListExercisesExercisesGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExercisesExercisesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListExercisesExercisesGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getExerciseFiltersExercisesFiltersGetResponse200 = {
@@ -95,21 +186,91 @@ export const getGetExerciseFiltersExercisesFiltersGetUrl = () => {
  */
 export const getExerciseFiltersExercisesFiltersGet = async ( options?: RequestInit): Promise<getExerciseFiltersExercisesFiltersGetResponse> => {
 
-  const res = await fetch(getGetExerciseFiltersExercisesFiltersGetUrl(),
+  return apiMutator<getExerciseFiltersExercisesFiltersGetResponse>(getGetExerciseFiltersExercisesFiltersGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getExerciseFiltersExercisesFiltersGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getExerciseFiltersExercisesFiltersGetResponse
+
+
+export const getGetExerciseFiltersExercisesFiltersGetQueryKey = () => {
+    return [
+    `/exercises/filters`
+    ] as const;
+    }
+
+
+export const getGetExerciseFiltersExercisesFiltersGetQueryOptions = <TData = Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExerciseFiltersExercisesFiltersGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>> = ({ signal }) => getExerciseFiltersExercisesFiltersGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetExerciseFiltersExercisesFiltersGetQueryResult = NonNullable<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>>
+export type GetExerciseFiltersExercisesFiltersGetQueryError = unknown
+
+
+export function useGetExerciseFiltersExercisesFiltersGet<TData = Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseFiltersExercisesFiltersGet<TData = Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseFiltersExercisesFiltersGet<TData = Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Exercise Filters
+ */
+
+export function useGetExerciseFiltersExercisesFiltersGet<TData = Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseFiltersExercisesFiltersGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetExerciseFiltersExercisesFiltersGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getExerciseExercisesExerciseIdGetResponse200 = {
@@ -144,20 +305,90 @@ export const getGetExerciseExercisesExerciseIdGetUrl = (exerciseId: string,) => 
  */
 export const getExerciseExercisesExerciseIdGet = async (exerciseId: string, options?: RequestInit): Promise<getExerciseExercisesExerciseIdGetResponse> => {
 
-  const res = await fetch(getGetExerciseExercisesExerciseIdGetUrl(exerciseId),
+  return apiMutator<getExerciseExercisesExerciseIdGetResponse>(getGetExerciseExercisesExerciseIdGetUrl(exerciseId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getExerciseExercisesExerciseIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getExerciseExercisesExerciseIdGetResponse
+
+
+export const getGetExerciseExercisesExerciseIdGetQueryKey = (exerciseId: string,) => {
+    return [
+    `/exercises/${exerciseId}`
+    ] as const;
+    }
+
+
+export const getGetExerciseExercisesExerciseIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError = HTTPValidationError>(exerciseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExerciseExercisesExerciseIdGetQueryKey(exerciseId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>> = ({ signal }) => getExerciseExercisesExerciseIdGet(exerciseId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: exerciseId !== null && exerciseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetExerciseExercisesExerciseIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>>
+export type GetExerciseExercisesExerciseIdGetQueryError = HTTPValidationError
+
+
+export function useGetExerciseExercisesExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseExercisesExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseExercisesExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Exercise
+ */
+
+export function useGetExerciseExercisesExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseExercisesExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetExerciseExercisesExerciseIdGetQueryOptions(exerciseId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

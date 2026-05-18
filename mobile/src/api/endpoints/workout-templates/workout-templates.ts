@@ -5,6 +5,21 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   HTTPValidationError,
   WorkoutTemplateCreate,
@@ -15,6 +30,12 @@ import type {
   WorkoutTemplateResponse,
   WorkoutTemplateUpdate
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type listWorkoutTemplatesWorkoutTemplatesGetResponse200 = {
@@ -42,21 +63,91 @@ export const getListWorkoutTemplatesWorkoutTemplatesGetUrl = () => {
  */
 export const listWorkoutTemplatesWorkoutTemplatesGet = async ( options?: RequestInit): Promise<listWorkoutTemplatesWorkoutTemplatesGetResponse> => {
 
-  const res = await fetch(getListWorkoutTemplatesWorkoutTemplatesGetUrl(),
+  return apiMutator<listWorkoutTemplatesWorkoutTemplatesGetResponse>(getListWorkoutTemplatesWorkoutTemplatesGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listWorkoutTemplatesWorkoutTemplatesGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listWorkoutTemplatesWorkoutTemplatesGetResponse
+
+
+export const getListWorkoutTemplatesWorkoutTemplatesGetQueryKey = () => {
+    return [
+    `/workout-templates`
+    ] as const;
+    }
+
+
+export const getListWorkoutTemplatesWorkoutTemplatesGetQueryOptions = <TData = Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWorkoutTemplatesWorkoutTemplatesGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>> = ({ signal }) => listWorkoutTemplatesWorkoutTemplatesGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListWorkoutTemplatesWorkoutTemplatesGetQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>>
+export type ListWorkoutTemplatesWorkoutTemplatesGetQueryError = unknown
+
+
+export function useListWorkoutTemplatesWorkoutTemplatesGet<TData = Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListWorkoutTemplatesWorkoutTemplatesGet<TData = Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListWorkoutTemplatesWorkoutTemplatesGet<TData = Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Workout Templates
+ */
+
+export function useListWorkoutTemplatesWorkoutTemplatesGet<TData = Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutTemplatesWorkoutTemplatesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListWorkoutTemplatesWorkoutTemplatesGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type createWorkoutTemplateWorkoutTemplatesPostResponse201 = {
@@ -91,21 +182,91 @@ export const getCreateWorkoutTemplateWorkoutTemplatesPostUrl = () => {
  */
 export const createWorkoutTemplateWorkoutTemplatesPost = async (workoutTemplateCreate: WorkoutTemplateCreate, options?: RequestInit): Promise<createWorkoutTemplateWorkoutTemplatesPostResponse> => {
 
-  const res = await fetch(getCreateWorkoutTemplateWorkoutTemplatesPostUrl(),
+  return apiMutator<createWorkoutTemplateWorkoutTemplatesPostResponse>(getCreateWorkoutTemplateWorkoutTemplatesPostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(workoutTemplateCreate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: createWorkoutTemplateWorkoutTemplatesPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createWorkoutTemplateWorkoutTemplatesPostResponse
+
+
+export const getCreateWorkoutTemplateWorkoutTemplatesPostQueryKey = (workoutTemplateCreate?: WorkoutTemplateCreate,) => {
+    return [
+    'POST', `/workout-templates`, workoutTemplateCreate
+    ] as const;
+    }
+
+
+export const getCreateWorkoutTemplateWorkoutTemplatesPostQueryOptions = <TData = Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError = HTTPValidationError>(workoutTemplateCreate: WorkoutTemplateCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateWorkoutTemplateWorkoutTemplatesPostQueryKey(workoutTemplateCreate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>> = ({ signal }) => createWorkoutTemplateWorkoutTemplatesPost(workoutTemplateCreate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type CreateWorkoutTemplateWorkoutTemplatesPostQueryResult = NonNullable<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>>
+export type CreateWorkoutTemplateWorkoutTemplatesPostQueryError = HTTPValidationError
+
+
+export function useCreateWorkoutTemplateWorkoutTemplatesPost<TData = Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError = HTTPValidationError>(
+ workoutTemplateCreate: WorkoutTemplateCreate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>,
+          TError,
+          Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateWorkoutTemplateWorkoutTemplatesPost<TData = Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError = HTTPValidationError>(
+ workoutTemplateCreate: WorkoutTemplateCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>,
+          TError,
+          Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateWorkoutTemplateWorkoutTemplatesPost<TData = Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError = HTTPValidationError>(
+ workoutTemplateCreate: WorkoutTemplateCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Create Workout Template
+ */
+
+export function useCreateWorkoutTemplateWorkoutTemplatesPost<TData = Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError = HTTPValidationError>(
+ workoutTemplateCreate: WorkoutTemplateCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutTemplateWorkoutTemplatesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateWorkoutTemplateWorkoutTemplatesPostQueryOptions(workoutTemplateCreate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getWorkoutTemplateWorkoutTemplatesTemplateIdGetResponse200 = {
@@ -140,21 +301,91 @@ export const getGetWorkoutTemplateWorkoutTemplatesTemplateIdGetUrl = (templateId
  */
 export const getWorkoutTemplateWorkoutTemplatesTemplateIdGet = async (templateId: number, options?: RequestInit): Promise<getWorkoutTemplateWorkoutTemplatesTemplateIdGetResponse> => {
 
-  const res = await fetch(getGetWorkoutTemplateWorkoutTemplatesTemplateIdGetUrl(templateId),
+  return apiMutator<getWorkoutTemplateWorkoutTemplatesTemplateIdGetResponse>(getGetWorkoutTemplateWorkoutTemplatesTemplateIdGetUrl(templateId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getWorkoutTemplateWorkoutTemplatesTemplateIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getWorkoutTemplateWorkoutTemplatesTemplateIdGetResponse
+
+
+export const getGetWorkoutTemplateWorkoutTemplatesTemplateIdGetQueryKey = (templateId: number,) => {
+    return [
+    `/workout-templates/${templateId}`
+    ] as const;
+    }
+
+
+export const getGetWorkoutTemplateWorkoutTemplatesTemplateIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError = HTTPValidationError>(templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkoutTemplateWorkoutTemplatesTemplateIdGetQueryKey(templateId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>> = ({ signal }) => getWorkoutTemplateWorkoutTemplatesTemplateIdGet(templateId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetWorkoutTemplateWorkoutTemplatesTemplateIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>>
+export type GetWorkoutTemplateWorkoutTemplatesTemplateIdGetQueryError = HTTPValidationError
+
+
+export function useGetWorkoutTemplateWorkoutTemplatesTemplateIdGet<TData = Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError = HTTPValidationError>(
+ templateId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkoutTemplateWorkoutTemplatesTemplateIdGet<TData = Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkoutTemplateWorkoutTemplatesTemplateIdGet<TData = Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Workout Template
+ */
+
+export function useGetWorkoutTemplateWorkoutTemplatesTemplateIdGet<TData = Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutTemplateWorkoutTemplatesTemplateIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWorkoutTemplateWorkoutTemplatesTemplateIdGetQueryOptions(templateId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type updateWorkoutTemplateWorkoutTemplatesTemplateIdPatchResponse200 = {
@@ -190,21 +421,97 @@ export const getUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchUrl = (templ
 export const updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch = async (templateId: number,
     workoutTemplateUpdate: WorkoutTemplateUpdate, options?: RequestInit): Promise<updateWorkoutTemplateWorkoutTemplatesTemplateIdPatchResponse> => {
 
-  const res = await fetch(getUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchUrl(templateId),
+  return apiMutator<updateWorkoutTemplateWorkoutTemplatesTemplateIdPatchResponse>(getUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchUrl(templateId),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(workoutTemplateUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateWorkoutTemplateWorkoutTemplatesTemplateIdPatchResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateWorkoutTemplateWorkoutTemplatesTemplateIdPatchResponse
+
+
+export const getUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchQueryKey = (templateId: number,
+    workoutTemplateUpdate?: WorkoutTemplateUpdate,) => {
+    return [
+    'PATCH', `/workout-templates/${templateId}`, workoutTemplateUpdate
+    ] as const;
+    }
+
+
+export const getUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchQueryOptions = <TData = Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError = HTTPValidationError>(templateId: number,
+    workoutTemplateUpdate: WorkoutTemplateUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchQueryKey(templateId,workoutTemplateUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>> = ({ signal }) => updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch(templateId,workoutTemplateUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchQueryResult = NonNullable<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>>
+export type UpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchQueryError = HTTPValidationError
+
+
+export function useUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateUpdate: WorkoutTemplateUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateUpdate: WorkoutTemplateUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateUpdate: WorkoutTemplateUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Update Workout Template
+ */
+
+export function useUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateUpdate: WorkoutTemplateUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateWorkoutTemplateWorkoutTemplatesTemplateIdPatchQueryOptions(templateId,workoutTemplateUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type deleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteResponse204 = {
@@ -239,21 +546,91 @@ export const getDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteUrl = (temp
  */
 export const deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete = async (templateId: number, options?: RequestInit): Promise<deleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteResponse> => {
 
-  const res = await fetch(getDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteUrl(templateId),
+  return apiMutator<deleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteResponse>(getDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteUrl(templateId),
   {
     ...options,
     method: 'DELETE'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: deleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as deleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteResponse
+
+
+export const getDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteQueryKey = (templateId: number,) => {
+    return [
+    'DELETE', `/workout-templates/${templateId}`
+    ] as const;
+    }
+
+
+export const getDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteQueryOptions = <TData = Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError = HTTPValidationError>(templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteQueryKey(templateId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>> = ({ signal }) => deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete(templateId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type DeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteQueryResult = NonNullable<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>>
+export type DeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteQueryError = HTTPValidationError
+
+
+export function useDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError = HTTPValidationError>(
+ templateId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delete Workout Template
+ */
+
+export function useDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteWorkoutTemplateWorkoutTemplatesTemplateIdDeleteQueryOptions(templateId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetResponse200 = {
@@ -288,21 +665,91 @@ export const getListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetUrl =
  */
 export const listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet = async (templateId: number, options?: RequestInit): Promise<listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetResponse> => {
 
-  const res = await fetch(getListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetUrl(templateId),
+  return apiMutator<listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetResponse>(getListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetUrl(templateId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetResponse
+
+
+export const getListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetQueryKey = (templateId: number,) => {
+    return [
+    `/workout-templates/${templateId}/exercises`
+    ] as const;
+    }
+
+
+export const getListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetQueryOptions = <TData = Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError = HTTPValidationError>(templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetQueryKey(templateId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>> = ({ signal }) => listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet(templateId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetQueryResult = NonNullable<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>>
+export type ListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetQueryError = HTTPValidationError
+
+
+export function useListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet<TData = Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError = HTTPValidationError>(
+ templateId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet<TData = Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet<TData = Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Template Exercises
+ */
+
+export function useListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet<TData = Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError = HTTPValidationError>(
+ templateId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listTemplateExercisesWorkoutTemplatesTemplateIdExercisesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListTemplateExercisesWorkoutTemplatesTemplateIdExercisesGetQueryOptions(templateId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostResponse201 = {
@@ -338,21 +785,97 @@ export const getCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostUrl
 export const createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost = async (templateId: number,
     workoutTemplateExerciseCreate: WorkoutTemplateExerciseCreate, options?: RequestInit): Promise<createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostResponse> => {
 
-  const res = await fetch(getCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostUrl(templateId),
+  return apiMutator<createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostResponse>(getCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostUrl(templateId),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(workoutTemplateExerciseCreate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostResponse
+
+
+export const getCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostQueryKey = (templateId: number,
+    workoutTemplateExerciseCreate?: WorkoutTemplateExerciseCreate,) => {
+    return [
+    'POST', `/workout-templates/${templateId}/exercises`, workoutTemplateExerciseCreate
+    ] as const;
+    }
+
+
+export const getCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostQueryOptions = <TData = Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError = HTTPValidationError>(templateId: number,
+    workoutTemplateExerciseCreate: WorkoutTemplateExerciseCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostQueryKey(templateId,workoutTemplateExerciseCreate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>> = ({ signal }) => createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost(templateId,workoutTemplateExerciseCreate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type CreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostQueryResult = NonNullable<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>>
+export type CreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostQueryError = HTTPValidationError
+
+
+export function useCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost<TData = Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateExerciseCreate: WorkoutTemplateExerciseCreate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>,
+          TError,
+          Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost<TData = Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateExerciseCreate: WorkoutTemplateExerciseCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>,
+          TError,
+          Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost<TData = Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateExerciseCreate: WorkoutTemplateExerciseCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Create Template Exercise
+ */
+
+export function useCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost<TData = Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError = HTTPValidationError>(
+ templateId: number,
+    workoutTemplateExerciseCreate: WorkoutTemplateExerciseCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateTemplateExerciseWorkoutTemplatesTemplateIdExercisesPostQueryOptions(templateId,workoutTemplateExerciseCreate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetResponse200 = {
@@ -389,21 +912,97 @@ export const getGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateEx
 export const getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet = async (templateId: number,
     templateExerciseId: number, options?: RequestInit): Promise<getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetResponse> => {
 
-  const res = await fetch(getGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetUrl(templateId,templateExerciseId),
+  return apiMutator<getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetResponse>(getGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetUrl(templateId,templateExerciseId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetResponse
+
+
+export const getGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetQueryKey = (templateId: number,
+    templateExerciseId: number,) => {
+    return [
+    `/workout-templates/${templateId}/exercises/${templateExerciseId}`
+    ] as const;
+    }
+
+
+export const getGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError = HTTPValidationError>(templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetQueryKey(templateId,templateExerciseId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>> = ({ signal }) => getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet(templateId,templateExerciseId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined && templateExerciseId !== null && templateExerciseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>>
+export type GetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetQueryError = HTTPValidationError
+
+
+export function useGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet<TData = Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet<TData = Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet<TData = Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Template Exercise
+ */
+
+export function useGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet<TData = Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdGetQueryOptions(templateId,templateExerciseId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchResponse200 = {
@@ -441,21 +1040,103 @@ export const updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateEx
     templateExerciseId: number,
     workoutTemplateExerciseUpdate: WorkoutTemplateExerciseUpdate, options?: RequestInit): Promise<updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchResponse> => {
 
-  const res = await fetch(getUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchUrl(templateId,templateExerciseId),
+  return apiMutator<updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchResponse>(getUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchUrl(templateId,templateExerciseId),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(workoutTemplateExerciseUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchResponse
+
+
+export const getUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchQueryKey = (templateId: number,
+    templateExerciseId: number,
+    workoutTemplateExerciseUpdate?: WorkoutTemplateExerciseUpdate,) => {
+    return [
+    'PATCH', `/workout-templates/${templateId}/exercises/${templateExerciseId}`, workoutTemplateExerciseUpdate
+    ] as const;
+    }
+
+
+export const getUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchQueryOptions = <TData = Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError = HTTPValidationError>(templateId: number,
+    templateExerciseId: number,
+    workoutTemplateExerciseUpdate: WorkoutTemplateExerciseUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchQueryKey(templateId,templateExerciseId,workoutTemplateExerciseUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>> = ({ signal }) => updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch(templateId,templateExerciseId,workoutTemplateExerciseUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined && templateExerciseId !== null && templateExerciseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchQueryResult = NonNullable<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>>
+export type UpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchQueryError = HTTPValidationError
+
+
+export function useUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch<TData = Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number,
+    workoutTemplateExerciseUpdate: WorkoutTemplateExerciseUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch<TData = Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number,
+    workoutTemplateExerciseUpdate: WorkoutTemplateExerciseUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch<TData = Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number,
+    workoutTemplateExerciseUpdate: WorkoutTemplateExerciseUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Update Template Exercise
+ */
+
+export function useUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch<TData = Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number,
+    workoutTemplateExerciseUpdate: WorkoutTemplateExerciseUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatchQueryOptions(templateId,templateExerciseId,workoutTemplateExerciseUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteResponse204 = {
@@ -492,20 +1173,96 @@ export const getDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplat
 export const deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete = async (templateId: number,
     templateExerciseId: number, options?: RequestInit): Promise<deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteResponse> => {
 
-  const res = await fetch(getDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteUrl(templateId,templateExerciseId),
+  return apiMutator<deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteResponse>(getDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteUrl(templateId,templateExerciseId),
   {
     ...options,
     method: 'DELETE'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteResponse
+
+
+export const getDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteQueryKey = (templateId: number,
+    templateExerciseId: number,) => {
+    return [
+    'DELETE', `/workout-templates/${templateId}/exercises/${templateExerciseId}`
+    ] as const;
+    }
+
+
+export const getDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteQueryOptions = <TData = Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError = HTTPValidationError>(templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteQueryKey(templateId,templateExerciseId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>> = ({ signal }) => deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete(templateId,templateExerciseId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: templateId !== null && templateId !== undefined && templateExerciseId !== null && templateExerciseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type DeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteQueryResult = NonNullable<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>>
+export type DeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteQueryError = HTTPValidationError
+
+
+export function useDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete<TData = Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete<TData = Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete<TData = Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delete Template Exercise
+ */
+
+export function useDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete<TData = Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError = HTTPValidationError>(
+ templateId: number,
+    templateExerciseId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDeleteQueryOptions(templateId,templateExerciseId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

@@ -5,11 +5,32 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   HTTPValidationError,
   ListPersonalRecordsPersonalRecordsGetParams,
   PersonalRecordResponse
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type listPersonalRecordsPersonalRecordsGetResponse200 = {
@@ -51,21 +72,91 @@ export const getListPersonalRecordsPersonalRecordsGetUrl = (params?: ListPersona
  */
 export const listPersonalRecordsPersonalRecordsGet = async (params?: ListPersonalRecordsPersonalRecordsGetParams, options?: RequestInit): Promise<listPersonalRecordsPersonalRecordsGetResponse> => {
 
-  const res = await fetch(getListPersonalRecordsPersonalRecordsGetUrl(params),
+  return apiMutator<listPersonalRecordsPersonalRecordsGetResponse>(getListPersonalRecordsPersonalRecordsGetUrl(params),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listPersonalRecordsPersonalRecordsGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listPersonalRecordsPersonalRecordsGetResponse
+
+
+export const getListPersonalRecordsPersonalRecordsGetQueryKey = (params?: ListPersonalRecordsPersonalRecordsGetParams,) => {
+    return [
+    `/personal-records`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListPersonalRecordsPersonalRecordsGetQueryOptions = <TData = Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError = HTTPValidationError>(params?: ListPersonalRecordsPersonalRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPersonalRecordsPersonalRecordsGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>> = ({ signal }) => listPersonalRecordsPersonalRecordsGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListPersonalRecordsPersonalRecordsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>>
+export type ListPersonalRecordsPersonalRecordsGetQueryError = HTTPValidationError
+
+
+export function useListPersonalRecordsPersonalRecordsGet<TData = Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError = HTTPValidationError>(
+ params: undefined |  ListPersonalRecordsPersonalRecordsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPersonalRecordsPersonalRecordsGet<TData = Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError = HTTPValidationError>(
+ params?: ListPersonalRecordsPersonalRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListPersonalRecordsPersonalRecordsGet<TData = Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError = HTTPValidationError>(
+ params?: ListPersonalRecordsPersonalRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Personal Records
+ */
+
+export function useListPersonalRecordsPersonalRecordsGet<TData = Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError = HTTPValidationError>(
+ params?: ListPersonalRecordsPersonalRecordsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listPersonalRecordsPersonalRecordsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListPersonalRecordsPersonalRecordsGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getPersonalRecordPersonalRecordsRecordIdGetResponse200 = {
@@ -100,20 +191,90 @@ export const getGetPersonalRecordPersonalRecordsRecordIdGetUrl = (recordId: numb
  */
 export const getPersonalRecordPersonalRecordsRecordIdGet = async (recordId: number, options?: RequestInit): Promise<getPersonalRecordPersonalRecordsRecordIdGetResponse> => {
 
-  const res = await fetch(getGetPersonalRecordPersonalRecordsRecordIdGetUrl(recordId),
+  return apiMutator<getPersonalRecordPersonalRecordsRecordIdGetResponse>(getGetPersonalRecordPersonalRecordsRecordIdGetUrl(recordId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getPersonalRecordPersonalRecordsRecordIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getPersonalRecordPersonalRecordsRecordIdGetResponse
+
+
+export const getGetPersonalRecordPersonalRecordsRecordIdGetQueryKey = (recordId: number,) => {
+    return [
+    `/personal-records/${recordId}`
+    ] as const;
+    }
+
+
+export const getGetPersonalRecordPersonalRecordsRecordIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError = HTTPValidationError>(recordId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPersonalRecordPersonalRecordsRecordIdGetQueryKey(recordId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>> = ({ signal }) => getPersonalRecordPersonalRecordsRecordIdGet(recordId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: recordId !== null && recordId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetPersonalRecordPersonalRecordsRecordIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>>
+export type GetPersonalRecordPersonalRecordsRecordIdGetQueryError = HTTPValidationError
+
+
+export function useGetPersonalRecordPersonalRecordsRecordIdGet<TData = Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError = HTTPValidationError>(
+ recordId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPersonalRecordPersonalRecordsRecordIdGet<TData = Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError = HTTPValidationError>(
+ recordId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetPersonalRecordPersonalRecordsRecordIdGet<TData = Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError = HTTPValidationError>(
+ recordId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Personal Record
+ */
+
+export function useGetPersonalRecordPersonalRecordsRecordIdGet<TData = Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError = HTTPValidationError>(
+ recordId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getPersonalRecordPersonalRecordsRecordIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetPersonalRecordPersonalRecordsRecordIdGetQueryOptions(recordId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

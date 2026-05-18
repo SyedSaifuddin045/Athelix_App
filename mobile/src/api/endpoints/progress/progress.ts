@@ -5,11 +5,32 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   ExerciseProgressResponse,
   GetExerciseProgressProgressExerciseIdGetParams,
   HTTPValidationError
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type getExerciseProgressProgressExerciseIdGetResponse200 = {
@@ -53,20 +74,96 @@ export const getGetExerciseProgressProgressExerciseIdGetUrl = (exerciseId: strin
 export const getExerciseProgressProgressExerciseIdGet = async (exerciseId: string,
     params?: GetExerciseProgressProgressExerciseIdGetParams, options?: RequestInit): Promise<getExerciseProgressProgressExerciseIdGetResponse> => {
 
-  const res = await fetch(getGetExerciseProgressProgressExerciseIdGetUrl(exerciseId,params),
+  return apiMutator<getExerciseProgressProgressExerciseIdGetResponse>(getGetExerciseProgressProgressExerciseIdGetUrl(exerciseId,params),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getExerciseProgressProgressExerciseIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getExerciseProgressProgressExerciseIdGetResponse
+
+
+export const getGetExerciseProgressProgressExerciseIdGetQueryKey = (exerciseId: string,
+    params?: GetExerciseProgressProgressExerciseIdGetParams,) => {
+    return [
+    `/progress/${exerciseId}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetExerciseProgressProgressExerciseIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError = HTTPValidationError>(exerciseId: string,
+    params?: GetExerciseProgressProgressExerciseIdGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExerciseProgressProgressExerciseIdGetQueryKey(exerciseId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>> = ({ signal }) => getExerciseProgressProgressExerciseIdGet(exerciseId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: exerciseId !== null && exerciseId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetExerciseProgressProgressExerciseIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>>
+export type GetExerciseProgressProgressExerciseIdGetQueryError = HTTPValidationError
+
+
+export function useGetExerciseProgressProgressExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string,
+    params: undefined |  GetExerciseProgressProgressExerciseIdGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseProgressProgressExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string,
+    params?: GetExerciseProgressProgressExerciseIdGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseProgressProgressExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string,
+    params?: GetExerciseProgressProgressExerciseIdGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Exercise Progress
+ */
+
+export function useGetExerciseProgressProgressExerciseIdGet<TData = Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError = HTTPValidationError>(
+ exerciseId: string,
+    params?: GetExerciseProgressProgressExerciseIdGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseProgressProgressExerciseIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetExerciseProgressProgressExerciseIdGetQueryOptions(exerciseId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

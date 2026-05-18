@@ -5,9 +5,30 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   AppConfigResponse
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type getAppConfigMetaAppConfigGetResponse200 = {
@@ -35,20 +56,90 @@ export const getGetAppConfigMetaAppConfigGetUrl = () => {
  */
 export const getAppConfigMetaAppConfigGet = async ( options?: RequestInit): Promise<getAppConfigMetaAppConfigGetResponse> => {
 
-  const res = await fetch(getGetAppConfigMetaAppConfigGetUrl(),
+  return apiMutator<getAppConfigMetaAppConfigGetResponse>(getGetAppConfigMetaAppConfigGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getAppConfigMetaAppConfigGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getAppConfigMetaAppConfigGetResponse
+
+
+export const getGetAppConfigMetaAppConfigGetQueryKey = () => {
+    return [
+    `/meta/app-config`
+    ] as const;
+    }
+
+
+export const getGetAppConfigMetaAppConfigGetQueryOptions = <TData = Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAppConfigMetaAppConfigGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>> = ({ signal }) => getAppConfigMetaAppConfigGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetAppConfigMetaAppConfigGetQueryResult = NonNullable<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>>
+export type GetAppConfigMetaAppConfigGetQueryError = unknown
+
+
+export function useGetAppConfigMetaAppConfigGet<TData = Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAppConfigMetaAppConfigGet<TData = Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>,
+          TError,
+          Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetAppConfigMetaAppConfigGet<TData = Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get App Config
+ */
+
+export function useGetAppConfigMetaAppConfigGet<TData = Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAppConfigMetaAppConfigGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAppConfigMetaAppConfigGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

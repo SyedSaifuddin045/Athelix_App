@@ -5,11 +5,32 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams,
   HTTPValidationError,
   MuscleBalanceReportResponse
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type getMuscleBalanceReportAnalyticsMuscleBalanceGetResponse200 = {
@@ -51,20 +72,90 @@ export const getGetMuscleBalanceReportAnalyticsMuscleBalanceGetUrl = (params?: G
  */
 export const getMuscleBalanceReportAnalyticsMuscleBalanceGet = async (params?: GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams, options?: RequestInit): Promise<getMuscleBalanceReportAnalyticsMuscleBalanceGetResponse> => {
 
-  const res = await fetch(getGetMuscleBalanceReportAnalyticsMuscleBalanceGetUrl(params),
+  return apiMutator<getMuscleBalanceReportAnalyticsMuscleBalanceGetResponse>(getGetMuscleBalanceReportAnalyticsMuscleBalanceGetUrl(params),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getMuscleBalanceReportAnalyticsMuscleBalanceGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getMuscleBalanceReportAnalyticsMuscleBalanceGetResponse
+
+
+export const getGetMuscleBalanceReportAnalyticsMuscleBalanceGetQueryKey = (params?: GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams,) => {
+    return [
+    `/analytics/muscle-balance`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMuscleBalanceReportAnalyticsMuscleBalanceGetQueryOptions = <TData = Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError = HTTPValidationError>(params?: GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMuscleBalanceReportAnalyticsMuscleBalanceGetQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>> = ({ signal }) => getMuscleBalanceReportAnalyticsMuscleBalanceGet(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetMuscleBalanceReportAnalyticsMuscleBalanceGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>>
+export type GetMuscleBalanceReportAnalyticsMuscleBalanceGetQueryError = HTTPValidationError
+
+
+export function useGetMuscleBalanceReportAnalyticsMuscleBalanceGet<TData = Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError = HTTPValidationError>(
+ params: undefined |  GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMuscleBalanceReportAnalyticsMuscleBalanceGet<TData = Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError = HTTPValidationError>(
+ params?: GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMuscleBalanceReportAnalyticsMuscleBalanceGet<TData = Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError = HTTPValidationError>(
+ params?: GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Muscle Balance Report
+ */
+
+export function useGetMuscleBalanceReportAnalyticsMuscleBalanceGet<TData = Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError = HTTPValidationError>(
+ params?: GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMuscleBalanceReportAnalyticsMuscleBalanceGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMuscleBalanceReportAnalyticsMuscleBalanceGetQueryOptions(params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

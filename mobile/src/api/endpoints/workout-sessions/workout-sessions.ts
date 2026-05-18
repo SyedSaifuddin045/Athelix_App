@@ -5,6 +5,21 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   ExerciseSetCreate,
   ExerciseSetResponse,
@@ -15,6 +30,12 @@ import type {
   WorkoutSessionResponse,
   WorkoutSessionUpdate
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type listWorkoutSessionsWorkoutSessionsGetResponse200 = {
@@ -42,21 +63,91 @@ export const getListWorkoutSessionsWorkoutSessionsGetUrl = () => {
  */
 export const listWorkoutSessionsWorkoutSessionsGet = async ( options?: RequestInit): Promise<listWorkoutSessionsWorkoutSessionsGetResponse> => {
 
-  const res = await fetch(getListWorkoutSessionsWorkoutSessionsGetUrl(),
+  return apiMutator<listWorkoutSessionsWorkoutSessionsGetResponse>(getListWorkoutSessionsWorkoutSessionsGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listWorkoutSessionsWorkoutSessionsGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listWorkoutSessionsWorkoutSessionsGetResponse
+
+
+export const getListWorkoutSessionsWorkoutSessionsGetQueryKey = () => {
+    return [
+    `/workout-sessions`
+    ] as const;
+    }
+
+
+export const getListWorkoutSessionsWorkoutSessionsGetQueryOptions = <TData = Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListWorkoutSessionsWorkoutSessionsGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>> = ({ signal }) => listWorkoutSessionsWorkoutSessionsGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListWorkoutSessionsWorkoutSessionsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>>
+export type ListWorkoutSessionsWorkoutSessionsGetQueryError = unknown
+
+
+export function useListWorkoutSessionsWorkoutSessionsGet<TData = Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListWorkoutSessionsWorkoutSessionsGet<TData = Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListWorkoutSessionsWorkoutSessionsGet<TData = Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Workout Sessions
+ */
+
+export function useListWorkoutSessionsWorkoutSessionsGet<TData = Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listWorkoutSessionsWorkoutSessionsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListWorkoutSessionsWorkoutSessionsGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type createWorkoutSessionWorkoutSessionsPostResponse201 = {
@@ -91,21 +182,91 @@ export const getCreateWorkoutSessionWorkoutSessionsPostUrl = () => {
  */
 export const createWorkoutSessionWorkoutSessionsPost = async (workoutSessionCreate: WorkoutSessionCreate, options?: RequestInit): Promise<createWorkoutSessionWorkoutSessionsPostResponse> => {
 
-  const res = await fetch(getCreateWorkoutSessionWorkoutSessionsPostUrl(),
+  return apiMutator<createWorkoutSessionWorkoutSessionsPostResponse>(getCreateWorkoutSessionWorkoutSessionsPostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(workoutSessionCreate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: createWorkoutSessionWorkoutSessionsPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createWorkoutSessionWorkoutSessionsPostResponse
+
+
+export const getCreateWorkoutSessionWorkoutSessionsPostQueryKey = (workoutSessionCreate?: WorkoutSessionCreate,) => {
+    return [
+    'POST', `/workout-sessions`, workoutSessionCreate
+    ] as const;
+    }
+
+
+export const getCreateWorkoutSessionWorkoutSessionsPostQueryOptions = <TData = Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError = HTTPValidationError>(workoutSessionCreate: WorkoutSessionCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateWorkoutSessionWorkoutSessionsPostQueryKey(workoutSessionCreate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>> = ({ signal }) => createWorkoutSessionWorkoutSessionsPost(workoutSessionCreate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type CreateWorkoutSessionWorkoutSessionsPostQueryResult = NonNullable<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>>
+export type CreateWorkoutSessionWorkoutSessionsPostQueryError = HTTPValidationError
+
+
+export function useCreateWorkoutSessionWorkoutSessionsPost<TData = Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError = HTTPValidationError>(
+ workoutSessionCreate: WorkoutSessionCreate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>,
+          TError,
+          Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateWorkoutSessionWorkoutSessionsPost<TData = Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError = HTTPValidationError>(
+ workoutSessionCreate: WorkoutSessionCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>,
+          TError,
+          Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateWorkoutSessionWorkoutSessionsPost<TData = Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError = HTTPValidationError>(
+ workoutSessionCreate: WorkoutSessionCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Create Workout Session
+ */
+
+export function useCreateWorkoutSessionWorkoutSessionsPost<TData = Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError = HTTPValidationError>(
+ workoutSessionCreate: WorkoutSessionCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createWorkoutSessionWorkoutSessionsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateWorkoutSessionWorkoutSessionsPostQueryOptions(workoutSessionCreate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getWorkoutSessionWorkoutSessionsSessionIdGetResponse200 = {
@@ -140,21 +301,91 @@ export const getGetWorkoutSessionWorkoutSessionsSessionIdGetUrl = (sessionId: nu
  */
 export const getWorkoutSessionWorkoutSessionsSessionIdGet = async (sessionId: number, options?: RequestInit): Promise<getWorkoutSessionWorkoutSessionsSessionIdGetResponse> => {
 
-  const res = await fetch(getGetWorkoutSessionWorkoutSessionsSessionIdGetUrl(sessionId),
+  return apiMutator<getWorkoutSessionWorkoutSessionsSessionIdGetResponse>(getGetWorkoutSessionWorkoutSessionsSessionIdGetUrl(sessionId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getWorkoutSessionWorkoutSessionsSessionIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getWorkoutSessionWorkoutSessionsSessionIdGetResponse
+
+
+export const getGetWorkoutSessionWorkoutSessionsSessionIdGetQueryKey = (sessionId: number,) => {
+    return [
+    `/workout-sessions/${sessionId}`
+    ] as const;
+    }
+
+
+export const getGetWorkoutSessionWorkoutSessionsSessionIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError = HTTPValidationError>(sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWorkoutSessionWorkoutSessionsSessionIdGetQueryKey(sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>> = ({ signal }) => getWorkoutSessionWorkoutSessionsSessionIdGet(sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetWorkoutSessionWorkoutSessionsSessionIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>>
+export type GetWorkoutSessionWorkoutSessionsSessionIdGetQueryError = HTTPValidationError
+
+
+export function useGetWorkoutSessionWorkoutSessionsSessionIdGet<TData = Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError = HTTPValidationError>(
+ sessionId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkoutSessionWorkoutSessionsSessionIdGet<TData = Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetWorkoutSessionWorkoutSessionsSessionIdGet<TData = Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Workout Session
+ */
+
+export function useGetWorkoutSessionWorkoutSessionsSessionIdGet<TData = Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getWorkoutSessionWorkoutSessionsSessionIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetWorkoutSessionWorkoutSessionsSessionIdGetQueryOptions(sessionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type updateWorkoutSessionWorkoutSessionsSessionIdPatchResponse200 = {
@@ -190,21 +421,97 @@ export const getUpdateWorkoutSessionWorkoutSessionsSessionIdPatchUrl = (sessionI
 export const updateWorkoutSessionWorkoutSessionsSessionIdPatch = async (sessionId: number,
     workoutSessionUpdate: WorkoutSessionUpdate, options?: RequestInit): Promise<updateWorkoutSessionWorkoutSessionsSessionIdPatchResponse> => {
 
-  const res = await fetch(getUpdateWorkoutSessionWorkoutSessionsSessionIdPatchUrl(sessionId),
+  return apiMutator<updateWorkoutSessionWorkoutSessionsSessionIdPatchResponse>(getUpdateWorkoutSessionWorkoutSessionsSessionIdPatchUrl(sessionId),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(workoutSessionUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateWorkoutSessionWorkoutSessionsSessionIdPatchResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateWorkoutSessionWorkoutSessionsSessionIdPatchResponse
+
+
+export const getUpdateWorkoutSessionWorkoutSessionsSessionIdPatchQueryKey = (sessionId: number,
+    workoutSessionUpdate?: WorkoutSessionUpdate,) => {
+    return [
+    'PATCH', `/workout-sessions/${sessionId}`, workoutSessionUpdate
+    ] as const;
+    }
+
+
+export const getUpdateWorkoutSessionWorkoutSessionsSessionIdPatchQueryOptions = <TData = Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError = HTTPValidationError>(sessionId: number,
+    workoutSessionUpdate: WorkoutSessionUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateWorkoutSessionWorkoutSessionsSessionIdPatchQueryKey(sessionId,workoutSessionUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>> = ({ signal }) => updateWorkoutSessionWorkoutSessionsSessionIdPatch(sessionId,workoutSessionUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpdateWorkoutSessionWorkoutSessionsSessionIdPatchQueryResult = NonNullable<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>>
+export type UpdateWorkoutSessionWorkoutSessionsSessionIdPatchQueryError = HTTPValidationError
+
+
+export function useUpdateWorkoutSessionWorkoutSessionsSessionIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    workoutSessionUpdate: WorkoutSessionUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateWorkoutSessionWorkoutSessionsSessionIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    workoutSessionUpdate: WorkoutSessionUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateWorkoutSessionWorkoutSessionsSessionIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    workoutSessionUpdate: WorkoutSessionUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Update Workout Session
+ */
+
+export function useUpdateWorkoutSessionWorkoutSessionsSessionIdPatch<TData = Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    workoutSessionUpdate: WorkoutSessionUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateWorkoutSessionWorkoutSessionsSessionIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateWorkoutSessionWorkoutSessionsSessionIdPatchQueryOptions(sessionId,workoutSessionUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type deleteWorkoutSessionWorkoutSessionsSessionIdDeleteResponse204 = {
@@ -239,21 +546,91 @@ export const getDeleteWorkoutSessionWorkoutSessionsSessionIdDeleteUrl = (session
  */
 export const deleteWorkoutSessionWorkoutSessionsSessionIdDelete = async (sessionId: number, options?: RequestInit): Promise<deleteWorkoutSessionWorkoutSessionsSessionIdDeleteResponse> => {
 
-  const res = await fetch(getDeleteWorkoutSessionWorkoutSessionsSessionIdDeleteUrl(sessionId),
+  return apiMutator<deleteWorkoutSessionWorkoutSessionsSessionIdDeleteResponse>(getDeleteWorkoutSessionWorkoutSessionsSessionIdDeleteUrl(sessionId),
   {
     ...options,
     method: 'DELETE'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: deleteWorkoutSessionWorkoutSessionsSessionIdDeleteResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as deleteWorkoutSessionWorkoutSessionsSessionIdDeleteResponse
+
+
+export const getDeleteWorkoutSessionWorkoutSessionsSessionIdDeleteQueryKey = (sessionId: number,) => {
+    return [
+    'DELETE', `/workout-sessions/${sessionId}`
+    ] as const;
+    }
+
+
+export const getDeleteWorkoutSessionWorkoutSessionsSessionIdDeleteQueryOptions = <TData = Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError = HTTPValidationError>(sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteWorkoutSessionWorkoutSessionsSessionIdDeleteQueryKey(sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>> = ({ signal }) => deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type DeleteWorkoutSessionWorkoutSessionsSessionIdDeleteQueryResult = NonNullable<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>>
+export type DeleteWorkoutSessionWorkoutSessionsSessionIdDeleteQueryError = HTTPValidationError
+
+
+export function useDeleteWorkoutSessionWorkoutSessionsSessionIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteWorkoutSessionWorkoutSessionsSessionIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteWorkoutSessionWorkoutSessionsSessionIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delete Workout Session
+ */
+
+export function useDeleteWorkoutSessionWorkoutSessionsSessionIdDelete<TData = Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteWorkoutSessionWorkoutSessionsSessionIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteWorkoutSessionWorkoutSessionsSessionIdDeleteQueryOptions(sessionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type listExerciseSetsWorkoutSessionsSessionIdSetsGetResponse200 = {
@@ -288,21 +665,91 @@ export const getListExerciseSetsWorkoutSessionsSessionIdSetsGetUrl = (sessionId:
  */
 export const listExerciseSetsWorkoutSessionsSessionIdSetsGet = async (sessionId: number, options?: RequestInit): Promise<listExerciseSetsWorkoutSessionsSessionIdSetsGetResponse> => {
 
-  const res = await fetch(getListExerciseSetsWorkoutSessionsSessionIdSetsGetUrl(sessionId),
+  return apiMutator<listExerciseSetsWorkoutSessionsSessionIdSetsGetResponse>(getListExerciseSetsWorkoutSessionsSessionIdSetsGetUrl(sessionId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listExerciseSetsWorkoutSessionsSessionIdSetsGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listExerciseSetsWorkoutSessionsSessionIdSetsGetResponse
+
+
+export const getListExerciseSetsWorkoutSessionsSessionIdSetsGetQueryKey = (sessionId: number,) => {
+    return [
+    `/workout-sessions/${sessionId}/sets`
+    ] as const;
+    }
+
+
+export const getListExerciseSetsWorkoutSessionsSessionIdSetsGetQueryOptions = <TData = Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError = HTTPValidationError>(sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListExerciseSetsWorkoutSessionsSessionIdSetsGetQueryKey(sessionId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>> = ({ signal }) => listExerciseSetsWorkoutSessionsSessionIdSetsGet(sessionId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListExerciseSetsWorkoutSessionsSessionIdSetsGetQueryResult = NonNullable<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>>
+export type ListExerciseSetsWorkoutSessionsSessionIdSetsGetQueryError = HTTPValidationError
+
+
+export function useListExerciseSetsWorkoutSessionsSessionIdSetsGet<TData = Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError = HTTPValidationError>(
+ sessionId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListExerciseSetsWorkoutSessionsSessionIdSetsGet<TData = Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>,
+          TError,
+          Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListExerciseSetsWorkoutSessionsSessionIdSetsGet<TData = Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Exercise Sets
+ */
+
+export function useListExerciseSetsWorkoutSessionsSessionIdSetsGet<TData = Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError = HTTPValidationError>(
+ sessionId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listExerciseSetsWorkoutSessionsSessionIdSetsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListExerciseSetsWorkoutSessionsSessionIdSetsGetQueryOptions(sessionId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type createExerciseSetWorkoutSessionsSessionIdSetsPostResponse201 = {
@@ -338,21 +785,97 @@ export const getCreateExerciseSetWorkoutSessionsSessionIdSetsPostUrl = (sessionI
 export const createExerciseSetWorkoutSessionsSessionIdSetsPost = async (sessionId: number,
     exerciseSetCreate: ExerciseSetCreate, options?: RequestInit): Promise<createExerciseSetWorkoutSessionsSessionIdSetsPostResponse> => {
 
-  const res = await fetch(getCreateExerciseSetWorkoutSessionsSessionIdSetsPostUrl(sessionId),
+  return apiMutator<createExerciseSetWorkoutSessionsSessionIdSetsPostResponse>(getCreateExerciseSetWorkoutSessionsSessionIdSetsPostUrl(sessionId),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(exerciseSetCreate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: createExerciseSetWorkoutSessionsSessionIdSetsPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createExerciseSetWorkoutSessionsSessionIdSetsPostResponse
+
+
+export const getCreateExerciseSetWorkoutSessionsSessionIdSetsPostQueryKey = (sessionId: number,
+    exerciseSetCreate?: ExerciseSetCreate,) => {
+    return [
+    'POST', `/workout-sessions/${sessionId}/sets`, exerciseSetCreate
+    ] as const;
+    }
+
+
+export const getCreateExerciseSetWorkoutSessionsSessionIdSetsPostQueryOptions = <TData = Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError = HTTPValidationError>(sessionId: number,
+    exerciseSetCreate: ExerciseSetCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateExerciseSetWorkoutSessionsSessionIdSetsPostQueryKey(sessionId,exerciseSetCreate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>> = ({ signal }) => createExerciseSetWorkoutSessionsSessionIdSetsPost(sessionId,exerciseSetCreate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type CreateExerciseSetWorkoutSessionsSessionIdSetsPostQueryResult = NonNullable<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>>
+export type CreateExerciseSetWorkoutSessionsSessionIdSetsPostQueryError = HTTPValidationError
+
+
+export function useCreateExerciseSetWorkoutSessionsSessionIdSetsPost<TData = Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError = HTTPValidationError>(
+ sessionId: number,
+    exerciseSetCreate: ExerciseSetCreate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>,
+          TError,
+          Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateExerciseSetWorkoutSessionsSessionIdSetsPost<TData = Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError = HTTPValidationError>(
+ sessionId: number,
+    exerciseSetCreate: ExerciseSetCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>,
+          TError,
+          Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateExerciseSetWorkoutSessionsSessionIdSetsPost<TData = Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError = HTTPValidationError>(
+ sessionId: number,
+    exerciseSetCreate: ExerciseSetCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Create Exercise Set
+ */
+
+export function useCreateExerciseSetWorkoutSessionsSessionIdSetsPost<TData = Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError = HTTPValidationError>(
+ sessionId: number,
+    exerciseSetCreate: ExerciseSetCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createExerciseSetWorkoutSessionsSessionIdSetsPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateExerciseSetWorkoutSessionsSessionIdSetsPostQueryOptions(sessionId,exerciseSetCreate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getExerciseSetWorkoutSessionsSessionIdSetsSetIdGetResponse200 = {
@@ -389,21 +912,97 @@ export const getGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetUrl = (session
 export const getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet = async (sessionId: number,
     setId: number, options?: RequestInit): Promise<getExerciseSetWorkoutSessionsSessionIdSetsSetIdGetResponse> => {
 
-  const res = await fetch(getGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetUrl(sessionId,setId),
+  return apiMutator<getExerciseSetWorkoutSessionsSessionIdSetsSetIdGetResponse>(getGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetUrl(sessionId,setId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getExerciseSetWorkoutSessionsSessionIdSetsSetIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getExerciseSetWorkoutSessionsSessionIdSetsSetIdGetResponse
+
+
+export const getGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetQueryKey = (sessionId: number,
+    setId: number,) => {
+    return [
+    `/workout-sessions/${sessionId}/sets/${setId}`
+    ] as const;
+    }
+
+
+export const getGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError = HTTPValidationError>(sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetQueryKey(sessionId,setId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>> = ({ signal }) => getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet(sessionId,setId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined && setId !== null && setId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>>
+export type GetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetQueryError = HTTPValidationError
+
+
+export function useGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGet<TData = Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGet<TData = Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGet<TData = Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Exercise Set
+ */
+
+export function useGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGet<TData = Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getExerciseSetWorkoutSessionsSessionIdSetsSetIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetExerciseSetWorkoutSessionsSessionIdSetsSetIdGetQueryOptions(sessionId,setId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchResponse200 = {
@@ -441,21 +1040,103 @@ export const updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch = async (se
     setId: number,
     exerciseSetUpdate: ExerciseSetUpdate, options?: RequestInit): Promise<updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchResponse> => {
 
-  const res = await fetch(getUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchUrl(sessionId,setId),
+  return apiMutator<updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchResponse>(getUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchUrl(sessionId,setId),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(exerciseSetUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchResponse
+
+
+export const getUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchQueryKey = (sessionId: number,
+    setId: number,
+    exerciseSetUpdate?: ExerciseSetUpdate,) => {
+    return [
+    'PATCH', `/workout-sessions/${sessionId}/sets/${setId}`, exerciseSetUpdate
+    ] as const;
+    }
+
+
+export const getUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchQueryOptions = <TData = Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError = HTTPValidationError>(sessionId: number,
+    setId: number,
+    exerciseSetUpdate: ExerciseSetUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchQueryKey(sessionId,setId,exerciseSetUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>> = ({ signal }) => updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch(sessionId,setId,exerciseSetUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined && setId !== null && setId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchQueryResult = NonNullable<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>>
+export type UpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchQueryError = HTTPValidationError
+
+
+export function useUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch<TData = Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number,
+    exerciseSetUpdate: ExerciseSetUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch<TData = Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number,
+    exerciseSetUpdate: ExerciseSetUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch<TData = Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number,
+    exerciseSetUpdate: ExerciseSetUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Update Exercise Set
+ */
+
+export function useUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch<TData = Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number,
+    exerciseSetUpdate: ExerciseSetUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatchQueryOptions(sessionId,setId,exerciseSetUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteResponse204 = {
@@ -492,20 +1173,96 @@ export const getDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteUrl = (s
 export const deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete = async (sessionId: number,
     setId: number, options?: RequestInit): Promise<deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteResponse> => {
 
-  const res = await fetch(getDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteUrl(sessionId,setId),
+  return apiMutator<deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteResponse>(getDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteUrl(sessionId,setId),
   {
     ...options,
     method: 'DELETE'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteResponse
+
+
+export const getDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteQueryKey = (sessionId: number,
+    setId: number,) => {
+    return [
+    'DELETE', `/workout-sessions/${sessionId}/sets/${setId}`
+    ] as const;
+    }
+
+
+export const getDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteQueryOptions = <TData = Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError = HTTPValidationError>(sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteQueryKey(sessionId,setId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>> = ({ signal }) => deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete(sessionId,setId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: sessionId !== null && sessionId !== undefined && setId !== null && setId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type DeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteQueryResult = NonNullable<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>>
+export type DeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteQueryError = HTTPValidationError
+
+
+export function useDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete<TData = Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete<TData = Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete<TData = Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delete Exercise Set
+ */
+
+export function useDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete<TData = Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError = HTTPValidationError>(
+ sessionId: number,
+    setId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDeleteQueryOptions(sessionId,setId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

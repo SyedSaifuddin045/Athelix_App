@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   LayoutChangeEvent,
   Modal,
   Platform,
@@ -15,55 +16,103 @@ import {
   KeyboardAvoidingView,
   StatusBar,
 } from "react-native";
+import { QueryClientProvider, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSafeAreaInsets, SafeAreaProvider } from "react-native-safe-area-context";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
-  ACHIEVEMENTS,
-  ALL_EXERCISES,
   BODYWEIGHT_CHART,
-  BODYWEIGHT_ENTRIES,
-  DEFAULT_TEMPLATE_EXERCISES,
   DIFFICULTY_COLORS,
   EXERCISE_DETAILS,
   EXERCISE_EQUIPMENT,
   EXERCISE_FALLBACK,
   EXERCISE_MUSCLES,
   EXERCISE_NAMES,
-  EXERCISE_OVERLOADS,
   EXERCISE_PROGRESS_PERIODS,
   EXERCISE_PROGRESS_SERIES,
   EXERCISE_PROGRESS_VOLUME,
   FITNESS_LEVELS,
   GENDERS,
   GOALS,
-  INITIAL_WORKOUT_EXERCISES,
-  LINKED_SESSIONS,
-  MESOCYCLE_LIST,
-  MESOCYCLE_STATUS,
-  MESOCYCLES,
   MESO_VOLUME_DATA,
-  MUSCLE_DATA,
   MUSCLE_PERIODS,
-  PERSONAL_RECORDS,
-  PROFILE_STATS,
-  PROGRESS_QUICK_STATS,
   PROGRESS_SECTIONS,
-  RECENT_PRS,
   RECORD_TYPES,
-  SESSION_DETAIL,
-  START_WORKOUT_TEMPLATES,
-  TEMPLATE_LIST,
   TRAIN_SECTIONS,
   UNITS,
   WEEKLY_BARS,
-  WORKOUT_SESSIONS,
-  WORKOUT_WEEKS,
+  type ExerciseDetail,
+  type ExerciseItem,
   type TemplateExercise,
   type WorkoutExercise,
+  type WorkoutSet,
 } from "./src/data";
+import { installApiFetchInterceptor, getApiErrorMessage, getFieldError } from "./src/api/client";
+import { queryClient } from "./src/api/queryClient";
+import { queryKeys } from "./src/api/queryKeys";
+import {
+  useAppConfigQuery,
+  useBodyWeightLogsQuery,
+  useCurrentUserQuery,
+  useExerciseDetailQuery,
+  useExerciseFiltersQuery,
+  useExerciseProgressQuery,
+  useExercisesQuery,
+  useMesocycleAnalyticsQuery,
+  useMesocycleDetailQuery,
+  useMesocyclesQuery,
+  useMuscleBalanceQuery,
+  useOverviewQuery,
+  usePersonalRecordsQuery,
+  useProfileQuery,
+  useSessionDetailQuery,
+  useSessionsQuery,
+  useTemplateDetailQuery,
+  useTemplatesQuery,
+} from "./src/api/queries";
+import { AuthProvider, useAuth } from "./src/auth/AuthProvider";
+import {
+  createBodyWeightLogUsersMeBodyWeightLogsPost,
+  deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete,
+  updateCurrentUserUsersMePatch,
+  upsertCurrentUserProfileUsersMeProfilePut,
+} from "./src/api/endpoints/users/users";
+import {
+  createWorkoutTemplateWorkoutTemplatesPost,
+  deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete,
+  deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete,
+  createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost,
+  updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch,
+  updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch,
+} from "./src/api/endpoints/workout-templates/workout-templates";
+import {
+  createExerciseSetWorkoutSessionsSessionIdSetsPost,
+  createWorkoutSessionWorkoutSessionsPost,
+  deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete,
+  deleteWorkoutSessionWorkoutSessionsSessionIdDelete,
+  updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch,
+  updateWorkoutSessionWorkoutSessionsSessionIdPatch,
+} from "./src/api/endpoints/workout-sessions/workout-sessions";
+import {
+  createMesocycleMesocyclesPost,
+  deleteMesocycleMesocyclesMesocycleIdDelete,
+} from "./src/api/endpoints/mesocycles/mesocycles";
+import type {
+  ExerciseDetailResponse,
+  ExerciseResponse,
+  ExerciseSetResponse,
+  PersonalRecordResponse,
+  UserProfileResponse,
+  UserResponse,
+  WorkoutSessionDetailResponse,
+  WorkoutSessionResponse,
+  WorkoutTemplateDetailResponse,
+  WorkoutTemplateResponse,
+} from "./src/api/model";
+
+installApiFetchInterceptor();
 
 export type RootStackParamList = {
   Splash: undefined;
@@ -75,7 +124,7 @@ export type RootStackParamList = {
   TemplateList: undefined;
   TemplateBuilder: { id?: string };
   StartWorkout: { id?: string };
-  ActiveWorkout: undefined;
+  ActiveWorkout: { sessionId?: number; templateId?: string; mesocycleId?: string | null } | undefined;
   WorkoutHistory: undefined;
   SessionDetail: { id: string };
   MesocycleList: undefined;
@@ -138,6 +187,218 @@ function getMuscleStatus(sets: number, target: number) {
   if (ratio >= 0.85) return { label: "On track", color: COLORS.teal };
   if (ratio >= 0.6) return { label: "Under", color: COLORS.orange };
   return { label: "Low", color: "#ef4444" };
+}
+
+type TemplateDraftExercise = TemplateExercise & {
+  exerciseId: string;
+  templateExerciseId?: number;
+};
+
+type WorkoutDraftSet = WorkoutSet & {
+  serverId?: number;
+};
+
+type WorkoutDraftExercise = Omit<WorkoutExercise, "sets"> & {
+  exerciseId: string;
+  sets: WorkoutDraftSet[];
+};
+
+function toNumberId(id?: string | number | null) {
+  if (typeof id === "number") return Number.isFinite(id) ? id : null;
+  if (!id) return null;
+  const parsed = Number(id);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function numberOrNull(value: string) {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseRestSeconds(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes(":")) {
+    const [minutes, seconds] = trimmed.split(":").map((item) => Number(item));
+    if (Number.isFinite(minutes) && Number.isFinite(seconds)) return minutes * 60 + seconds;
+  }
+  const minutes = Number(trimmed);
+  return Number.isFinite(minutes) ? Math.round(minutes * 60) : null;
+}
+
+function formatCompactNumber(value?: number | null) {
+  if (value == null) return "0";
+  if (Math.abs(value) >= 1000) return `${Math.round(value / 100) / 10}k`;
+  return String(Math.round(value));
+}
+
+function formatKg(value?: number | null, suffix = "kg") {
+  if (value == null) return "-";
+  const rounded = Number.isInteger(value) ? value.toFixed(0) : value.toFixed(1);
+  return suffix ? `${rounded} ${suffix}` : rounded;
+}
+
+function formatVolume(value?: number | null) {
+  if (value == null) return "0 kg";
+  return `${formatCompactNumber(value)} kg`;
+}
+
+function formatDateLabel(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatShortDate(value?: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function formatTimeLabel(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+function displayName(user?: UserResponse | null, profile?: UserProfileResponse | null) {
+  return profile?.display_name || user?.username || "Athlete";
+}
+
+function initialsFor(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "AT";
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
+function exerciseEmoji(exercise?: Pick<ExerciseResponse, "body_part" | "target"> | ExerciseDetailResponse | null) {
+  const key = `${exercise?.target ?? ""} ${exercise?.body_part ?? ""}`.toLowerCase();
+  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute")) return "🦵";
+  if (key.includes("chest") || key.includes("shoulder")) return "🏋️";
+  if (key.includes("back") || key.includes("lat")) return "💪";
+  return "💪";
+}
+
+function mapExerciseItem(exercise: ExerciseResponse): ExerciseItem {
+  return {
+    id: exercise.id,
+    name: exercise.name,
+    primaryMuscle: exercise.target ?? exercise.body_part ?? "Unknown",
+    equipment: exercise.equipment ?? "Unknown",
+    difficulty: "Intermediate",
+    emoji: exerciseEmoji(exercise),
+  };
+}
+
+function mapExerciseDetail(exercise: ExerciseDetailResponse): ExerciseDetail {
+  return {
+    name: exercise.name,
+    emoji: exerciseEmoji(exercise),
+    primaryMuscle: exercise.target ?? exercise.body_part ?? "Unknown",
+    secondaryMuscles: exercise.secondary_muscles.map((item) => item.muscle),
+    equipment: exercise.equipment ?? "Unknown",
+    difficulty: "Intermediate",
+    category: exercise.body_part ?? "Exercise",
+    instructions: exercise.instructions
+      .slice()
+      .sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0))
+      .map((item) => item.instruction)
+      .filter((item): item is string => !!item),
+    tips: [],
+  };
+}
+
+function exerciseLookup(items?: ExerciseResponse[]) {
+  return new Map((items ?? []).map((item) => [item.id, item]));
+}
+
+function nameForExercise(id: string, lookup: Map<string, ExerciseResponse>) {
+  return lookup.get(id)?.name ?? id;
+}
+
+function workoutTitle(session?: WorkoutSessionResponse | WorkoutSessionDetailResponse | null) {
+  return session?.name || (session?.is_completed ? "Completed Workout" : "Workout");
+}
+
+function templateDraftFromDetail(detail: WorkoutTemplateDetailResponse, lookup: Map<string, ExerciseResponse>): TemplateDraftExercise[] {
+  return detail.exercises
+    .slice()
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((item) => ({
+      id: String(item.id),
+      templateExerciseId: item.id,
+      exerciseId: item.exercise_id,
+      name: nameForExercise(item.exercise_id, lookup),
+      emoji: exerciseEmoji(lookup.get(item.exercise_id)),
+      notes: item.notes ?? "",
+      sets: [
+        {
+          reps: item.target_reps ? String(item.target_reps) : "8",
+          rpe: item.target_rpe ? String(item.target_rpe) : "7",
+          rest: item.rest_seconds ? String(Math.round(item.rest_seconds / 60)) : "2",
+        },
+      ],
+    }));
+}
+
+function workoutDraftFromTemplate(detail: WorkoutTemplateDetailResponse, lookup: Map<string, ExerciseResponse>): WorkoutDraftExercise[] {
+  return detail.exercises
+    .slice()
+    .sort((a, b) => a.order_index - b.order_index)
+    .map((item) => {
+      const totalSets = Math.max(1, item.target_sets ?? 1);
+      return {
+        id: String(item.id),
+        exerciseId: item.exercise_id,
+        name: nameForExercise(item.exercise_id, lookup),
+        emoji: exerciseEmoji(lookup.get(item.exercise_id)),
+        notes: item.notes ?? "",
+        sets: Array.from({ length: totalSets }, (_, index) => ({
+          id: `${item.id}-${index + 1}`,
+          weight: "",
+          reps: item.target_reps ? String(item.target_reps) : "8",
+          rpe: item.target_rpe ? String(item.target_rpe) : "",
+          done: false,
+          warmup: false,
+        })),
+      };
+    });
+}
+
+function groupSetsByExercise(sets: ExerciseSetResponse[], lookup: Map<string, ExerciseResponse>) {
+  const groups = new Map<string, { exerciseId: string; name: string; emoji: string; sets: ExerciseSetResponse[] }>();
+  sets.forEach((set) => {
+    const current =
+      groups.get(set.exercise_id) ??
+      {
+        exerciseId: set.exercise_id,
+        name: nameForExercise(set.exercise_id, lookup),
+        emoji: exerciseEmoji(lookup.get(set.exercise_id)),
+        sets: [],
+      };
+    current.sets.push(set);
+    groups.set(set.exercise_id, current);
+  });
+  return Array.from(groups.values());
+}
+
+function recordValue(record: PersonalRecordResponse) {
+  const type = record.record_type.toLowerCase();
+  if (type.includes("weight") || type.includes("1rm") || type.includes("e1rm")) return formatKg(record.value);
+  return String(Math.round(record.value));
+}
+
+type SuccessData<TResponse> = Extract<TResponse, { status: 200 | 201 | 204 }> extends { data: infer TData } ? TData : never;
+
+function successData<TResponse extends { status: number; data: unknown }>(response: TResponse): SuccessData<TResponse> {
+  return response.data as SuccessData<TResponse>;
 }
 
 function Glow({ color }: { color: string }) {
@@ -276,6 +537,40 @@ function PrimaryButton({
       {icon}
       <Text style={[styles.primaryButtonText, subtle ? { color: "rgba(255,255,255,0.7)" } : null]}>{label}</Text>
     </Pressable>
+  );
+}
+
+function LoadingCard({ label = "Loading..." }: { label?: string }) {
+  return (
+    <Card style={{ alignItems: "center", gap: 10, marginTop: 18 }}>
+      <ActivityIndicator color={COLORS.teal} />
+      <Text style={styles.detailLabel}>{label}</Text>
+    </Card>
+  );
+}
+
+function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  return (
+    <Card style={{ marginTop: 18, borderColor: "rgba(239,68,68,0.24)", backgroundColor: "rgba(239,68,68,0.08)" }}>
+      <Text style={[styles.listRowTitle, { color: COLORS.red }]}>Could not load data</Text>
+      <Text style={[styles.detailLabel, { marginTop: 6 }]}>{getApiErrorMessage(error)}</Text>
+      {onRetry ? (
+        <Pressable onPress={onRetry} style={[styles.smallAccentButton, { alignSelf: "flex-start", marginTop: 12 }]}>
+          <Feather name="refresh-cw" size={13} color={COLORS.teal} />
+          <Text style={styles.smallAccentText}>Retry</Text>
+        </Pressable>
+      ) : null}
+    </Card>
+  );
+}
+
+function EmptyCard({ title, text }: { title: string; text: string }) {
+  return (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyStateEmoji}>-</Text>
+      <Text style={styles.emptyStateTitle}>{title}</Text>
+      <Text style={styles.emptyStateText}>{text}</Text>
+    </View>
   );
 }
 
@@ -639,69 +934,69 @@ function MiniInput({
 }
 
 function SplashScreen({ navigation }: { navigation: any }) {
-  const [progress, setProgress] = useState(0);
-  const [status, setStatus] = useState("Initializing...");
+  const auth = useAuth();
+  const appConfig = useAppConfigQuery();
+  const progress = appConfig.isPending || auth.status === "loading" ? 65 : 100;
+  const status =
+    appConfig.isPending
+      ? "Fetching app config..."
+      : auth.status === "loading"
+        ? "Restoring session..."
+        : auth.status === "authenticated"
+          ? "Ready!"
+          : "Sign in to continue";
 
   useEffect(() => {
-    const steps = [
-      { pct: 20, label: "Fetching app config...", delay: 400 },
-      { pct: 50, label: "Restoring session...", delay: 900 },
-      { pct: 75, label: "Syncing data...", delay: 1400 },
-      { pct: 100, label: "Ready!", delay: 1900 },
-    ];
-
-    const timers = steps.map(({ pct, label, delay }) =>
-      setTimeout(() => {
-        setProgress(pct);
-        setStatus(label);
-      }, delay),
-    );
-
-    const doneTimer = setTimeout(() => {
-      navigation.replace("MainTabs");
-    }, 2400);
-
-    return () => {
-      timers.forEach((timer) => clearTimeout(timer));
-      clearTimeout(doneTimer);
-    };
-  }, [navigation]);
+    if (appConfig.isPending || auth.status === "loading") return;
+    const timer = setTimeout(() => {
+      navigation.replace(auth.status === "authenticated" ? "MainTabs" : "Login");
+    }, 450);
+    return () => clearTimeout(timer);
+  }, [appConfig.isPending, auth.status, navigation]);
 
   return (
     <Screen glowColor="rgba(0,180,140,0.24)" scroll={false} contentContainerStyle={styles.centeredContent}>
       <View style={styles.splashLogo}>
         <Text style={styles.splashEmoji}>💪</Text>
       </View>
-      <Text style={styles.splashTitle}>FitTrack</Text>
+      <Text style={styles.splashTitle}>{appConfig.data?.app_name ?? "Athelix"}</Text>
       <Text style={styles.splashSubtitle}>Your training, elevated.</Text>
       <View style={styles.splashProgressCard}>
         <Text style={styles.splashProgressValue}>{progress}%</Text>
         <ProgressBar value={progress} color={COLORS.teal} height={8} />
         <Text style={styles.splashStatus}>{status}</Text>
+        {appConfig.isError || auth.error ? (
+          <Text style={styles.errorText}>{appConfig.isError ? getApiErrorMessage(appConfig.error) : auth.error}</Text>
+        ) : null}
       </View>
-      <Text style={styles.splashFooter}>FitTrack Pro v1.0.0</Text>
+      <Text style={styles.splashFooter}>{appConfig.data ? `${appConfig.data.app_name} v${appConfig.data.version}` : "Athelix"}</Text>
     </Screen>
   );
 }
 
 function LoginScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       setError("Please fill in all fields.");
       return;
     }
     setError("");
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await auth.login({ email: email.trim(), password });
       setLoading(false);
       navigation.replace("MainTabs");
-    }, 1200);
+    } catch (err) {
+      setLoading(false);
+      setError(getApiErrorMessage(err));
+    }
   };
 
   return (
@@ -759,19 +1054,6 @@ function LoginScreen({ navigation }: { navigation: any }) {
         />
       </View>
 
-      <View style={styles.authDividerRow}>
-        <View style={styles.divider} />
-        <Text style={styles.dividerText}>or continue as</Text>
-        <View style={styles.divider} />
-      </View>
-
-      <PrimaryButton
-        label="Continue as Demo User"
-        onPress={() => navigation.replace("MainTabs")}
-        subtle
-        icon={<Feather name="user" size={16} color="rgba(255,255,255,0.7)" />}
-      />
-
       <Text style={styles.authBottomText}>
         Don't have an account?{" "}
         <Text style={styles.linkTextInline} onPress={() => navigation.navigate("Register")}>
@@ -783,9 +1065,12 @@ function LoginScreen({ navigation }: { navigation: any }) {
 }
 
 function RegisterScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const checks = [
     { label: "8+ characters", ok: form.password.length >= 8 },
@@ -793,12 +1078,36 @@ function RegisterScreen({ navigation }: { navigation: any }) {
     { label: "Number", ok: /[0-9]/.test(form.password) },
   ];
 
-  const handleRegister = () => {
+  const clearFieldError = (field: string) => {
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleRegister = async () => {
+    if (!form.username || !form.email || !form.password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    setError("");
+    setFieldErrors({});
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await auth.register({ username: form.username.trim(), email: form.email.trim(), password: form.password });
       setLoading(false);
       navigation.replace("ProfileSetup");
-    }, 1200);
+    } catch (err) {
+      setLoading(false);
+      setError(getApiErrorMessage(err));
+      const extracted: Record<string, string> = {};
+      ["username", "email", "password"].forEach((field) => {
+        const msg = getFieldError(err, field);
+        if (msg) extracted[field] = msg;
+      });
+      if (Object.keys(extracted).length) setFieldErrors(extracted);
+    }
   };
 
   return (
@@ -820,39 +1129,51 @@ function RegisterScreen({ navigation }: { navigation: any }) {
           <Text style={styles.fieldLabel}>Username</Text>
           <TextInput
             value={form.username}
-            onChangeText={(value) => setForm((current) => ({ ...current, username: value }))}
+            onChangeText={(value) => {
+              setForm((current) => ({ ...current, username: value }));
+              clearFieldError("username");
+            }}
             placeholder="jordan_lifts"
             placeholderTextColor="rgba(255,255,255,0.28)"
-            style={styles.input}
+            style={[styles.input, fieldErrors.username ? { borderColor: COLORS.red } : null]}
           />
+          {fieldErrors.username ? <Text style={styles.fieldError}>{fieldErrors.username}</Text> : null}
         </View>
         <View>
           <Text style={styles.fieldLabel}>Email</Text>
           <TextInput
             value={form.email}
-            onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
+            onChangeText={(value) => {
+              setForm((current) => ({ ...current, email: value }));
+              clearFieldError("email");
+            }}
             placeholder="jordan@example.com"
             placeholderTextColor="rgba(255,255,255,0.28)"
-            style={styles.input}
+            style={[styles.input, fieldErrors.email ? { borderColor: COLORS.red } : null]}
             keyboardType="email-address"
             autoCapitalize="none"
           />
+          {fieldErrors.email ? <Text style={styles.fieldError}>{fieldErrors.email}</Text> : null}
         </View>
         <View>
           <Text style={styles.fieldLabel}>Password</Text>
           <View style={styles.inputWrap}>
             <TextInput
               value={form.password}
-              onChangeText={(value) => setForm((current) => ({ ...current, password: value }))}
+              onChangeText={(value) => {
+                setForm((current) => ({ ...current, password: value }));
+                clearFieldError("password");
+              }}
               placeholder="Create a strong password"
               placeholderTextColor="rgba(255,255,255,0.28)"
-              style={[styles.input, styles.inputWithRight]}
+              style={[styles.input, styles.inputWithRight, fieldErrors.password ? { borderColor: COLORS.red } : null]}
               secureTextEntry={!showPassword}
             />
             <Pressable style={styles.inputRightIcon} onPress={() => setShowPassword((value) => !value)}>
               <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="rgba(255,255,255,0.42)" />
             </Pressable>
           </View>
+          {fieldErrors.password ? <Text style={styles.fieldError}>{fieldErrors.password}</Text> : null}
           {form.password.length > 0 ? (
             <View style={styles.passwordChecks}>
               {checks.map((check) => (
@@ -870,6 +1191,11 @@ function RegisterScreen({ navigation }: { navigation: any }) {
           By creating an account, you agree to our <Text style={styles.linkTextInline}>Terms of Service</Text> and{" "}
           <Text style={styles.linkTextInline}>Privacy Policy</Text>.
         </Text>
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
         <PrimaryButton
           label={loading ? "Creating Account..." : "Create Account"}
           onPress={handleRegister}
@@ -889,18 +1215,46 @@ function RegisterScreen({ navigation }: { navigation: any }) {
 }
 
 function HomeScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const overview = useOverviewQuery(auth.isAuthenticated);
+  const data = overview.data;
+  const name = displayName(data?.user ?? auth.user, data?.profile);
+  const latestSession = data?.latest_completed_session;
+  const latestWeight = data?.latest_body_weight_log;
+  const activeMeso = data?.active_mesocycle;
+
+  useEffect(() => {
+    if (data && !data.has_profile) navigation.navigate("ProfileSetup");
+  }, [data, navigation]);
+
+  if (overview.isPending) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.22)">
+        <LoadingCard label="Loading your dashboard..." />
+      </Screen>
+    );
+  }
+
+  if (overview.isError) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.22)">
+        <ErrorCard error={overview.error} onRetry={() => overview.refetch()} />
+      </Screen>
+    );
+  }
+
   return (
     <Screen glowColor="rgba(0,180,140,0.22)">
       <View style={styles.mainHeader}>
         <Pressable style={styles.homeIdentity} onPress={() => navigation.navigate("Profile")}>
           <View style={styles.avatarBubble}>
-            <Text style={styles.avatarInitials}>JD</Text>
+            <Text style={styles.avatarInitials}>{initialsFor(name)}</Text>
           </View>
           <View>
             <Text style={styles.kickerText}>
               {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </Text>
-            <Text style={styles.greetingText}>Hey, Jordan</Text>
+            <Text style={styles.greetingText}>Hey, {name.split(" ")[0]}</Text>
           </View>
         </Pressable>
         <RoundButton>
@@ -909,7 +1263,10 @@ function HomeScreen({ navigation }: { navigation: any }) {
         </RoundButton>
       </View>
 
-      <Pressable onPress={() => navigation.navigate("MesocycleDetail", { id: "1" })} style={styles.inlineSection}>
+      <Pressable
+        onPress={() => (activeMeso ? navigation.navigate("MesocycleDetail", { id: String(activeMeso.id) }) : navigation.navigate("MesocycleList"))}
+        style={styles.inlineSection}
+      >
         <Card style={{ borderColor: "rgba(0,212,168,0.22)", backgroundColor: "rgba(0,212,168,0.1)" }}>
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
@@ -917,8 +1274,10 @@ function HomeScreen({ navigation }: { navigation: any }) {
                 <Feather name="trending-up" size={15} color={COLORS.teal} />
               </View>
               <View>
-                <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>Active Mesocycle</Text>
-                <Text style={styles.cardTitle}>Strength Block - Week 3/6</Text>
+                <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>{activeMeso ? "Active Mesocycle" : "No Active Mesocycle"}</Text>
+                <Text style={styles.cardTitle}>
+                  {activeMeso ? `${activeMeso.name}${activeMeso.weeks ? ` - ${activeMeso.weeks} weeks` : ""}` : "Plan a training block"}
+                </Text>
               </View>
             </View>
             <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.35)" />
@@ -936,11 +1295,23 @@ function HomeScreen({ navigation }: { navigation: any }) {
         </View>
         <View style={styles.statRowDivider} />
         <View style={styles.threeUp}>
-          <StatPill icon={<MaterialCommunityIcons name="fire" size={12} color="#f97316" />} label="Day Streak" value="12" />
+          <StatPill
+            icon={<MaterialCommunityIcons name="fire" size={12} color="#f97316" />}
+            label="Day Streak"
+            value={String(data?.workout_streaks.current_daily_streak ?? 0)}
+          />
           <DividerVertical />
-          <StatPill icon={<MaterialCommunityIcons name="dumbbell" size={12} color={COLORS.teal} />} label="Workouts" value="248" />
+          <StatPill
+            icon={<MaterialCommunityIcons name="dumbbell" size={12} color={COLORS.teal} />}
+            label="Workouts"
+            value={String(data?.stats.completed_sessions ?? 0)}
+          />
           <DividerVertical />
-          <StatPill icon={<Feather name="trending-up" size={12} color={COLORS.green} />} label="This Week" value="6" />
+          <StatPill
+            icon={<Feather name="trending-up" size={12} color={COLORS.green} />}
+            label="Templates"
+            value={String(data?.stats.total_workout_templates ?? 0)}
+          />
         </View>
       </Card>
 
@@ -954,9 +1325,9 @@ function HomeScreen({ navigation }: { navigation: any }) {
               <View>
                 <Text style={styles.detailLabel}>Latest Bodyweight</Text>
                 <View style={styles.rowGapSmall}>
-                  <Text style={styles.heroMetric}>82.4</Text>
+                  <Text style={styles.heroMetric}>{latestWeight ? latestWeight.weight_kg.toFixed(1) : "-"}</Text>
                   <Text style={styles.metricSuffix}>kg</Text>
-                  <Text style={[styles.metricChange, { color: COLORS.green }]}>↓ 0.3kg</Text>
+                  {latestWeight ? <Text style={[styles.metricChange, { color: COLORS.green }]}>{formatShortDate(latestWeight.logged_at)}</Text> : null}
                 </View>
               </View>
             </View>
@@ -973,19 +1344,21 @@ function HomeScreen({ navigation }: { navigation: any }) {
             <Ionicons name="chevron-forward" size={12} color={COLORS.teal} />
           </Pressable>
         </View>
-        <Pressable onPress={() => navigation.navigate("SessionDetail", { id: "1" })}>
+        <Pressable onPress={() => latestSession && navigation.navigate("SessionDetail", { id: String(latestSession.id) })}>
           <Card>
             <View style={styles.rowBetween}>
               <View>
-                <Text style={styles.cardTitle}>Upper Body Push</Text>
-                <Text style={styles.detailLabel}>Yesterday - 6:30 PM</Text>
+                <Text style={styles.cardTitle}>{latestSession ? workoutTitle(latestSession) : "No completed workouts yet"}</Text>
+                <Text style={styles.detailLabel}>
+                  {latestSession ? `${formatShortDate(latestSession.started_at)} - ${formatTimeLabel(latestSession.started_at)}` : "Start a workout to build history"}
+                </Text>
               </View>
-              <Tag label="Done" color={COLORS.teal} />
+              {latestSession ? <Tag label="Done" color={COLORS.teal} /> : null}
             </View>
             <View style={[styles.rowGapLarge, { marginTop: 14 }]}>
-              <MetricBlock value="52 min" label="Duration" />
-              <MetricBlock value="18 sets" label="Sets" />
-              <MetricBlock value="8.4k kg" label="Volume" />
+              <MetricBlock value={`${latestSession?.duration_minutes ?? 0} min`} label="Duration" />
+              <MetricBlock value={`${latestSession?.total_sets ?? 0} sets`} label="Sets" />
+              <MetricBlock value={formatVolume(latestSession?.total_volume)} label="Volume" />
             </View>
           </Card>
         </Pressable>
@@ -1000,19 +1373,24 @@ function HomeScreen({ navigation }: { navigation: any }) {
           </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
-          {RECENT_PRS.map((item) => (
-            <Pressable key={item.exercise} onPress={() => navigation.navigate("PersonalRecords")}>
-              <Card style={[styles.prCard, { borderColor: `${item.color}38` }]}>
+          {(data?.recent_personal_records.length ? data.recent_personal_records : []).map((item) => (
+            <Pressable key={item.id} onPress={() => navigation.navigate("PersonalRecords")}>
+              <Card style={[styles.prCard, { borderColor: `${COLORS.gold}38` }]}>
                 <View style={styles.rowGapTiny}>
-                  <Feather name="award" size={10} color={item.color} />
-                  <Text style={[styles.prBadge, { color: item.color }]}>PR</Text>
+                  <Feather name="award" size={10} color={COLORS.gold} />
+                  <Text style={[styles.prBadge, { color: COLORS.gold }]}>PR</Text>
                 </View>
-                <Text style={[styles.detailLabel, { marginTop: 10 }]}>{item.exercise}</Text>
-                <Text style={[styles.prValue, { color: item.color }]}>{item.value}</Text>
-                <Text style={[styles.detailLabel, { marginTop: 6 }]}>{item.date}</Text>
+                <Text style={[styles.detailLabel, { marginTop: 10 }]}>{item.exercise_id}</Text>
+                <Text style={[styles.prValue, { color: COLORS.gold }]}>{Math.round(item.value)}</Text>
+                <Text style={[styles.detailLabel, { marginTop: 6 }]}>{formatShortDate(item.achieved_on)}</Text>
               </Card>
             </Pressable>
           ))}
+          {data?.recent_personal_records.length === 0 ? (
+            <Card style={styles.prCard}>
+              <Text style={styles.detailLabel}>No PRs yet</Text>
+            </Card>
+          ) : null}
         </ScrollView>
       </View>
 
@@ -1027,27 +1405,35 @@ function HomeScreen({ navigation }: { navigation: any }) {
 }
 
 function ExploreScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState("All");
   const [equipment, setEquipment] = useState("All");
   const [showFilters, setShowFilters] = useState(false);
+  const filters = useExerciseFiltersQuery(auth.isAuthenticated);
+  const exerciseParams = useMemo(
+    () => ({
+      q: query.trim() || undefined,
+      target: muscle !== "All" ? muscle : undefined,
+      equipment: equipment !== "All" ? equipment : undefined,
+      limit: 100,
+      offset: 0,
+    }),
+    [equipment, muscle, query],
+  );
+  const exercisesQuery = useExercisesQuery(exerciseParams, auth.isAuthenticated);
 
-  const filtered = ALL_EXERCISES.filter((exercise) => {
-    const normalized = query.toLowerCase();
-    return (
-      (exercise.name.toLowerCase().includes(normalized) || exercise.primaryMuscle.toLowerCase().includes(normalized)) &&
-      (muscle === "All" || exercise.primaryMuscle === muscle) &&
-      (equipment === "All" || exercise.equipment === equipment)
-    );
-  });
+  const filtered = (exercisesQuery.data?.items ?? []).map(mapExerciseItem);
+  const muscleOptions = ["All", ...(filters.data?.targets ?? EXERCISE_MUSCLES.filter((item) => item !== "All"))];
+  const equipmentOptions = ["All", ...(filters.data?.equipment ?? EXERCISE_EQUIPMENT.filter((item) => item !== "All"))];
 
   const activeFilters = [muscle !== "All" ? muscle : null, equipment !== "All" ? equipment : null].filter(Boolean) as string[];
 
   return (
-    <Screen glowColor="rgba(0,120,180,0.16)">
+    <Screen glowColor="rgba(0,120,180,0.16)" scroll={false} contentContainerStyle={styles.scrollContent}>
       <View style={styles.tabIntro}>
         <Text style={styles.tabTitle}>Exercise Library</Text>
-        <Text style={styles.tabSubtitle}>{ALL_EXERCISES.length} exercises</Text>
+        <Text style={styles.tabSubtitle}>{exercisesQuery.data?.total ?? 0} exercises</Text>
       </View>
 
       <View style={[styles.rowGap, { marginTop: 18 }]}>
@@ -1099,7 +1485,7 @@ function ExploreScreen({ navigation }: { navigation: any }) {
         <Card style={{ marginTop: 16 }}>
           <SectionEyebrow>Muscle Group</SectionEyebrow>
           <ChipWrap
-            items={EXERCISE_MUSCLES}
+            items={muscleOptions}
             selected={muscle}
             onSelect={setMuscle}
             activeColor={COLORS.teal}
@@ -1107,7 +1493,7 @@ function ExploreScreen({ navigation }: { navigation: any }) {
           />
           <SectionEyebrow color="rgba(255,255,255,0.35)">Equipment</SectionEyebrow>
           <ChipWrap
-            items={EXERCISE_EQUIPMENT}
+            items={equipmentOptions}
             selected={equipment}
             onSelect={setEquipment}
             activeColor={COLORS.teal}
@@ -1117,9 +1503,21 @@ function ExploreScreen({ navigation }: { navigation: any }) {
       ) : null}
 
       <Text style={[styles.resultsText, { marginTop: 18 }]}>{filtered.length} results</Text>
-      <View style={{ gap: 10 }}>
-        {filtered.map((exercise) => (
-          <Pressable key={exercise.id} onPress={() => navigation.navigate("ExerciseDetail", { id: exercise.id })}>
+      {exercisesQuery.isError ? <ErrorCard error={exercisesQuery.error} onRetry={() => exercisesQuery.refetch()} /> : null}
+      <FlatList
+        data={filtered}
+        keyExtractor={(exercise) => exercise.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ gap: 10, paddingBottom: 34 }}
+        ListEmptyComponent={
+          exercisesQuery.isPending ? (
+            <LoadingCard label="Loading exercises..." />
+          ) : (
+            <EmptyCard title="No exercises found" text="Try different search terms" />
+          )
+        }
+        renderItem={({ item: exercise }) => (
+          <Pressable onPress={() => navigation.navigate("ExerciseDetail", { id: exercise.id })}>
             <Card style={styles.listRowCard}>
               <View style={styles.exerciseEmojiWrap}>
                 <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
@@ -1136,22 +1534,35 @@ function ExploreScreen({ navigation }: { navigation: any }) {
               </View>
             </Card>
           </Pressable>
-        ))}
-        {filtered.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateEmoji}>🔍</Text>
-            <Text style={styles.emptyStateTitle}>No exercises found</Text>
-            <Text style={styles.emptyStateText}>Try different search terms</Text>
-          </View>
-        ) : null}
-      </View>
+        )}
+      />
     </Screen>
   );
 }
 
 function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: { params: { id: string } } }) {
+  const auth = useAuth();
   const { id } = route.params;
-  const exercise = EXERCISE_DETAILS[id ?? ""] ?? EXERCISE_FALLBACK;
+  const exerciseQuery = useExerciseDetailQuery(id, auth.isAuthenticated);
+  const exercise = exerciseQuery.data ? mapExerciseDetail(exerciseQuery.data) : (EXERCISE_DETAILS[id ?? ""] ?? EXERCISE_FALLBACK);
+
+  if (exerciseQuery.isPending) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.16)">
+        <BackHeader title="Exercise Detail" onBack={() => navigation.goBack()} />
+        <LoadingCard label="Loading exercise..." />
+      </Screen>
+    );
+  }
+
+  if (exerciseQuery.isError) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.16)">
+        <BackHeader title="Exercise Detail" onBack={() => navigation.goBack()} />
+        <ErrorCard error={exerciseQuery.error} onRetry={() => exerciseQuery.refetch()} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen glowColor="rgba(0,180,140,0.16)">
@@ -1213,17 +1624,19 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
         </View>
       </Card>
 
-      <Card style={{ marginTop: 14, backgroundColor: "rgba(0,212,168,0.06)", borderColor: "rgba(0,212,168,0.18)" }}>
-        <SectionEyebrow color={COLORS.teal}>Pro Tips</SectionEyebrow>
-        <View style={{ marginTop: 12, gap: 10 }}>
-          {exercise.tips.map((tip) => (
-            <View key={tip} style={styles.tipRow}>
-              <Text style={{ color: COLORS.teal }}>→</Text>
-              <Text style={styles.tipText}>{tip}</Text>
-            </View>
-          ))}
-        </View>
-      </Card>
+      {exercise.tips.length > 0 ? (
+        <Card style={{ marginTop: 14, backgroundColor: "rgba(0,212,168,0.06)", borderColor: "rgba(0,212,168,0.18)" }}>
+          <SectionEyebrow color={COLORS.teal}>Pro Tips</SectionEyebrow>
+          <View style={{ marginTop: 12, gap: 10 }}>
+            {exercise.tips.map((tip) => (
+              <View key={tip} style={styles.tipRow}>
+                <Text style={{ color: COLORS.teal }}>→</Text>
+                <Text style={styles.tipText}>{tip}</Text>
+              </View>
+            ))}
+          </View>
+        </Card>
+      ) : null}
 
       <Pressable onPress={() => navigation.navigate("ExerciseProgress", { id: id ?? "1" })} style={{ marginTop: 14 }}>
         <Card>
@@ -1244,6 +1657,8 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
 }
 
 function TrainHubScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const overview = useOverviewQuery(auth.isAuthenticated);
   return (
     <Screen glowColor="rgba(0,180,140,0.18)">
       <View style={styles.tabIntro}>
@@ -1262,9 +1677,9 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
       </Pressable>
 
       <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
-        <CompactStatCard label="This Week" value="6" />
-        <CompactStatCard label="Total Vol" value="24k" />
-        <CompactStatCard label="Avg Duration" value="54" />
+        <CompactStatCard label="Sessions" value={String(overview.data?.stats.completed_sessions ?? 0)} />
+        <CompactStatCard label="Templates" value={String(overview.data?.stats.total_workout_templates ?? 0)} />
+        <CompactStatCard label="PRs" value={String(overview.data?.stats.personal_record_count ?? 0)} />
       </View>
 
       <View style={{ marginTop: 18, gap: 12 }}>
@@ -1306,11 +1721,29 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
 }
 
 function TemplateListScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const templates = useTemplatesQuery(auth.isAuthenticated);
+  const deleteTemplate = useMutation({
+    mutationFn: async (templateId: number) => deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete(templateId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+    },
+  });
+
+  const handleDelete = (template: WorkoutTemplateResponse) => {
+    Alert.alert("Delete template?", template.name, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => deleteTemplate.mutate(template.id) },
+    ]);
+  };
+
   return (
     <Screen glowColor="rgba(0,180,140,0.14)">
       <BackHeader
         title="Templates"
-        subtitle={`${TEMPLATE_LIST.length} saved`}
+        subtitle={`${templates.data?.length ?? 0} saved`}
         onBack={() => navigation.goBack()}
         right={
           <Pressable style={styles.smallAccentButton} onPress={() => navigation.navigate("TemplateBuilder")}>
@@ -1320,43 +1753,48 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
         }
       />
 
+      {templates.isPending ? <LoadingCard label="Loading templates..." /> : null}
+      {templates.isError ? <ErrorCard error={templates.error} onRetry={() => templates.refetch()} /> : null}
+
       <View style={{ gap: 12, marginTop: 18 }}>
-        {TEMPLATE_LIST.map((template) => (
+        {(templates.data ?? []).map((template) => (
           <Card key={template.id} style={{ borderRadius: 28 }}>
             <View style={styles.rowBetween}>
               <View style={{ flex: 1 }}>
                 <View style={styles.rowGap}>
-                  <View style={[styles.statusDot, { backgroundColor: template.color }]} />
+                  <View style={[styles.statusDot, { backgroundColor: COLORS.teal }]} />
                   <Text style={styles.cardTitle}>{template.name}</Text>
                 </View>
                 <Text style={[styles.detailLabel, { marginLeft: 14, marginTop: 6 }]}>
-                  {template.exercises.slice(0, 3).join(", ")}
-                  {template.exercises.length > 3 ? ` +${template.exercises.length - 3}` : ""}
+                  {template.description || `Created ${formatShortDate(template.created_at)}`}
                 </Text>
               </View>
-              <RoundButton onPress={() => navigation.navigate("TemplateBuilder", { id: template.id })}>
+              <RoundButton onPress={() => navigation.navigate("TemplateBuilder", { id: String(template.id) })}>
                 <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.5)" />
               </RoundButton>
             </View>
             <View style={[styles.rowBetween, { marginTop: 14 }]}>
               <View style={styles.rowGapLarge}>
-                <MetaInline icon={<Feather name="clock" size={11} color="rgba(255,255,255,0.32)" />} text={template.duration} />
-                <MetaInline
-                  icon={<MaterialCommunityIcons name="dumbbell" size={11} color="rgba(255,255,255,0.32)" />}
-                  text={`${template.sets} sets`}
-                />
-                <Text style={styles.listMeta}>Used {template.lastUsed}</Text>
+                <MetaInline icon={<Feather name="calendar" size={11} color="rgba(255,255,255,0.32)" />} text={formatShortDate(template.updated_at)} />
+                {template.is_public ? <Tag label="Public" color={COLORS.blue} /> : <Tag label="Private" color={COLORS.teal} />}
               </View>
               <Pressable
-                style={[styles.smallActionTag, { backgroundColor: `${template.color}22`, borderColor: `${template.color}44` }]}
-                onPress={() => navigation.navigate("StartWorkout", { id: template.id })}
+                style={[styles.smallActionTag, { backgroundColor: "rgba(0,212,168,0.13)", borderColor: "rgba(0,212,168,0.32)" }]}
+                onPress={() => navigation.navigate("StartWorkout", { id: String(template.id) })}
               >
-                <Feather name="play" size={11} color={template.color} />
-                <Text style={[styles.smallActionText, { color: template.color }]}>Start</Text>
+                <Feather name="play" size={11} color={COLORS.teal} />
+                <Text style={[styles.smallActionText, { color: COLORS.teal }]}>Start</Text>
               </Pressable>
             </View>
+            <Pressable onPress={() => handleDelete(template)} style={{ alignSelf: "flex-start", marginTop: 12 }}>
+              <Text style={[styles.listMeta, { color: COLORS.red }]}>Delete</Text>
+            </Pressable>
           </Card>
         ))}
+
+        {!templates.isPending && (templates.data?.length ?? 0) === 0 ? (
+          <EmptyCard title="No templates yet" text="Create your first reusable workout plan." />
+        ) : null}
 
         <Pressable onPress={() => navigation.navigate("TemplateBuilder")}>
           <View style={styles.dashedAddCard}>
@@ -1372,23 +1810,94 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
 }
 
 function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: { params?: { id?: string } } }) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
   const id = route.params?.id;
-  const isEdit = !!id;
-  const [name, setName] = useState(isEdit ? "Upper Body Push" : "");
-  const [exercises, setExercises] = useState<TemplateExercise[]>(isEdit ? DEFAULT_TEMPLATE_EXERCISES : []);
+  const templateId = toNumberId(id);
+  const isEdit = !!templateId;
+  const [name, setName] = useState("");
+  const [exercises, setExercises] = useState<TemplateDraftExercise[]>([]);
   const [expanded, setExpanded] = useState<string | null>(isEdit ? "1" : null);
+  const [exerciseSearch, setExerciseSearch] = useState("");
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const detail = useTemplateDetailQuery(templateId, auth.isAuthenticated && isEdit);
+  const catalog = useExercisesQuery({ q: exerciseSearch.trim() || undefined, limit: 50, offset: 0 }, auth.isAuthenticated && showExercisePicker);
+  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
 
-  const addExercise = () => {
+  useEffect(() => {
+    if (!detail.data) return;
+    setName(detail.data.name);
+    setExercises(templateDraftFromDetail(detail.data, lookup));
+    setExpanded(detail.data.exercises[0] ? String(detail.data.exercises[0].id) : null);
+  }, [detail.data, lookup]);
+
+  const saveTemplate = useMutation({
+    mutationFn: async () => {
+      if (!name.trim()) throw new Error("Template name is required.");
+      const template =
+        isEdit && templateId
+          ? successData(await updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch(templateId, { name: name.trim() }))
+          : successData(await createWorkoutTemplateWorkoutTemplatesPost({ name: name.trim(), is_public: false }));
+
+      if (isEdit && detail.data) {
+        const kept = new Set(exercises.map((exercise) => exercise.templateExerciseId).filter(Boolean));
+        const removed = detail.data.exercises.filter((exercise) => !kept.has(exercise.id));
+        await Promise.all(
+          removed.map((exercise) =>
+            deleteTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdDelete(template.id, exercise.id),
+          ),
+        );
+      }
+
+      for (const [index, exercise] of exercises.entries()) {
+        const firstSet = exercise.sets[0];
+        const payload = {
+          exercise_id: exercise.exerciseId,
+          order_index: index,
+          target_sets: exercise.sets.length,
+          target_reps: firstSet ? numberOrNull(firstSet.reps) : null,
+          target_rpe: firstSet ? numberOrNull(firstSet.rpe) : null,
+          rest_seconds: firstSet ? parseRestSeconds(firstSet.rest) : null,
+          notes: exercise.notes || null,
+        };
+
+        if (exercise.templateExerciseId) {
+          await updateTemplateExerciseWorkoutTemplatesTemplateIdExercisesTemplateExerciseIdPatch(
+            template.id,
+            exercise.templateExerciseId,
+            payload,
+          );
+        } else {
+          await createTemplateExerciseWorkoutTemplatesTemplateIdExercisesPost(template.id, payload);
+        }
+      }
+
+      return template;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.templates });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      navigation.replace("TemplateList");
+    },
+    onError: (err) => setSaveError(getApiErrorMessage(err)),
+  });
+
+  const addExercise = (exercise: ExerciseResponse) => {
     const nextId = Date.now().toString();
-    const nextExercise: TemplateExercise = {
+    const nextExercise: TemplateDraftExercise = {
       id: nextId,
-      name: "New Exercise",
-      emoji: "💪",
+      exerciseId: exercise.id,
+      name: exercise.name,
+      emoji: exerciseEmoji(exercise),
       notes: "",
       sets: [{ reps: "8", rpe: "7", rest: "2:00" }],
     };
     setExercises((current) => [...current, nextExercise]);
     setExpanded(nextId);
+    setShowExercisePicker(false);
+    setExerciseSearch("");
   };
 
   const addSet = (exerciseId: string) => {
@@ -1442,10 +1951,19 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
           <Feather name="arrow-left" size={16} color={COLORS.text} />
         </RoundButton>
         <Text style={styles.headerTitle}>{isEdit ? "Edit Template" : "New Template"}</Text>
-        <Pressable style={styles.saveChip} onPress={() => navigation.replace("TemplateList")}>
-          <Text style={styles.saveChipText}>Save</Text>
+        <Pressable style={styles.saveChip} onPress={() => saveTemplate.mutate()} disabled={saveTemplate.isPending}>
+          {saveTemplate.isPending ? <ActivityIndicator color="#000000" size="small" /> : null}
+          <Text style={styles.saveChipText}>{saveTemplate.isPending ? "Saving" : "Save"}</Text>
         </Pressable>
       </View>
+
+      {detail.isPending && isEdit ? <LoadingCard label="Loading template..." /> : null}
+      {detail.isError ? <ErrorCard error={detail.error} onRetry={() => detail.refetch()} /> : null}
+      {saveError ? (
+        <View style={[styles.errorBox, { marginTop: 12 }]}>
+          <Text style={styles.errorText}>{saveError}</Text>
+        </View>
+      ) : null}
 
       <TextInput
         value={name}
@@ -1516,7 +2034,7 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
           </Card>
         ))}
 
-        <Pressable onPress={addExercise}>
+        <Pressable onPress={() => setShowExercisePicker(true)}>
           <View style={styles.dashedAddCard}>
             <View style={[styles.addCircle, { backgroundColor: "rgba(0,212,168,0.12)" }]}>
               <Feather name="plus" size={18} color={COLORS.teal} />
@@ -1536,20 +2054,89 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
           </View>
         ) : null}
       </View>
+
+      <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => setShowExercisePicker(false)}>
+        <View style={styles.modalScrim}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowExercisePicker(false)} />
+          <View style={styles.bottomSheet}>
+            <View style={styles.rowBetween}>
+              <Text style={styles.sheetTitle}>Add Exercise</Text>
+              <Pressable onPress={() => setShowExercisePicker(false)}>
+                <Feather name="x" size={18} color="rgba(255,255,255,0.5)" />
+              </Pressable>
+            </View>
+            <View style={[styles.searchWrap, { marginTop: 18 }]}>
+              <Feather name="search" size={14} color="rgba(255,255,255,0.35)" />
+              <TextInput
+                value={exerciseSearch}
+                onChangeText={setExerciseSearch}
+                placeholder="Search exercises..."
+                placeholderTextColor="rgba(255,255,255,0.32)"
+                style={styles.searchInput}
+              />
+            </View>
+            <View style={{ maxHeight: 360, marginTop: 14 }}>
+              {catalog.isPending ? <LoadingCard label="Searching..." /> : null}
+              {catalog.isError ? <ErrorCard error={catalog.error} onRetry={() => catalog.refetch()} /> : null}
+              <ScrollView contentContainerStyle={{ gap: 10 }}>
+                {(catalog.data?.items ?? []).map((exercise) => (
+                  <Pressable key={exercise.id} onPress={() => addExercise(exercise)}>
+                    <Card style={styles.listRowCard}>
+                      <View style={styles.exerciseEmojiWrap}>
+                        <Text style={{ fontSize: 18 }}>{exerciseEmoji(exercise)}</Text>
+                      </View>
+                      <View style={styles.listRowBody}>
+                        <Text style={styles.listRowTitle}>{exercise.name}</Text>
+                        <Text style={styles.detailLabel}>
+                          {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
+                        </Text>
+                      </View>
+                    </Card>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
 
 function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
+  const auth = useAuth();
   const id = route?.params?.id;
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(id ?? null);
-  const [selectedMeso, setSelectedMeso] = useState<string | null>("1");
+  const [selectedMeso, setSelectedMeso] = useState<string | null>(null);
+  const templates = useTemplatesQuery(auth.isAuthenticated);
+  const mesocycles = useMesocyclesQuery(auth.isAuthenticated);
+  const startSession = useMutation({
+    mutationFn: async ({ templateId }: { templateId?: string | null }) => {
+      const template = templates.data?.find((item) => String(item.id) === templateId);
+      const response = await createWorkoutSessionWorkoutSessionsPost({
+        template_id: toNumberId(templateId),
+        mesocycle_id: toNumberId(selectedMeso),
+        name: template?.name ?? "Workout",
+        started_at: new Date().toISOString(),
+        is_completed: false,
+      });
+      return successData(response);
+    },
+    onSuccess: (session, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      navigation.replace("ActiveWorkout", {
+        sessionId: session.id,
+        templateId: variables.templateId ?? undefined,
+        mesocycleId: selectedMeso,
+      });
+    },
+  });
 
   return (
     <Screen glowColor="rgba(0,180,140,0.2)">
       <BackHeader title="Start Workout" subtitle="Choose how to begin" onBack={() => navigation.goBack()} />
 
-      <Pressable onPress={() => navigation.navigate("ActiveWorkout")} style={{ marginTop: 18 }}>
+      <Pressable onPress={() => startSession.mutate({ templateId: null })} style={{ marginTop: 18 }} disabled={startSession.isPending}>
         <Card style={{ borderColor: "rgba(0,212,168,0.3)", backgroundColor: "rgba(0,212,168,0.12)" }}>
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
@@ -1570,14 +2157,14 @@ function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { 
         <SectionEyebrow>Attach to Mesocycle (optional)</SectionEyebrow>
         <View style={{ gap: 10, marginTop: 12 }}>
           <SelectableRow selected={selectedMeso === null} onPress={() => setSelectedMeso(null)} label="No mesocycle" />
-          {MESOCYCLES.map((meso) => (
+          {(mesocycles.data ?? []).map((meso) => (
             <SelectableRow
               key={meso.id}
-              selected={selectedMeso === meso.id}
-              onPress={() => setSelectedMeso(meso.id)}
+              selected={selectedMeso === String(meso.id)}
+              onPress={() => setSelectedMeso(String(meso.id))}
               label={meso.name}
-              sublabel={meso.week}
-              color={meso.color}
+              sublabel={meso.goal ?? `${meso.weeks ?? "-"} weeks`}
+              color={COLORS.purple}
             />
           ))}
         </View>
@@ -1586,29 +2173,30 @@ function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { 
       <View style={{ marginTop: 20 }}>
         <SectionEyebrow>From Template</SectionEyebrow>
         <View style={{ gap: 10, marginTop: 12 }}>
-          {START_WORKOUT_TEMPLATES.map((template) => (
-            <Pressable key={template.id} onPress={() => setSelectedTemplate((current) => (current === template.id ? null : template.id))}>
+          {templates.isPending ? <LoadingCard label="Loading templates..." /> : null}
+          {(templates.data ?? []).map((template) => (
+            <Pressable key={template.id} onPress={() => setSelectedTemplate((current) => (current === String(template.id) ? null : String(template.id)))}>
               <Card
                 style={{
-                  borderColor: selectedTemplate === template.id ? `${template.color}44` : COLORS.border,
-                  backgroundColor: selectedTemplate === template.id ? `${template.color}12` : COLORS.card,
+                  borderColor: selectedTemplate === String(template.id) ? "rgba(0,212,168,0.44)" : COLORS.border,
+                  backgroundColor: selectedTemplate === String(template.id) ? "rgba(0,212,168,0.12)" : COLORS.card,
                 }}
               >
                 <View style={styles.rowBetween}>
                   <View style={[styles.rowGap, { flex: 1, alignItems: "flex-start" }]}>
-                    <Radio selected={selectedTemplate === template.id} color={template.color} />
+                    <Radio selected={selectedTemplate === String(template.id)} color={COLORS.teal} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.listRowTitle}>{template.name}</Text>
                       <View style={[styles.rowGapLarge, { marginTop: 6 }]}>
                         <MetaInline
                           icon={<MaterialCommunityIcons name="dumbbell" size={10} color="rgba(255,255,255,0.32)" />}
-                          text={`${template.exercises} exercises`}
+                          text={template.description ?? "Template"}
                         />
-                        <MetaInline icon={<Feather name="clock" size={10} color="rgba(255,255,255,0.32)" />} text={template.duration} />
+                        <MetaInline icon={<Feather name="calendar" size={10} color="rgba(255,255,255,0.32)" />} text={formatShortDate(template.updated_at)} />
                       </View>
                     </View>
                   </View>
-                  <Text style={styles.listMeta}>Used {template.lastUsed}</Text>
+                  <Text style={styles.listMeta}>{template.is_public ? "Public" : "Private"}</Text>
                 </View>
               </Card>
             </Pressable>
@@ -1619,44 +2207,115 @@ function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { 
       <PrimaryButton
         label={
           selectedTemplate
-            ? `Start with ${START_WORKOUT_TEMPLATES.find((item) => item.id === selectedTemplate)?.name ?? "template"}`
+            ? `Start with ${templates.data?.find((item) => String(item.id) === selectedTemplate)?.name ?? "template"}`
             : "Start Workout"
         }
-        onPress={() => navigation.navigate("ActiveWorkout")}
-        icon={<Feather name="play" size={18} color="#000000" />}
+        onPress={() => startSession.mutate({ templateId: selectedTemplate })}
+        disabled={startSession.isPending}
+        icon={startSession.isPending ? <ActivityIndicator color="#000000" /> : <Feather name="play" size={18} color="#000000" />}
         style={{ marginTop: 22 }}
       />
+      {startSession.isError ? (
+        <View style={[styles.errorBox, { marginTop: 12 }]}>
+          <Text style={styles.errorText}>{getApiErrorMessage(startSession.error)}</Text>
+        </View>
+      ) : null}
     </Screen>
   );
 }
 
-function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
+function ActiveWorkoutScreen({
+  navigation,
+  route,
+}: {
+  navigation: any;
+  route?: { params?: { sessionId?: number; templateId?: string; mesocycleId?: string | null } };
+}) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const sessionId = route?.params?.sessionId;
+  const templateId = toNumberId(route?.params?.templateId);
   const [elapsed, setElapsed] = useState(0);
-  const [exercises, setExercises] = useState<WorkoutExercise[]>(INITIAL_WORKOUT_EXERCISES);
+  const [exercises, setExercises] = useState<WorkoutDraftExercise[]>([]);
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [showFinish, setShowFinish] = useState(false);
-  const [expanded, setExpanded] = useState<string | null>("1");
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [exerciseSearch, setExerciseSearch] = useState("");
+  const [error, setError] = useState("");
+  const template = useTemplateDetailQuery(templateId, auth.isAuthenticated && !!templateId);
+  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const pickerCatalog = useExercisesQuery({ q: exerciseSearch.trim() || undefined, limit: 50, offset: 0 }, auth.isAuthenticated && showExercisePicker);
+  const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
 
   useEffect(() => {
     const interval = setInterval(() => setElapsed((value) => value + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!template.data || exercises.length > 0) return;
+    const draft = workoutDraftFromTemplate(template.data, lookup);
+    setExercises(draft);
+    setExpanded(draft[0]?.id ?? null);
+  }, [exercises.length, lookup, template.data]);
+
   const completedSets = exercises.flatMap((exercise) => exercise.sets.filter((set) => set.done && !set.warmup)).length;
   const totalSets = exercises.flatMap((exercise) => exercise.sets.filter((set) => !set.warmup)).length;
 
-  const toggleSet = (exerciseId: string, setId: string) => {
-    setExercises((current) =>
-      current.map((exercise) =>
-        exercise.id === exerciseId
-          ? {
-              ...exercise,
-              sets: exercise.sets.map((set) => (set.id === setId ? { ...set, done: !set.done } : set)),
-            }
-          : exercise,
-      ),
-    );
+  const persistSet = async (exercise: WorkoutDraftExercise, set: WorkoutDraftSet, shouldComplete: boolean) => {
+    if (!sessionId) throw new Error("Session was not created.");
+    if (!shouldComplete) {
+      if (set.serverId) await deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete(sessionId, set.serverId);
+      return undefined;
+    }
+
+    const setNumber = exercise.sets.filter((item) => !item.warmup).findIndex((item) => item.id === set.id) + 1;
+    const payload = {
+      exercise_id: exercise.exerciseId,
+      set_number: Math.max(1, setNumber),
+      set_type: set.warmup ? "warmup" : "working",
+      reps: numberOrNull(set.reps),
+      weight_kg: numberOrNull(set.weight),
+      rpe: numberOrNull(set.rpe),
+      is_pr: false,
+      notes: null,
+      logged_at: new Date().toISOString(),
+    };
+
+    if (set.serverId) {
+      const response = await updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch(sessionId, set.serverId, payload);
+      return successData(response).id;
+    }
+    const response = await createExerciseSetWorkoutSessionsSessionIdSetsPost(sessionId, payload);
+    return successData(response).id;
+  };
+
+  const toggleSet = async (exerciseId: string, setId: string) => {
+    const exercise = exercises.find((item) => item.id === exerciseId);
+    const set = exercise?.sets.find((item) => item.id === setId);
+    if (!exercise || !set) return;
+    const shouldComplete = !set.done;
+    setError("");
+    try {
+      const serverId = await persistSet(exercise, set, shouldComplete);
+      setExercises((current) =>
+        current.map((currentExercise) =>
+          currentExercise.id === exerciseId
+            ? {
+                ...currentExercise,
+                sets: currentExercise.sets.map((currentSet) =>
+                  currentSet.id === setId ? { ...currentSet, done: shouldComplete, serverId: shouldComplete ? serverId : undefined } : currentSet,
+                ),
+              }
+            : currentExercise,
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
   };
 
   const updateSet = (exerciseId: string, setId: string, field: "weight" | "reps" | "rpe", value: string) => {
@@ -1695,17 +2354,61 @@ function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
     );
   };
 
-  const addExercise = () => {
+  const addExercise = (exercise: ExerciseResponse) => {
     const nextId = Date.now().toString();
-    const nextExercise: WorkoutExercise = {
+    const nextExercise: WorkoutDraftExercise = {
       id: nextId,
-      name: "New Exercise",
-      emoji: "💪",
+      exerciseId: exercise.id,
+      name: exercise.name,
+      emoji: exerciseEmoji(exercise),
       notes: "",
       sets: [{ id: `${nextId}-1`, weight: "60", reps: "8", rpe: "", done: false, warmup: false }],
     };
     setExercises((current) => [...current, nextExercise]);
     setExpanded(nextId);
+    setShowExercisePicker(false);
+    setExerciseSearch("");
+  };
+
+  const discardWorkout = () => {
+    Alert.alert("Discard workout?", "This will delete the empty session draft.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Discard",
+        style: "destructive",
+        onPress: async () => {
+          if (sessionId) {
+            try {
+              await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
+              queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+            } catch {
+              // Still leave the screen; the server can be cleaned up from history if needed.
+            }
+          }
+          navigation.goBack();
+        },
+      },
+    ]);
+  };
+
+  const finishWorkout = async () => {
+    if (!sessionId) return;
+    setError("");
+    try {
+      await updateWorkoutSessionWorkoutSessionsSessionIdPatch(sessionId, {
+        finished_at: new Date().toISOString(),
+        is_completed: true,
+        mood,
+        notes: note || null,
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      setShowFinish(false);
+      navigation.replace("SessionDetail", { id: String(sessionId) });
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
   };
 
   return (
@@ -1713,7 +2416,7 @@ function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
       <Screen glowColor="rgba(0,0,0,0)">
         <Card style={[styles.stickyCard, { marginTop: 0 }]}>
           <View style={styles.rowBetween}>
-            <Pressable style={styles.dangerPill} onPress={() => navigation.goBack()}>
+            <Pressable style={styles.dangerPill} onPress={discardWorkout}>
               <Feather name="x" size={13} color={COLORS.red} />
               <Text style={styles.dangerPillText}>Discard</Text>
             </Pressable>
@@ -1732,6 +2435,13 @@ function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
             <ProgressBar value={totalSets ? (completedSets / totalSets) * 100 : 0} color={COLORS.teal} />
           </View>
         </Card>
+
+        {template.isPending && templateId ? <LoadingCard label="Loading template workout..." /> : null}
+        {error ? (
+          <View style={[styles.errorBox, { marginTop: 12 }]}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
 
         <View style={{ marginTop: 16, gap: 12 }}>
           {exercises.map((exercise) => {
@@ -1784,7 +2494,7 @@ function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
                             placeholder="-"
                           />
                           <Pressable
-                            onPress={() => toggleSet(exercise.id, set.id)}
+                            onPress={() => void toggleSet(exercise.id, set.id)}
                             style={[styles.doneToggle, set.done ? { backgroundColor: COLORS.teal, borderColor: COLORS.teal } : null]}
                           >
                             {set.done ? <Feather name="check" size={15} color="#000000" /> : null}
@@ -1802,7 +2512,7 @@ function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
             );
           })}
 
-          <Pressable onPress={addExercise}>
+          <Pressable onPress={() => setShowExercisePicker(true)}>
             <View style={styles.dashedAddCard}>
               <View style={[styles.addCircle, { backgroundColor: "rgba(0,212,168,0.12)" }]}>
                 <Feather name="plus" size={18} color={COLORS.teal} />
@@ -1860,14 +2570,56 @@ function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
               </View>
               <PrimaryButton
                 label="Finish & Save"
-                onPress={() => {
-                  setShowFinish(false);
-                  navigation.navigate("SessionDetail", { id: "1" });
-                }}
+                onPress={() => void finishWorkout()}
                 icon={<Feather name="check" size={16} color="#000000" />}
                 style={{ marginTop: 18 }}
               />
               <PrimaryButton label="Keep going" onPress={() => setShowFinish(false)} subtle style={{ marginTop: 10 }} />
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={showExercisePicker} transparent animationType="slide" onRequestClose={() => setShowExercisePicker(false)}>
+          <View style={styles.modalScrim}>
+            <Pressable style={styles.modalBackdrop} onPress={() => setShowExercisePicker(false)} />
+            <View style={styles.bottomSheet}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.sheetTitle}>Add Exercise</Text>
+                <Pressable onPress={() => setShowExercisePicker(false)}>
+                  <Feather name="x" size={18} color="rgba(255,255,255,0.5)" />
+                </Pressable>
+              </View>
+              <View style={[styles.searchWrap, { marginTop: 18 }]}>
+                <Feather name="search" size={14} color="rgba(255,255,255,0.35)" />
+                <TextInput
+                  value={exerciseSearch}
+                  onChangeText={setExerciseSearch}
+                  placeholder="Search exercises..."
+                  placeholderTextColor="rgba(255,255,255,0.32)"
+                  style={styles.searchInput}
+                />
+              </View>
+              <View style={{ maxHeight: 360, marginTop: 14 }}>
+                {pickerCatalog.isPending ? <LoadingCard label="Searching..." /> : null}
+                {pickerCatalog.isError ? <ErrorCard error={pickerCatalog.error} onRetry={() => pickerCatalog.refetch()} /> : null}
+                <ScrollView contentContainerStyle={{ gap: 10 }}>
+                  {(pickerCatalog.data?.items ?? []).map((exercise) => (
+                    <Pressable key={exercise.id} onPress={() => addExercise(exercise)}>
+                      <Card style={styles.listRowCard}>
+                        <View style={styles.exerciseEmojiWrap}>
+                          <Text style={{ fontSize: 18 }}>{exerciseEmoji(exercise)}</Text>
+                        </View>
+                        <View style={styles.listRowBody}>
+                          <Text style={styles.listRowTitle}>{exercise.name}</Text>
+                          <Text style={styles.detailLabel}>
+                            {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
+                          </Text>
+                        </View>
+                      </Card>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
             </View>
           </View>
         </Modal>
@@ -1877,39 +2629,50 @@ function ActiveWorkoutScreen({ navigation }: { navigation: any }) {
 }
 
 function WorkoutHistoryScreen({ navigation }: { navigation: any }) {
-  const totalVolume = WORKOUT_SESSIONS.reduce((sum, session) => sum + parseFloat(session.volume.replace("k", "")) * 1000, 0);
+  const auth = useAuth();
+  const sessions = useSessionsQuery(auth.isAuthenticated);
+  const totalVolume = (sessions.data ?? []).reduce((sum, session) => sum + (session.total_volume ?? 0), 0);
+  const grouped = useMemo(() => {
+    return (sessions.data ?? []).reduce<Record<string, WorkoutSessionResponse[]>>((acc, session) => {
+      const key = formatDateLabel(session.started_at);
+      acc[key] = [...(acc[key] ?? []), session];
+      return acc;
+    }, {});
+  }, [sessions.data]);
 
   return (
     <Screen glowColor="rgba(0,180,140,0.12)">
-      <BackHeader title="Workout History" subtitle={`${WORKOUT_SESSIONS.length} sessions`} onBack={() => navigation.goBack()} />
+      <BackHeader title="Workout History" subtitle={`${sessions.data?.length ?? 0} sessions`} onBack={() => navigation.goBack()} />
       <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
-        <CompactStatCard label="Total Sessions" value="248" />
+        <CompactStatCard label="Total Sessions" value={String(sessions.data?.length ?? 0)} />
         <CompactStatCard label="Total Volume" value={`${Math.round(totalVolume / 1000)}k kg`} />
-        <CompactStatCard label="Best Streak" value="14 days" />
+        <CompactStatCard label="Completed" value={String((sessions.data ?? []).filter((session) => session.is_completed).length)} />
       </View>
+      {sessions.isPending ? <LoadingCard label="Loading history..." /> : null}
+      {sessions.isError ? <ErrorCard error={sessions.error} onRetry={() => sessions.refetch()} /> : null}
       <View style={{ marginTop: 18, gap: 18 }}>
-        {Object.entries(WORKOUT_WEEKS).map(([week, sessions]) => (
+        {Object.entries(grouped).map(([week, weekSessions]) => (
           <View key={week}>
             <SectionEyebrow>{week}</SectionEyebrow>
             <View style={{ gap: 10, marginTop: 12 }}>
-              {sessions.map((session) => (
-                <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: session.id })}>
+              {weekSessions.map((session) => (
+                <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
                   <Card style={styles.listRowCard}>
                     <View style={styles.historyMoodWrap}>
-                      <Text style={{ fontSize: 18 }}>{session.mood}</Text>
+                      <Text style={{ fontSize: 18 }}>{session.mood ?? "✓"}</Text>
                     </View>
                     <View style={styles.listRowBody}>
-                      <Text style={styles.listRowTitle}>{session.name}</Text>
+                      <Text style={styles.listRowTitle}>{workoutTitle(session)}</Text>
                       <Text style={styles.detailLabel}>
-                        {session.date} - {session.time}
+                        {formatShortDate(session.started_at)} - {formatTimeLabel(session.started_at)}
                       </Text>
                       <View style={[styles.rowGapLarge, { marginTop: 6 }]}>
-                        <MetaInline icon={<Feather name="clock" size={10} color="rgba(255,255,255,0.3)" />} text={`${session.duration}m`} />
+                        <MetaInline icon={<Feather name="clock" size={10} color="rgba(255,255,255,0.3)" />} text={`${session.duration_minutes ?? 0}m`} />
                         <MetaInline
                           icon={<MaterialCommunityIcons name="dumbbell" size={10} color="rgba(255,255,255,0.3)" />}
-                          text={`${session.sets} sets`}
+                          text={`${session.total_sets ?? 0} sets`}
                         />
-                        {session.prs > 0 ? <Tag label={`${session.prs} PR`} color={COLORS.gold} /> : null}
+                        {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR`} color={COLORS.gold} /> : null}
                       </View>
                     </View>
                     <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.22)" />
@@ -1919,21 +2682,60 @@ function WorkoutHistoryScreen({ navigation }: { navigation: any }) {
             </View>
           </View>
         ))}
+        {!sessions.isPending && (sessions.data?.length ?? 0) === 0 ? (
+          <EmptyCard title="No workouts yet" text="Start a workout to populate your history." />
+        ) : null}
       </View>
     </Screen>
   );
 }
 
-function SessionDetailScreen({ navigation }: { navigation: any }) {
+function SessionDetailScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const sessionId = toNumberId(route?.params?.id);
   const [showMenu, setShowMenu] = useState(false);
+  const detail = useSessionDetailQuery(sessionId, auth.isAuthenticated);
+  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
+  const exerciseGroups = useMemo(() => groupSetsByExercise(detail.data?.sets ?? [], lookup), [detail.data?.sets, lookup]);
 
   const handleDelete = () => {
     setShowMenu(false);
     Alert.alert("Delete this session?", "PRs will be recalculated.", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: () => navigation.replace("WorkoutHistory") },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          if (sessionId) await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
+          queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+          queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+          navigation.replace("WorkoutHistory");
+        },
+      },
     ]);
   };
+
+  if (detail.isPending) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.12)">
+        <BackHeader title="Session Detail" onBack={() => navigation.goBack()} />
+        <LoadingCard label="Loading session..." />
+      </Screen>
+    );
+  }
+
+  if (detail.isError || !detail.data) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.12)">
+        <BackHeader title="Session Detail" onBack={() => navigation.goBack()} />
+        <ErrorCard error={detail.error} onRetry={() => detail.refetch()} />
+      </Screen>
+    );
+  }
+
+  const session = detail.data;
 
   return (
     <Screen glowColor="rgba(0,180,140,0.12)">
@@ -1964,36 +2766,36 @@ function SessionDetailScreen({ navigation }: { navigation: any }) {
       <View style={{ marginTop: 18 }}>
         <View style={styles.rowBetween}>
           <View style={styles.rowGap}>
-            <Text style={{ fontSize: 30 }}>{SESSION_DETAIL.mood}</Text>
+            <Text style={{ fontSize: 30 }}>{session.mood ?? "✓"}</Text>
             <View>
-              <Text style={styles.heroTitle}>{SESSION_DETAIL.name}</Text>
-              <Text style={styles.detailLabel}>{SESSION_DETAIL.date}</Text>
+              <Text style={styles.heroTitle}>{workoutTitle(session)}</Text>
+              <Text style={styles.detailLabel}>{formatDateLabel(session.started_at)}</Text>
             </View>
           </View>
-          {SESSION_DETAIL.prs > 0 ? <Tag label={`${SESSION_DETAIL.prs} PR!`} color={COLORS.gold} /> : null}
+          {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR!`} color={COLORS.gold} /> : null}
         </View>
         <View style={[styles.threeUpGrid, { marginTop: 14 }]}>
-          <DetailStat label="Duration" value={`${SESSION_DETAIL.duration}m`} icon={<Feather name="clock" size={13} color={COLORS.teal} />} />
+          <DetailStat label="Duration" value={`${session.duration_minutes ?? 0}m`} icon={<Feather name="clock" size={13} color={COLORS.teal} />} />
           <DetailStat
             label="Sets"
-            value={String(SESSION_DETAIL.sets)}
+            value={String(session.total_sets ?? session.sets.length)}
             icon={<MaterialCommunityIcons name="dumbbell" size={13} color={COLORS.teal} />}
           />
           <DetailStat
             label="Volume"
-            value={SESSION_DETAIL.volume}
+            value={formatVolume(session.total_volume)}
             icon={<MaterialCommunityIcons name="dumbbell" size={13} color={COLORS.teal} />}
           />
         </View>
       </View>
 
       <View style={{ gap: 12, marginTop: 18 }}>
-        {SESSION_DETAIL.exercises.map((exercise) => (
+        {exerciseGroups.map((exercise) => (
           <Card key={exercise.name} style={{ paddingHorizontal: 16, paddingVertical: 0 }}>
             <View style={styles.exerciseHeader}>
               <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
               <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
-              {exercise.pr ? <Tag label="PR" color={COLORS.gold} /> : null}
+              {exercise.sets.some((set) => set.is_pr) ? <Tag label="PR" color={COLORS.gold} /> : null}
             </View>
             <View style={{ paddingVertical: 14 }}>
               <View style={styles.sessionGridHeader}>
@@ -2004,13 +2806,13 @@ function SessionDetailScreen({ navigation }: { navigation: any }) {
                 ))}
               </View>
               <View style={{ gap: 8 }}>
-                {exercise.sets.map((set, index) => (
-                  <View key={`${exercise.name}-${index}`} style={styles.sessionGridRow}>
-                    <Text style={[styles.smallStrongText, { width: 28, textAlign: "center", color: set.type === "W" ? COLORS.orange : COLORS.muted }]}>
-                      {set.type}
+                {exercise.sets.map((set) => (
+                  <View key={set.id} style={styles.sessionGridRow}>
+                    <Text style={[styles.smallStrongText, { width: 28, textAlign: "center", color: set.set_type === "warmup" ? COLORS.orange : COLORS.muted }]}>
+                      {set.set_type === "warmup" ? "W" : set.set_number}
                     </Text>
-                    {[set.weight, set.reps, set.rpe].map((value) => (
-                      <View key={`${exercise.name}-${set.type}-${value}`} style={styles.sessionCell}>
+                    {[formatKg(set.weight_kg, ""), set.reps ?? "-", set.rpe ?? "-"].map((value, index) => (
+                      <View key={`${set.id}-${index}`} style={styles.sessionCell}>
                         <Text style={styles.sessionCellText}>{value}</Text>
                       </View>
                     ))}
@@ -2026,6 +2828,24 @@ function SessionDetailScreen({ navigation }: { navigation: any }) {
 }
 
 function MesocycleListScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const mesocycles = useMesocyclesQuery(auth.isAuthenticated);
+  const createMeso = useMutation({
+    mutationFn: async () =>
+      createMesocycleMesocyclesPost({
+        name: "New Mesocycle",
+        goal: "Improve strength",
+        started_on: new Date().toISOString().slice(0, 10),
+        weeks: 6,
+      }),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mesocycles });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      navigation.navigate("MesocycleDetail", { id: String(successData(response).id) });
+    },
+  });
+
   return (
     <Screen glowColor="rgba(139,92,246,0.16)">
       <BackHeader
@@ -2033,7 +2853,10 @@ function MesocycleListScreen({ navigation }: { navigation: any }) {
         subtitle="Block periodization planning"
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={[styles.smallAccentButton, { backgroundColor: "rgba(139,92,246,0.15)", borderColor: "rgba(139,92,246,0.3)" }]}>
+          <Pressable
+            onPress={() => createMeso.mutate()}
+            style={[styles.smallAccentButton, { backgroundColor: "rgba(139,92,246,0.15)", borderColor: "rgba(139,92,246,0.3)" }]}
+          >
             <Feather name="plus" size={14} color={COLORS.purple} />
             <Text style={[styles.smallAccentText, { color: COLORS.purple }]}>New</Text>
           </Pressable>
@@ -2056,72 +2879,129 @@ function MesocycleListScreen({ navigation }: { navigation: any }) {
         </View>
       </Card>
 
+      {mesocycles.isPending ? <LoadingCard label="Loading mesocycles..." /> : null}
+      {mesocycles.isError ? <ErrorCard error={mesocycles.error} onRetry={() => mesocycles.refetch()} /> : null}
+
       <View style={{ marginTop: 18, gap: 12 }}>
-        {MESOCYCLE_LIST.map((meso) => {
-          const status = MESOCYCLE_STATUS[meso.status];
-          const progress = meso.weeks ? (meso.currentWeek / meso.weeks) * 100 : 0;
+        {(mesocycles.data ?? []).map((meso) => {
+          const start = new Date(meso.started_on).getTime();
+          const end = meso.ended_on ? new Date(meso.ended_on).getTime() : start + (meso.weeks ?? 0) * 7 * 24 * 60 * 60 * 1000;
+          const progress = end > start ? ((Date.now() - start) / (end - start)) * 100 : 0;
           return (
-            <Pressable key={meso.id} onPress={() => navigation.navigate("MesocycleDetail", { id: meso.id })}>
-              <Card style={{ borderColor: `${meso.color}24` }}>
+            <Pressable key={meso.id} onPress={() => navigation.navigate("MesocycleDetail", { id: String(meso.id) })}>
+              <Card style={{ borderColor: "rgba(139,92,246,0.24)" }}>
                 <View style={styles.rowBetween}>
                   <View style={{ flex: 1 }}>
                     <View style={styles.rowGap}>
-                      <View style={[styles.statusDot, { backgroundColor: meso.color }]} />
+                      <View style={[styles.statusDot, { backgroundColor: COLORS.purple }]} />
                       <Text style={styles.cardTitle}>{meso.name}</Text>
                     </View>
-                    <Text style={[styles.detailLabel, { marginLeft: 14, marginTop: 6 }]}>{meso.phase}</Text>
+                    <Text style={[styles.detailLabel, { marginLeft: 14, marginTop: 6 }]}>{meso.goal ?? "Training block"}</Text>
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 6 }}>
-                    <Tag label={status.label} color={status.color} backgroundColor={status.bg} />
+                    <Tag label={meso.ended_on ? "Complete" : "Active"} color={meso.ended_on ? COLORS.green : COLORS.purple} />
                     <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
                   </View>
                 </View>
-                {meso.status === "active" ? (
-                  <View style={{ marginTop: 14 }}>
-                    <View style={styles.rowBetween}>
-                      <Text style={styles.detailLabel}>
-                        Week {meso.currentWeek} of {meso.weeks}
-                      </Text>
-                      <Text style={[styles.smallStrongText, { color: meso.color }]}>{Math.round(progress)}%</Text>
-                    </View>
-                    <View style={{ marginTop: 8 }}>
-                      <ProgressBar value={progress} color={meso.color} />
-                    </View>
+                <View style={{ marginTop: 14 }}>
+                  <View style={styles.rowBetween}>
+                    <Text style={styles.detailLabel}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
+                    <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>{Math.round(Math.max(0, Math.min(100, progress)))}%</Text>
                   </View>
-                ) : null}
+                  <View style={{ marginTop: 8 }}>
+                    <ProgressBar value={progress} color={COLORS.purple} />
+                  </View>
+                </View>
               </Card>
             </Pressable>
           );
         })}
+        {!mesocycles.isPending && (mesocycles.data?.length ?? 0) === 0 ? (
+          <EmptyCard title="No mesocycles yet" text="Create a block when you want advanced planning." />
+        ) : null}
       </View>
     </Screen>
   );
 }
 
-function MesocycleDetailScreen({ navigation }: { navigation: any }) {
+function MesocycleDetailScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const mesocycleId = toNumberId(route?.params?.id);
+  const detail = useMesocycleDetailQuery(mesocycleId, auth.isAuthenticated);
+  const analytics = useMesocycleAnalyticsQuery(mesocycleId, undefined, auth.isAuthenticated);
+  const deleteMeso = useMutation({
+    mutationFn: async () => {
+      if (!mesocycleId) return;
+      await deleteMesocycleMesocyclesMesocycleIdDelete(mesocycleId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.mesocycles });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      navigation.replace("MesocycleList");
+    },
+  });
+
+  if (detail.isPending) {
+    return (
+      <Screen glowColor="rgba(139,92,246,0.16)">
+        <BackHeader title="Mesocycle" onBack={() => navigation.goBack()} />
+        <LoadingCard label="Loading mesocycle..." />
+      </Screen>
+    );
+  }
+
+  if (detail.isError || !detail.data) {
+    return (
+      <Screen glowColor="rgba(139,92,246,0.16)">
+        <BackHeader title="Mesocycle" onBack={() => navigation.goBack()} />
+        <ErrorCard error={detail.error} onRetry={() => detail.refetch()} />
+      </Screen>
+    );
+  }
+
+  const meso = detail.data;
+  const summary = analytics.data?.current_block_summary;
+  const delta = analytics.data?.comparison_to_previous;
+  const volumeData = meso.sessions.map((session) => ({
+    label: formatShortDate(session.started_at),
+    value: session.total_volume ?? 0,
+  }));
+  const start = new Date(meso.started_on).getTime();
+  const end = meso.ended_on ? new Date(meso.ended_on).getTime() : start + (meso.weeks ?? 0) * 7 * 24 * 60 * 60 * 1000;
+  const progress = end > start ? Math.max(0, Math.min(100, ((Date.now() - start) / (end - start)) * 100)) : 0;
+
   return (
     <Screen glowColor="rgba(139,92,246,0.16)">
-      <BackHeader title="Mesocycle" onBack={() => navigation.goBack()} />
+      <BackHeader
+        title="Mesocycle"
+        onBack={() => navigation.goBack()}
+        right={
+          <RoundButton onPress={() => deleteMeso.mutate()}>
+            <Feather name="trash-2" size={15} color={COLORS.red} />
+          </RoundButton>
+        }
+      />
 
       <Card style={{ marginTop: 18, backgroundColor: "rgba(139,92,246,0.1)", borderColor: "rgba(139,92,246,0.25)" }}>
         <View style={styles.rowGap}>
           <View style={[styles.statusDot, { backgroundColor: COLORS.teal }]} />
-          <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>ACTIVE</Text>
+          <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>{meso.ended_on ? "COMPLETE" : "ACTIVE"}</Text>
         </View>
-        <Text style={[styles.heroTitle, { marginTop: 10 }]}>Strength Block</Text>
-        <Text style={styles.detailLabel}>Phase 1 - Linear Progression</Text>
+        <Text style={[styles.heroTitle, { marginTop: 10 }]}>{meso.name}</Text>
+        <Text style={styles.detailLabel}>{meso.goal ?? "Training block"}</Text>
         <View style={[styles.rowBetween, { marginTop: 18 }]}>
-          <Text style={styles.detailLabel}>Week 3 of 6</Text>
-          <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>50%</Text>
+          <Text style={styles.detailLabel}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
+          <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>{Math.round(progress)}%</Text>
         </View>
         <View style={{ marginTop: 8 }}>
-          <ProgressBar value={50} color={COLORS.purple} />
+          <ProgressBar value={progress} color={COLORS.purple} />
         </View>
         <View style={[styles.rowGapLarge, { marginTop: 16, flexWrap: "wrap" }]}>
-          <MetaInline icon={<Feather name="calendar" size={12} color="rgba(255,255,255,0.35)" />} text="Mar 3 -> Apr 13" />
+          <MetaInline icon={<Feather name="calendar" size={12} color="rgba(255,255,255,0.35)" />} text={`${formatShortDate(meso.started_on)} -> ${formatShortDate(meso.ended_on)}`} />
           <MetaInline
             icon={<MaterialCommunityIcons name="dumbbell" size={12} color="rgba(255,255,255,0.35)" />}
-            text="14 sessions logged"
+            text={`${meso.sessions.length} sessions logged`}
           />
         </View>
       </Card>
@@ -2129,10 +3009,10 @@ function MesocycleDetailScreen({ navigation }: { navigation: any }) {
       <Card style={{ marginTop: 14 }}>
         <View style={styles.rowBetween}>
           <Text style={styles.sectionCardTitle}>Weekly Volume</Text>
-          <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>kg lifted</Text>
+        <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>kg lifted</Text>
         </View>
         <View style={{ marginTop: 14 }}>
-          <TrendChart data={MESO_VOLUME_DATA.map((item) => ({ label: item.label, value: item.value }))} color={COLORS.purple} labelEvery={1} height={110} />
+          <TrendChart data={volumeData.length ? volumeData : MESO_VOLUME_DATA.map((item) => ({ label: item.label, value: item.value }))} color={COLORS.purple} labelEvery={1} height={110} />
         </View>
       </Card>
 
@@ -2142,10 +3022,15 @@ function MesocycleDetailScreen({ navigation }: { navigation: any }) {
           <Text style={[styles.listRowTitle, { color: COLORS.purple }]}>Block Analytics</Text>
         </View>
         <View style={[styles.twoUpGrid, { marginTop: 14 }]}>
-          <AnalyticsCard label="vs. Previous Block" value="+12%" sub="volume increase" color={COLORS.green} />
-          <AnalyticsCard label="Deload Suggestion" value="Week 5" sub="based on fatigue" color={COLORS.text} />
-          <AnalyticsCard label="Top Lift Gain" value="+10kg" sub="Deadlift e1RM" color={COLORS.green} />
-          <AnalyticsCard label="Avg Session RPE" value="7.8" sub="within target 7-9" color={COLORS.green} />
+          <AnalyticsCard label="vs. Previous Block" value={delta ? formatVolume(delta.total_volume_load_delta) : "-"} sub="volume delta" color={COLORS.green} />
+          <AnalyticsCard
+            label="Deload Suggestion"
+            value={analytics.data?.deload_suggestion.is_recommended ? "Yes" : "No"}
+            sub="based on high RPE weeks"
+            color={COLORS.text}
+          />
+          <AnalyticsCard label="Total Sets" value={String(summary?.total_sets ?? 0)} sub="current block" color={COLORS.green} />
+          <AnalyticsCard label="Avg Session RPE" value={summary?.average_session_rpe?.toFixed(1) ?? "-"} sub="current block" color={COLORS.green} />
         </View>
         <Pressable onPress={() => navigation.navigate("MuscleBalance")} style={styles.analyticsLink}>
           <View style={styles.rowGap}>
@@ -2159,22 +3044,23 @@ function MesocycleDetailScreen({ navigation }: { navigation: any }) {
       <View style={{ marginTop: 18 }}>
         <SectionEyebrow>Linked Sessions</SectionEyebrow>
         <View style={{ gap: 10, marginTop: 12 }}>
-          {LINKED_SESSIONS.map((session) => (
-            <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: session.id })}>
+          {meso.sessions.map((session) => (
+            <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
               <Card style={styles.listRowCard}>
                 <View style={styles.softIconWrap}>
                   <MaterialCommunityIcons name="dumbbell" size={16} color={COLORS.purple} />
                 </View>
                 <View style={styles.listRowBody}>
-                  <Text style={styles.listRowTitle}>{session.name}</Text>
+                  <Text style={styles.listRowTitle}>{workoutTitle(session)}</Text>
                   <Text style={styles.detailLabel}>
-                    {session.date} - {session.sets} sets - {session.volume} kg
+                    {formatShortDate(session.started_at)} - {session.total_sets ?? 0} sets - {formatVolume(session.total_volume)}
                   </Text>
                 </View>
                 <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.22)" />
               </Card>
             </Pressable>
           ))}
+          {meso.sessions.length === 0 ? <Text style={styles.detailLabel}>No sessions linked to this mesocycle yet.</Text> : null}
         </View>
       </View>
     </Screen>
@@ -2182,15 +3068,18 @@ function MesocycleDetailScreen({ navigation }: { navigation: any }) {
 }
 
 function ProgressHubScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const overview = useOverviewQuery(auth.isAuthenticated);
+  const latestPr = overview.data?.recent_personal_records[0];
   return (
     <Screen glowColor="rgba(251,191,36,0.1)">
       <View style={styles.tabIntro}>
         <SectionEyebrow>Analytics</SectionEyebrow>
         <Text style={styles.tabTitle}>Progress</Text>
         <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
-          {PROGRESS_QUICK_STATS.map((stat) => (
-            <CompactStatCard key={stat.label} label={stat.label} value={stat.value} valueColor={stat.color} />
-          ))}
+          <CompactStatCard label="PRs" value={String(overview.data?.stats.personal_record_count ?? 0)} valueColor={COLORS.gold} />
+          <CompactStatCard label="Sessions" value={String(overview.data?.stats.completed_sessions ?? 0)} valueColor={COLORS.teal} />
+          <CompactStatCard label="Streak" value={String(overview.data?.workout_streaks.current_daily_streak ?? 0)} valueColor={COLORS.green} />
         </View>
       </View>
 
@@ -2225,24 +3114,43 @@ function ProgressHubScreen({ navigation }: { navigation: any }) {
         ))}
       </View>
 
-      <Card style={{ marginTop: 18, backgroundColor: "rgba(251,191,36,0.07)", borderColor: "rgba(251,191,36,0.2)" }}>
-        <View style={styles.rowGap}>
-          <Text style={{ fontSize: 24 }}>🏆</Text>
-          <View>
-            <Text style={[styles.listRowTitle, { color: COLORS.gold }]}>New Bench Press PR!</Text>
-            <Text style={styles.detailLabel}>110 kg x 3 reps - 3 days ago</Text>
+      {latestPr ? (
+        <Card style={{ marginTop: 18, backgroundColor: "rgba(251,191,36,0.07)", borderColor: "rgba(251,191,36,0.2)" }}>
+          <View style={styles.rowGap}>
+            <Text style={{ fontSize: 24 }}>🏆</Text>
+            <View>
+              <Text style={[styles.listRowTitle, { color: COLORS.gold }]}>New {latestPr.record_type} PR</Text>
+              <Text style={styles.detailLabel}>
+                {recordValue(latestPr)} - {formatShortDate(latestPr.achieved_on)}
+              </Text>
+            </View>
           </View>
-        </View>
-      </Card>
+        </Card>
+      ) : null}
     </Screen>
   );
 }
 
 function PersonalRecordsScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const appConfig = useAppConfigQuery();
+  const records = usePersonalRecordsQuery(filter === "All" ? undefined : { record_type: filter }, auth.isAuthenticated);
+  const exercises = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const lookup = useMemo(() => exerciseLookup(exercises.data?.items), [exercises.data?.items]);
 
-  const filtered = PERSONAL_RECORDS.filter((entry) => entry.exercise.toLowerCase().includes(search.toLowerCase()));
+  const grouped = useMemo(() => {
+    const normalized = search.toLowerCase();
+    const groups = new Map<string, PersonalRecordResponse[]>();
+    (records.data ?? []).forEach((record) => {
+      const name = nameForExercise(record.exercise_id, lookup);
+      if (normalized && !name.toLowerCase().includes(normalized) && !record.exercise_id.toLowerCase().includes(normalized)) return;
+      groups.set(record.exercise_id, [...(groups.get(record.exercise_id) ?? []), record]);
+    });
+    return Array.from(groups.entries()).map(([exerciseId, items]) => ({ exerciseId, records: items }));
+  }, [lookup, records.data, search]);
+  const recordTypes = ["All", ...(appConfig.data?.supported_values.personal_record_types ?? RECORD_TYPES.filter((type) => type !== "All"))];
 
   return (
     <Screen glowColor="rgba(251,191,36,0.14)">
@@ -2266,7 +3174,7 @@ function PersonalRecordsScreen({ navigation }: { navigation: any }) {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, marginTop: 14 }}>
-        {RECORD_TYPES.map((type) => (
+        {recordTypes.map((type) => (
           <Pressable
             key={type}
             onPress={() => setFilter(type)}
@@ -2280,59 +3188,91 @@ function PersonalRecordsScreen({ navigation }: { navigation: any }) {
         ))}
       </ScrollView>
 
+      {records.isPending ? <LoadingCard label="Loading personal records..." /> : null}
+      {records.isError ? <ErrorCard error={records.error} onRetry={() => records.refetch()} /> : null}
+
       <View style={{ marginTop: 16, gap: 12 }}>
-        {filtered.map((entry) => (
-          <Card key={entry.id} style={{ paddingVertical: 0 }}>
+        {grouped.map((entry) => {
+          const exercise = lookup.get(entry.exerciseId);
+          return (
+          <Card key={entry.exerciseId} style={{ paddingVertical: 0 }}>
             <Pressable style={styles.exerciseHeader} onPress={() => navigation.navigate("ExerciseProgress", { id: entry.exerciseId })}>
-              <Text style={{ fontSize: 20 }}>{entry.emoji}</Text>
-              <Text style={[styles.listRowTitle, { flex: 1 }]}>{entry.exercise}</Text>
+              <Text style={{ fontSize: 20 }}>{exerciseEmoji(exercise)}</Text>
+              <Text style={[styles.listRowTitle, { flex: 1 }]}>{nameForExercise(entry.exerciseId, lookup)}</Text>
               <View style={styles.rowGapTiny}>
                 <Feather name="trending-up" size={13} color="rgba(255,255,255,0.32)" />
                 <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.22)" />
               </View>
             </Pressable>
             <View style={{ paddingHorizontal: 16, paddingVertical: 14, gap: 10 }}>
-              {entry.records
-                .filter((record) => filter === "All" || record.type === filter)
-                .map((record) => (
-                  <View key={record.type} style={styles.rowBetween}>
+              {entry.records.map((record) => (
+                  <View key={record.id} style={styles.rowBetween}>
                     <View style={styles.rowGap}>
                       <View style={[styles.softIconWrap, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
                         <Feather name="award" size={13} color={COLORS.gold} />
                       </View>
                       <View>
-                        <Text style={styles.smallStrongText}>{record.type}</Text>
-                        <Text style={styles.listMeta}>{record.date}</Text>
+                        <Text style={styles.smallStrongText}>{record.record_type}</Text>
+                        <Text style={styles.listMeta}>{formatShortDate(record.achieved_on)}</Text>
                       </View>
                     </View>
                     <View style={styles.rowGap}>
-                      <Text style={[styles.prValue, { color: COLORS.gold }]}>{record.value}</Text>
-                      {record.isNew ? <Tag label="NEW" color={COLORS.teal} /> : null}
+                      <Text style={[styles.prValue, { color: COLORS.gold }]}>{recordValue(record)}</Text>
                     </View>
                   </View>
                 ))}
             </View>
           </Card>
-        ))}
+          );
+        })}
+        {!records.isPending && grouped.length === 0 ? <EmptyCard title="No records found" text="Complete workouts to generate records." /> : null}
       </View>
     </Screen>
   );
 }
 
 function ExerciseProgressScreen({ navigation, route }: { navigation: any; route: { params: { id: string } } }) {
+  const auth = useAuth();
   const { id } = route.params;
   const [period, setPeriod] = useState("3M");
-  const exercise = EXERCISE_NAMES[id ?? "1"] ?? EXERCISE_NAMES["1"];
-  const current = EXERCISE_PROGRESS_SERIES.at(-1)?.value ?? 0;
-  const gain = current - (EXERCISE_PROGRESS_SERIES[0]?.value ?? 0);
+  const progress = useExerciseProgressQuery(id, undefined, auth.isAuthenticated);
+  const e1rmData =
+    progress.data?.e1rm_history.map((item) => ({ label: formatShortDate(item.performed_at), value: item.default_e1rm ?? item.weight_kg ?? 0 })) ?? [];
+  const volumeData =
+    progress.data?.weekly_volume_history.map((item, index, array) => ({
+      label: formatShortDate(item.week_start),
+      value: item.volume_load,
+      highlight: index === array.length - 1,
+    })) ?? [];
+  const current = e1rmData.at(-1)?.value ?? 0;
+  const gain = current - (e1rmData[0]?.value ?? current);
+  const exerciseName = progress.data?.exercise_name ?? EXERCISE_NAMES[id ?? "1"]?.name ?? "Exercise";
+
+  if (progress.isPending) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.12)">
+        <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
+        <LoadingCard label="Loading progress..." />
+      </Screen>
+    );
+  }
+
+  if (progress.isError) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.12)">
+        <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
+        <ErrorCard error={progress.error} onRetry={() => progress.refetch()} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen glowColor="rgba(0,180,140,0.12)">
-      <BackHeader title={exercise.name} subtitle="Exercise Progress" onBack={() => navigation.goBack()} />
+      <BackHeader title={exerciseName} subtitle="Exercise Progress" onBack={() => navigation.goBack()} />
 
       <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
         <CompactStatCard label="Current e1RM" value={`${current} kg`} valueColor={COLORS.teal} />
-        <CompactStatCard label="Gain (3M)" value={`+${gain} kg`} valueColor={COLORS.green} />
+        <CompactStatCard label="Gain" value={`${gain >= 0 ? "+" : ""}${Math.round(gain)} kg`} valueColor={gain >= 0 ? COLORS.green : COLORS.red} />
         <CompactStatCard label="All-time PR" value={`${current} kg`} valueColor={COLORS.gold} />
       </View>
 
@@ -2355,36 +3295,39 @@ function ExerciseProgressScreen({ navigation, route }: { navigation: any; route:
           </ScrollView>
         </View>
         <View style={{ marginTop: 14 }}>
-          <TrendChart data={EXERCISE_PROGRESS_SERIES} color={COLORS.teal} height={128} />
+          <TrendChart data={e1rmData.length ? e1rmData : EXERCISE_PROGRESS_SERIES} color={COLORS.teal} height={128} />
         </View>
       </Card>
 
       <Card style={{ marginTop: 14 }}>
         <Text style={styles.sectionCardTitle}>Weekly Volume</Text>
         <View style={{ marginTop: 12 }}>
-          <VerticalBars data={EXERCISE_PROGRESS_VOLUME.map((item) => ({ label: item.label, value: item.value, highlight: item.highlight }))} height={90} />
+          <VerticalBars data={volumeData.length ? volumeData : EXERCISE_PROGRESS_VOLUME.map((item) => ({ label: item.label, value: item.value, highlight: item.highlight }))} height={90} />
         </View>
       </Card>
 
       <View style={{ marginTop: 18 }}>
         <SectionEyebrow>Recent Overloads</SectionEyebrow>
         <View style={{ gap: 10, marginTop: 12 }}>
-          {EXERCISE_OVERLOADS.map((entry) => (
-            <Card key={`${entry.date}-${entry.change}`} style={styles.listRowCard}>
+          {(progress.data?.progressive_overload ?? []).map((entry) => (
+            <Card key={`${entry.current_session_id}-${entry.performed_at}`} style={styles.listRowCard}>
               <View style={[styles.softIconWrap, { backgroundColor: "rgba(34,197,94,0.15)" }]}>
                 <Feather name="award" size={13} color={COLORS.green} />
               </View>
               <View style={styles.listRowBody}>
                 <View style={styles.rowGapTiny}>
-                  <Text style={[styles.smallStrongText, { color: COLORS.green }]}>{entry.change}</Text>
-                  <Text style={styles.detailLabel}>- {entry.type}</Text>
+                  <Text style={[styles.smallStrongText, { color: COLORS.green }]}>+{formatVolume(entry.volume_load_delta)}</Text>
+                  <Text style={styles.detailLabel}>- volume</Text>
                 </View>
                 <Text style={styles.listMeta}>
-                  {entry.date} - {entry.session}
+                  {formatShortDate(entry.performed_at)} - session {entry.current_session_id}
                 </Text>
               </View>
             </Card>
           ))}
+          {progress.data?.progressive_overload.length === 0 ? (
+            <Text style={styles.detailLabel}>No overload comparisons yet.</Text>
+          ) : null}
         </View>
       </View>
     </Screen>
@@ -2392,8 +3335,20 @@ function ExerciseProgressScreen({ navigation, route }: { navigation: any; route:
 }
 
 function MuscleBalanceScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
   const [period, setPeriod] = useState("1W");
-  const underTarget = MUSCLE_DATA.filter((item) => item.sets < item.target);
+  const weeks = period === "1W" ? 1 : period === "4W" ? 4 : period === "8W" ? 8 : 12;
+  const report = useMuscleBalanceQuery({ weeks }, auth.isAuthenticated);
+  const muscleData =
+    report.data?.items.map((item, index) => ({
+      muscle: item.muscle_group,
+      sets: Math.round(item.average_weekly_sets),
+      completedSets: item.completed_sets,
+      target: item.minimum_weekly_sets,
+      color: [COLORS.teal, COLORS.green, COLORS.gold, COLORS.purple, COLORS.blue, COLORS.orange][index % 6],
+      meetsMinimum: item.meets_minimum,
+    })) ?? [];
+  const underTarget = muscleData.filter((item) => !item.meetsMinimum);
 
   return (
     <Screen glowColor="rgba(139,92,246,0.15)">
@@ -2422,21 +3377,24 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
       <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
         <CompactStatCard
           label="On Track"
-          value={String(MUSCLE_DATA.filter((item) => item.sets >= item.target * 0.85).length)}
+          value={String(muscleData.filter((item) => item.meetsMinimum).length)}
           valueColor={COLORS.teal}
         />
         <CompactStatCard label="Under Target" value={String(underTarget.length)} valueColor={COLORS.orange} />
         <CompactStatCard
           label="Over Target"
-          value={String(MUSCLE_DATA.filter((item) => item.sets > item.target * 1.1).length)}
+          value={String(muscleData.filter((item) => item.sets > item.target * 1.1).length)}
           valueColor={COLORS.green}
         />
       </View>
 
+      {report.isPending ? <LoadingCard label="Loading muscle balance..." /> : null}
+      {report.isError ? <ErrorCard error={report.error} onRetry={() => report.refetch()} /> : null}
+
       <Card style={{ marginTop: 16 }}>
         <Text style={styles.sectionCardTitle}>Sets by Muscle Group</Text>
         <View style={{ marginTop: 16, gap: 12 }}>
-          {MUSCLE_DATA.map((item) => (
+          {muscleData.map((item) => (
             <View key={item.muscle}>
               <View style={styles.rowBetween}>
                 <Text style={styles.smallStrongText}>{item.muscle}</Text>
@@ -2458,7 +3416,7 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
       <View style={{ marginTop: 18 }}>
         <SectionEyebrow>Breakdown</SectionEyebrow>
         <View style={{ gap: 10, marginTop: 12 }}>
-          {MUSCLE_DATA.map((item) => {
+          {muscleData.map((item) => {
             const status = getMuscleStatus(item.sets, item.target);
             return (
               <Card key={item.muscle}>
@@ -2477,6 +3435,7 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
               </Card>
             );
           })}
+          {!report.isPending && muscleData.length === 0 ? <EmptyCard title="No muscle data" text="Complete workouts to generate analytics." /> : null}
         </View>
       </View>
     </Screen>
@@ -2484,6 +3443,11 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
 }
 
 function ProfileScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const overview = useOverviewQuery(auth.isAuthenticated);
+  const user = overview.data?.user ?? auth.user;
+  const profile = overview.data?.profile;
+  const name = displayName(user, profile);
   const menuSections = [
     {
       label: "My Data",
@@ -2494,7 +3458,7 @@ function ProfileScreen({ navigation }: { navigation: any }) {
           icon: <MaterialCommunityIcons name="scale-bathroom" size={15} color={COLORS.green} />,
           route: "BodyweightHistory" as keyof RootStackParamList,
           color: COLORS.green,
-          badge: "82.4 kg",
+          badge: overview.data?.latest_body_weight_log ? formatKg(overview.data.latest_body_weight_log.weight_kg) : undefined,
         },
         { label: "Personal Records", icon: <Feather name="award" size={15} color={COLORS.gold} />, route: "PersonalRecords" as keyof RootStackParamList, color: COLORS.gold },
         { label: "Exercise Progress", icon: <Feather name="trending-up" size={15} color={COLORS.teal} />, route: "ExerciseProgress" as keyof RootStackParamList, color: COLORS.teal, id: "1" },
@@ -2518,28 +3482,35 @@ function ProfileScreen({ navigation }: { navigation: any }) {
       <View style={styles.profileTop}>
         <View style={styles.profileAvatarWrap}>
           <View style={styles.profileAvatar}>
-            <Text style={styles.avatarInitials}>JD</Text>
+            <Text style={styles.avatarInitials}>{initialsFor(name)}</Text>
           </View>
           <Pressable style={styles.profileEditButton} onPress={() => navigation.navigate("ProfileSetup")}>
             <Feather name="edit-3" size={13} color={COLORS.teal} />
           </Pressable>
         </View>
-        <Text style={styles.heroTitle}>Jordan Davis</Text>
-        <Text style={styles.detailLabel}>@jordan_lifts</Text>
+        <Text style={styles.heroTitle}>{name}</Text>
+        <Text style={styles.detailLabel}>@{user?.username ?? "athlete"}</Text>
         <View style={[styles.rowGapTiny, { marginTop: 8 }]}>
           <View style={[styles.statusDot, { backgroundColor: COLORS.green }]} />
-          <Text style={styles.listMeta}>Intermediate - 180cm - 82 kg</Text>
+          <Text style={styles.listMeta}>
+            {profile?.fitness_level ?? "Fitness level"} - {profile?.height_cm ? `${profile.height_cm}cm` : "height"} -{" "}
+            {profile?.weight_kg ? formatKg(profile.weight_kg) : "weight"}
+          </Text>
         </View>
 
         <Card style={{ width: "100%", marginTop: 18, paddingVertical: 0 }}>
           <View style={styles.profileStatsRow}>
-            {PROFILE_STATS.map((stat, index) => (
-              <View key={stat.label} style={styles.profileStatCell}>
-                <Text style={[styles.profileStatValue, { color: COLORS.teal }]}>{stat.value}</Text>
-                <Text style={styles.profileStatLabel}>{stat.label}</Text>
-                {index < PROFILE_STATS.length - 1 ? <View style={styles.profileStatDivider} /> : null}
-              </View>
-            ))}
+            {[
+              { label: "Sessions", value: overview.data?.stats.completed_sessions ?? 0 },
+              { label: "Templates", value: overview.data?.stats.total_workout_templates ?? 0 },
+              { label: "PRs", value: overview.data?.stats.personal_record_count ?? 0 },
+            ].map((stat, index, array) => (
+                <View key={stat.label} style={styles.profileStatCell}>
+                  <Text style={[styles.profileStatValue, { color: COLORS.teal }]}>{stat.value}</Text>
+                  <Text style={styles.profileStatLabel}>{stat.label}</Text>
+                  {index < array.length - 1 ? <View style={styles.profileStatDivider} /> : null}
+                </View>
+              ))}
           </View>
         </Card>
       </View>
@@ -2550,13 +3521,18 @@ function ProfileScreen({ navigation }: { navigation: any }) {
           <Text style={styles.linkText}>See All</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginTop: 10 }}>
-          {ACHIEVEMENTS.map((achievement) => (
-            <Card key={achievement.label} style={styles.achievementCard}>
-              <Text style={{ fontSize: 24 }}>{achievement.icon}</Text>
-              <Text style={[styles.smallStrongText, { marginTop: 10 }]}>{achievement.label}</Text>
-              <Text style={[styles.listMeta, { color: COLORS.teal, marginTop: 6 }]}>{achievement.date}</Text>
+          {(overview.data?.recent_personal_records.length ? overview.data.recent_personal_records : []).map((record) => (
+            <Card key={record.id} style={styles.achievementCard}>
+              <Text style={{ fontSize: 24 }}>🏆</Text>
+              <Text style={[styles.smallStrongText, { marginTop: 10 }]}>{record.record_type}</Text>
+              <Text style={[styles.listMeta, { color: COLORS.teal, marginTop: 6 }]}>{formatShortDate(record.achieved_on)}</Text>
             </Card>
           ))}
+          {overview.data?.recent_personal_records.length === 0 ? (
+            <Card style={styles.achievementCard}>
+              <Text style={styles.detailLabel}>No PRs yet</Text>
+            </Card>
+          ) : null}
         </ScrollView>
       </View>
 
@@ -2590,28 +3566,72 @@ function ProfileScreen({ navigation }: { navigation: any }) {
         ))}
       </View>
 
-      <Pressable onPress={() => navigation.replace("Login")} style={{ marginTop: 18 }}>
+      <Pressable
+        onPress={async () => {
+          await auth.logout();
+          navigation.replace("Login");
+        }}
+        style={{ marginTop: 18 }}
+      >
         <View style={styles.logoutButton}>
           <Feather name="log-out" size={15} color={COLORS.red} />
           <Text style={styles.logoutText}>Sign Out</Text>
         </View>
       </Pressable>
 
-      <Text style={styles.footerText}>FitTrack Pro v1.0.0 - member since Jan 2024</Text>
+      <Text style={styles.footerText}>Athelix - member since {formatShortDate(user?.created_at)}</Text>
     </Screen>
   );
 }
 
 function ProfileSetupScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const profileQuery = useProfileQuery(auth.isAuthenticated);
   const [form, setForm] = useState({
-    displayName: "Jordan Davis",
-    dob: "1995-06-15",
-    gender: "Male",
-    height: "180",
-    weight: "82",
-    fitnessLevel: "Intermediate",
+    displayName: "",
+    dob: "",
+    gender: "",
+    height: "",
+    weight: "",
+    fitnessLevel: "",
     unit: "metric",
     goal: "Improve strength",
+  });
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const profile = profileQuery.data;
+    if (!profile) return;
+    setForm((current) => ({
+      ...current,
+      displayName: profile.display_name ?? "",
+      dob: profile.date_of_birth ?? "",
+      gender: profile.gender ?? "",
+      height: profile.height_cm ? String(profile.height_cm) : "",
+      weight: profile.weight_kg ? String(profile.weight_kg) : "",
+      fitnessLevel: profile.fitness_level ?? "",
+      unit: profile.preferred_unit ?? "metric",
+    }));
+  }, [profileQuery.data]);
+
+  const saveProfile = useMutation({
+    mutationFn: async () =>
+      upsertCurrentUserProfileUsersMeProfilePut({
+        display_name: form.displayName || null,
+        date_of_birth: form.dob || null,
+        gender: form.gender || null,
+        height_cm: numberOrNull(form.height),
+        weight_kg: numberOrNull(form.weight),
+        fitness_level: form.fitnessLevel || null,
+        preferred_unit: form.unit,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      navigation.replace("MainTabs");
+    },
+    onError: (err) => setError(getApiErrorMessage(err)),
   });
 
   return (
@@ -2621,12 +3641,19 @@ function ProfileSetupScreen({ navigation }: { navigation: any }) {
         subtitle="Tell us about yourself"
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.saveChip} onPress={() => navigation.replace("Profile")}>
+          <Pressable style={styles.saveChip} onPress={() => saveProfile.mutate()} disabled={saveProfile.isPending}>
             <Feather name="check" size={13} color="#000000" />
-            <Text style={styles.saveChipText}>Save</Text>
+            <Text style={styles.saveChipText}>{saveProfile.isPending ? "Saving" : "Save"}</Text>
           </Pressable>
         }
       />
+
+      {profileQuery.isPending ? <LoadingCard label="Loading profile..." /> : null}
+      {error ? (
+        <View style={[styles.errorBox, { marginTop: 12 }]}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
       <View style={{ marginTop: 18, gap: 20 }}>
         <View>
@@ -2703,34 +3730,64 @@ function ProfileSetupScreen({ navigation }: { navigation: any }) {
           </View>
         </View>
 
-        <PrimaryButton label="Save Profile" onPress={() => navigation.replace("Profile")} style={{ marginTop: 6 }} />
+        <PrimaryButton
+          label={saveProfile.isPending ? "Saving Profile..." : "Save Profile"}
+          onPress={() => saveProfile.mutate()}
+          disabled={saveProfile.isPending}
+          style={{ marginTop: 6 }}
+        />
       </View>
     </Screen>
   );
 }
 
 function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
-  const [entries, setEntries] = useState(BODYWEIGHT_ENTRIES);
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const logs = useBodyWeightLogsQuery(auth.isAuthenticated);
   const [showAdd, setShowAdd] = useState(false);
   const [newWeight, setNewWeight] = useState("");
   const [newNote, setNewNote] = useState("");
+  const entries = useMemo(
+    () => (logs.data ?? []).slice().sort((a, b) => new Date(b.logged_at).getTime() - new Date(a.logged_at).getTime()),
+    [logs.data],
+  );
+  const chartData = entries
+    .slice()
+    .reverse()
+    .map((entry) => ({ label: formatShortDate(entry.logged_at), value: entry.weight_kg }));
 
-  const latest = entries[0]?.weight ?? 82.4;
-  const previous = entries[entries.length - 1]?.weight ?? 84.3;
+  const latest = entries[0]?.weight_kg ?? 0;
+  const previous = entries[entries.length - 1]?.weight_kg ?? latest;
   const change = latest - previous;
+
+  const createLog = useMutation({
+    mutationFn: async () =>
+      createBodyWeightLogUsersMeBodyWeightLogsPost({
+        weight_kg: Number(newWeight),
+        logged_at: new Date().toISOString(),
+        notes: newNote || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.bodyWeightLogs });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      setNewWeight("");
+      setNewNote("");
+      setShowAdd(false);
+    },
+  });
+
+  const deleteLog = useMutation({
+    mutationFn: async (logId: number) => deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete(logId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.bodyWeightLogs });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+    },
+  });
 
   const addEntry = () => {
     if (!newWeight) return;
-    const next = {
-      id: Date.now().toString(),
-      date: "Mar 18, 2026",
-      weight: Number(newWeight),
-      note: newNote,
-    };
-    setEntries((current) => [next, ...current]);
-    setNewWeight("");
-    setNewNote("");
-    setShowAdd(false);
+    createLog.mutate();
   };
 
   return (
@@ -2747,18 +3804,23 @@ function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
 
       <View style={{ marginTop: 18 }}>
         <View style={styles.rowGap}>
-          <Text style={styles.bigMetric}>{latest}</Text>
+          <Text style={styles.bigMetric}>{latest ? latest.toFixed(1) : "-"}</Text>
           <Text style={styles.metricSuffix}>kg</Text>
-          <Text style={[styles.metricChange, { color: change < 0 ? COLORS.green : "#ef4444" }]}>
-            {change < 0 ? "↓" : "↑"} {Math.abs(change).toFixed(1)} kg
-          </Text>
+          {entries.length > 1 ? (
+            <Text style={[styles.metricChange, { color: change < 0 ? COLORS.green : "#ef4444" }]}>
+              {change < 0 ? "↓" : "↑"} {Math.abs(change).toFixed(1)} kg
+            </Text>
+          ) : null}
         </View>
-        <Text style={styles.detailLabel}>vs. 30 days ago ({previous} kg)</Text>
+        <Text style={styles.detailLabel}>{entries.length > 1 ? `vs. oldest entry (${previous} kg)` : "Add entries to track change"}</Text>
       </View>
 
       <Card style={{ marginTop: 16 }}>
-        <TrendChart data={BODYWEIGHT_CHART} color={COLORS.teal} height={128} referenceValue={82.4} />
+        <TrendChart data={chartData.length ? chartData : BODYWEIGHT_CHART} color={COLORS.teal} height={128} referenceValue={latest || undefined} />
       </Card>
+
+      {logs.isPending ? <LoadingCard label="Loading bodyweight logs..." /> : null}
+      {logs.isError ? <ErrorCard error={logs.error} onRetry={() => logs.refetch()} /> : null}
 
       <View style={{ marginTop: 18 }}>
         <SectionEyebrow>All Entries</SectionEyebrow>
@@ -2767,25 +3829,26 @@ function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
             <Card key={entry.id} style={styles.listRowCard}>
               <View style={styles.listRowBody}>
                 <View style={styles.rowGap}>
-                  <Text style={[styles.cardTitle, index === 0 ? { color: COLORS.teal } : null]}>{entry.weight} kg</Text>
+                  <Text style={[styles.cardTitle, index === 0 ? { color: COLORS.teal } : null]}>{formatKg(entry.weight_kg)}</Text>
                   {index === 0 ? <Tag label="Latest" color={COLORS.teal} /> : null}
                   {index > 0 ? (
-                    <Text style={[styles.smallStrongText, { color: entry.weight < entries[index - 1].weight ? COLORS.green : "#ef4444" }]}>
-                      {entry.weight < entries[index - 1].weight ? "↓" : "↑"}
-                      {Math.abs(entry.weight - entries[index - 1].weight).toFixed(1)}
+                    <Text style={[styles.smallStrongText, { color: entry.weight_kg < entries[index - 1].weight_kg ? COLORS.green : "#ef4444" }]}>
+                      {entry.weight_kg < entries[index - 1].weight_kg ? "↓" : "↑"}
+                      {Math.abs(entry.weight_kg - entries[index - 1].weight_kg).toFixed(1)}
                     </Text>
                   ) : null}
                 </View>
                 <Text style={styles.detailLabel}>
-                  {entry.date}
-                  {entry.note ? ` - ${entry.note}` : ""}
+                  {formatDateLabel(entry.logged_at)}
+                  {entry.notes ? ` - ${entry.notes}` : ""}
                 </Text>
               </View>
-              <Pressable onPress={() => setEntries((current) => current.filter((item) => item.id !== entry.id))} style={styles.deleteWrap}>
+              <Pressable onPress={() => deleteLog.mutate(entry.id)} style={styles.deleteWrap}>
                 <Feather name="trash-2" size={13} color="rgba(239,68,68,0.8)" />
               </Pressable>
             </Card>
           ))}
+          {!logs.isPending && entries.length === 0 ? <EmptyCard title="No entries yet" text="Log your first bodyweight entry." /> : null}
         </View>
       </View>
 
@@ -2821,11 +3884,15 @@ function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
               />
             </View>
             <PrimaryButton
-              label="Save Entry"
+              label={createLog.isPending ? "Saving..." : "Save Entry"}
               onPress={addEntry}
+              disabled={createLog.isPending}
               icon={<Feather name="check" size={16} color="#000000" />}
               style={{ marginTop: 20 }}
             />
+            {createLog.isError ? (
+              <Text style={[styles.errorText, { marginTop: 10 }]}>{getApiErrorMessage(createLog.error)}</Text>
+            ) : null}
           </View>
         </View>
       </Modal>
@@ -2834,14 +3901,18 @@ function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
 }
 
 function SettingsScreen({ navigation }: { navigation: any }) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const currentUser = useCurrentUserQuery(auth.isAuthenticated);
   const [form, setForm] = useState({
-    username: "jordan_lifts",
-    email: "jordan@example.com",
+    username: "",
+    email: "",
     newPassword: "",
     confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
   const [notifications, setNotifications] = useState({
     workoutReminders: true,
     prAlerts: true,
@@ -2849,9 +3920,30 @@ function SettingsScreen({ navigation }: { navigation: any }) {
     newFeatures: true,
   });
 
+  useEffect(() => {
+    if (!currentUser.data) return;
+    setForm((current) => ({ ...current, username: currentUser.data.username, email: currentUser.data.email }));
+  }, [currentUser.data]);
+
+  const saveAccount = useMutation({
+    mutationFn: async () =>
+      updateCurrentUserUsersMePatch({
+        username: form.username.trim() || null,
+        email: form.email.trim() || null,
+      }),
+    onSuccess: (response) => {
+      auth.setUser(successData(response));
+      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+    onError: (err) => setError(getApiErrorMessage(err)),
+  });
+
   const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setError("");
+    saveAccount.mutate();
   };
 
   return (
@@ -2865,10 +3957,19 @@ function SettingsScreen({ navigation }: { navigation: any }) {
             onPress={handleSave}
           >
             <Feather name="check" size={13} color={saved ? COLORS.green : "#000000"} />
-            <Text style={[styles.saveChipText, saved ? { color: COLORS.green } : null]}>{saved ? "Saved!" : "Save"}</Text>
+            <Text style={[styles.saveChipText, saved ? { color: COLORS.green } : null]}>
+              {saveAccount.isPending ? "Saving" : saved ? "Saved!" : "Save"}
+            </Text>
           </Pressable>
         }
       />
+
+      {currentUser.isPending ? <LoadingCard label="Loading account..." /> : null}
+      {error ? (
+        <View style={[styles.errorBox, { marginTop: 12 }]}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : null}
 
       <View style={{ marginTop: 18, gap: 22 }}>
         <View>
@@ -3029,7 +4130,11 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppContent />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </QueryClientProvider>
     </SafeAreaProvider>
   );
 }
@@ -3117,6 +4222,7 @@ const styles = StyleSheet.create({
   linkText: { color: COLORS.teal, fontSize: 12, fontWeight: "600" },
   errorBox: { borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)" },
   errorText: { color: COLORS.red, fontSize: 12 },
+  fieldError: { color: COLORS.red, fontSize: 10, marginTop: 6, marginLeft: 2 },
   authDividerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 26 },
   divider: { flex: 1, height: 1, backgroundColor: "rgba(255,255,255,0.08)" },
   dividerText: { color: "rgba(255,255,255,0.3)", fontSize: 11 },

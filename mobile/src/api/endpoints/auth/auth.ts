@@ -5,6 +5,21 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   AuthResponse,
   HTTPValidationError,
@@ -13,6 +28,12 @@ import type {
   RegisterRequest,
   UserResponse
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type registerUserAuthRegisterPostResponse201 = {
@@ -47,21 +68,91 @@ export const getRegisterUserAuthRegisterPostUrl = () => {
  */
 export const registerUserAuthRegisterPost = async (registerRequest: RegisterRequest, options?: RequestInit): Promise<registerUserAuthRegisterPostResponse> => {
 
-  const res = await fetch(getRegisterUserAuthRegisterPostUrl(),
+  return apiMutator<registerUserAuthRegisterPostResponse>(getRegisterUserAuthRegisterPostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(registerRequest)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: registerUserAuthRegisterPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as registerUserAuthRegisterPostResponse
+
+
+export const getRegisterUserAuthRegisterPostQueryKey = (registerRequest?: RegisterRequest,) => {
+    return [
+    'POST', `/auth/register`, registerRequest
+    ] as const;
+    }
+
+
+export const getRegisterUserAuthRegisterPostQueryOptions = <TData = Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError = HTTPValidationError>(registerRequest: RegisterRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRegisterUserAuthRegisterPostQueryKey(registerRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>> = ({ signal }) => registerUserAuthRegisterPost(registerRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type RegisterUserAuthRegisterPostQueryResult = NonNullable<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>>
+export type RegisterUserAuthRegisterPostQueryError = HTTPValidationError
+
+
+export function useRegisterUserAuthRegisterPost<TData = Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError = HTTPValidationError>(
+ registerRequest: RegisterRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof registerUserAuthRegisterPost>>,
+          TError,
+          Awaited<ReturnType<typeof registerUserAuthRegisterPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRegisterUserAuthRegisterPost<TData = Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError = HTTPValidationError>(
+ registerRequest: RegisterRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof registerUserAuthRegisterPost>>,
+          TError,
+          Awaited<ReturnType<typeof registerUserAuthRegisterPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRegisterUserAuthRegisterPost<TData = Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError = HTTPValidationError>(
+ registerRequest: RegisterRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Register User
+ */
+
+export function useRegisterUserAuthRegisterPost<TData = Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError = HTTPValidationError>(
+ registerRequest: RegisterRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof registerUserAuthRegisterPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRegisterUserAuthRegisterPostQueryOptions(registerRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type loginUserAuthLoginPostResponse200 = {
@@ -96,21 +187,91 @@ export const getLoginUserAuthLoginPostUrl = () => {
  */
 export const loginUserAuthLoginPost = async (loginRequest: LoginRequest, options?: RequestInit): Promise<loginUserAuthLoginPostResponse> => {
 
-  const res = await fetch(getLoginUserAuthLoginPostUrl(),
+  return apiMutator<loginUserAuthLoginPostResponse>(getLoginUserAuthLoginPostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(loginRequest)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: loginUserAuthLoginPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as loginUserAuthLoginPostResponse
+
+
+export const getLoginUserAuthLoginPostQueryKey = (loginRequest?: LoginRequest,) => {
+    return [
+    'POST', `/auth/login`, loginRequest
+    ] as const;
+    }
+
+
+export const getLoginUserAuthLoginPostQueryOptions = <TData = Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError = HTTPValidationError>(loginRequest: LoginRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLoginUserAuthLoginPostQueryKey(loginRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof loginUserAuthLoginPost>>> = ({ signal }) => loginUserAuthLoginPost(loginRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type LoginUserAuthLoginPostQueryResult = NonNullable<Awaited<ReturnType<typeof loginUserAuthLoginPost>>>
+export type LoginUserAuthLoginPostQueryError = HTTPValidationError
+
+
+export function useLoginUserAuthLoginPost<TData = Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError = HTTPValidationError>(
+ loginRequest: LoginRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof loginUserAuthLoginPost>>,
+          TError,
+          Awaited<ReturnType<typeof loginUserAuthLoginPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLoginUserAuthLoginPost<TData = Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError = HTTPValidationError>(
+ loginRequest: LoginRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof loginUserAuthLoginPost>>,
+          TError,
+          Awaited<ReturnType<typeof loginUserAuthLoginPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useLoginUserAuthLoginPost<TData = Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError = HTTPValidationError>(
+ loginRequest: LoginRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Login User
+ */
+
+export function useLoginUserAuthLoginPost<TData = Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError = HTTPValidationError>(
+ loginRequest: LoginRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof loginUserAuthLoginPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getLoginUserAuthLoginPostQueryOptions(loginRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type refreshTokensAuthRefreshPostResponse200 = {
@@ -145,21 +306,91 @@ export const getRefreshTokensAuthRefreshPostUrl = () => {
  */
 export const refreshTokensAuthRefreshPost = async (refreshTokenRequest: RefreshTokenRequest, options?: RequestInit): Promise<refreshTokensAuthRefreshPostResponse> => {
 
-  const res = await fetch(getRefreshTokensAuthRefreshPostUrl(),
+  return apiMutator<refreshTokensAuthRefreshPostResponse>(getRefreshTokensAuthRefreshPostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(refreshTokenRequest)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: refreshTokensAuthRefreshPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as refreshTokensAuthRefreshPostResponse
+
+
+export const getRefreshTokensAuthRefreshPostQueryKey = (refreshTokenRequest?: RefreshTokenRequest,) => {
+    return [
+    'POST', `/auth/refresh`, refreshTokenRequest
+    ] as const;
+    }
+
+
+export const getRefreshTokensAuthRefreshPostQueryOptions = <TData = Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError = HTTPValidationError>(refreshTokenRequest: RefreshTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getRefreshTokensAuthRefreshPostQueryKey(refreshTokenRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>> = ({ signal }) => refreshTokensAuthRefreshPost(refreshTokenRequest, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type RefreshTokensAuthRefreshPostQueryResult = NonNullable<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>>
+export type RefreshTokensAuthRefreshPostQueryError = HTTPValidationError
+
+
+export function useRefreshTokensAuthRefreshPost<TData = Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError = HTTPValidationError>(
+ refreshTokenRequest: RefreshTokenRequest, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>,
+          TError,
+          Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefreshTokensAuthRefreshPost<TData = Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError = HTTPValidationError>(
+ refreshTokenRequest: RefreshTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>,
+          TError,
+          Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useRefreshTokensAuthRefreshPost<TData = Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError = HTTPValidationError>(
+ refreshTokenRequest: RefreshTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Refresh Tokens
+ */
+
+export function useRefreshTokensAuthRefreshPost<TData = Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError = HTTPValidationError>(
+ refreshTokenRequest: RefreshTokenRequest, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof refreshTokensAuthRefreshPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getRefreshTokensAuthRefreshPostQueryOptions(refreshTokenRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getMeAuthMeGetResponse200 = {
@@ -187,20 +418,90 @@ export const getGetMeAuthMeGetUrl = () => {
  */
 export const getMeAuthMeGet = async ( options?: RequestInit): Promise<getMeAuthMeGetResponse> => {
 
-  const res = await fetch(getGetMeAuthMeGetUrl(),
+  return apiMutator<getMeAuthMeGetResponse>(getGetMeAuthMeGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getMeAuthMeGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getMeAuthMeGetResponse
+
+
+export const getGetMeAuthMeGetQueryKey = () => {
+    return [
+    `/auth/me`
+    ] as const;
+    }
+
+
+export const getGetMeAuthMeGetQueryOptions = <TData = Awaited<ReturnType<typeof getMeAuthMeGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeAuthMeGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMeAuthMeGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMeAuthMeGet>>> = ({ signal }) => getMeAuthMeGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMeAuthMeGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetMeAuthMeGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMeAuthMeGet>>>
+export type GetMeAuthMeGetQueryError = unknown
+
+
+export function useGetMeAuthMeGet<TData = Awaited<ReturnType<typeof getMeAuthMeGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeAuthMeGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeAuthMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMeAuthMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeAuthMeGet<TData = Awaited<ReturnType<typeof getMeAuthMeGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeAuthMeGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMeAuthMeGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMeAuthMeGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMeAuthMeGet<TData = Awaited<ReturnType<typeof getMeAuthMeGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeAuthMeGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Me
+ */
+
+export function useGetMeAuthMeGet<TData = Awaited<ReturnType<typeof getMeAuthMeGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMeAuthMeGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMeAuthMeGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 

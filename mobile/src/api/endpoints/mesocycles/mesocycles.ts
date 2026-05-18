@@ -5,6 +5,21 @@
  * Backend API for workout tracking, exercise logging, personal record detection, mesocycle planning, and training analytics.
  * OpenAPI spec version: 0.1.0
  */
+import {
+  useQuery
+} from '@tanstack/react-query';
+import type {
+  DataTag,
+  DefinedInitialDataOptions,
+  DefinedUseQueryResult,
+  QueryClient,
+  QueryFunction,
+  QueryKey,
+  UndefinedInitialDataOptions,
+  UseQueryOptions,
+  UseQueryResult
+} from '@tanstack/react-query';
+
 import type {
   GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams,
   HTTPValidationError,
@@ -14,6 +29,12 @@ import type {
   MesocycleResponse,
   MesocycleUpdate
 } from '../../model';
+
+import { apiMutator } from '../../client';
+
+
+type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
 
 
 export type listMesocyclesMesocyclesGetResponse200 = {
@@ -41,21 +62,91 @@ export const getListMesocyclesMesocyclesGetUrl = () => {
  */
 export const listMesocyclesMesocyclesGet = async ( options?: RequestInit): Promise<listMesocyclesMesocyclesGetResponse> => {
 
-  const res = await fetch(getListMesocyclesMesocyclesGetUrl(),
+  return apiMutator<listMesocyclesMesocyclesGetResponse>(getListMesocyclesMesocyclesGetUrl(),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listMesocyclesMesocyclesGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as listMesocyclesMesocyclesGetResponse
+
+
+export const getListMesocyclesMesocyclesGetQueryKey = () => {
+    return [
+    `/mesocycles`
+    ] as const;
+    }
+
+
+export const getListMesocyclesMesocyclesGetQueryOptions = <TData = Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMesocyclesMesocyclesGetQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>> = ({ signal }) => listMesocyclesMesocyclesGet({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type ListMesocyclesMesocyclesGetQueryResult = NonNullable<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>>
+export type ListMesocyclesMesocyclesGetQueryError = unknown
+
+
+export function useListMesocyclesMesocyclesGet<TData = Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError = unknown>(
+  options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMesocyclesMesocyclesGet<TData = Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>,
+          TError,
+          Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListMesocyclesMesocyclesGet<TData = Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List Mesocycles
+ */
+
+export function useListMesocyclesMesocyclesGet<TData = Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof listMesocyclesMesocyclesGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getListMesocyclesMesocyclesGetQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type createMesocycleMesocyclesPostResponse201 = {
@@ -90,21 +181,91 @@ export const getCreateMesocycleMesocyclesPostUrl = () => {
  */
 export const createMesocycleMesocyclesPost = async (mesocycleCreate: MesocycleCreate, options?: RequestInit): Promise<createMesocycleMesocyclesPostResponse> => {
 
-  const res = await fetch(getCreateMesocycleMesocyclesPostUrl(),
+  return apiMutator<createMesocycleMesocyclesPostResponse>(getCreateMesocycleMesocyclesPostUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(mesocycleCreate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: createMesocycleMesocyclesPostResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as createMesocycleMesocyclesPostResponse
+
+
+export const getCreateMesocycleMesocyclesPostQueryKey = (mesocycleCreate?: MesocycleCreate,) => {
+    return [
+    'POST', `/mesocycles`, mesocycleCreate
+    ] as const;
+    }
+
+
+export const getCreateMesocycleMesocyclesPostQueryOptions = <TData = Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError = HTTPValidationError>(mesocycleCreate: MesocycleCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getCreateMesocycleMesocyclesPostQueryKey(mesocycleCreate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>> = ({ signal }) => createMesocycleMesocyclesPost(mesocycleCreate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type CreateMesocycleMesocyclesPostQueryResult = NonNullable<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>>
+export type CreateMesocycleMesocyclesPostQueryError = HTTPValidationError
+
+
+export function useCreateMesocycleMesocyclesPost<TData = Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError = HTTPValidationError>(
+ mesocycleCreate: MesocycleCreate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>,
+          TError,
+          Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateMesocycleMesocyclesPost<TData = Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError = HTTPValidationError>(
+ mesocycleCreate: MesocycleCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>,
+          TError,
+          Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useCreateMesocycleMesocyclesPost<TData = Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError = HTTPValidationError>(
+ mesocycleCreate: MesocycleCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Create Mesocycle
+ */
+
+export function useCreateMesocycleMesocyclesPost<TData = Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError = HTTPValidationError>(
+ mesocycleCreate: MesocycleCreate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof createMesocycleMesocyclesPost>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getCreateMesocycleMesocyclesPostQueryOptions(mesocycleCreate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetResponse200 = {
@@ -148,21 +309,97 @@ export const getGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetUrl = (mes
 export const getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet = async (mesocycleId: number,
     params?: GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams, options?: RequestInit): Promise<getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetResponse> => {
 
-  const res = await fetch(getGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetUrl(mesocycleId,params),
+  return apiMutator<getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetResponse>(getGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetUrl(mesocycleId,params),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetResponse
+
+
+export const getGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetQueryKey = (mesocycleId: number,
+    params?: GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams,) => {
+    return [
+    `/mesocycles/${mesocycleId}/analytics`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetQueryOptions = <TData = Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError = HTTPValidationError>(mesocycleId: number,
+    params?: GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetQueryKey(mesocycleId,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>> = ({ signal }) => getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet(mesocycleId,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: mesocycleId !== null && mesocycleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>>
+export type GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetQueryError = HTTPValidationError
+
+
+export function useGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet<TData = Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    params: undefined |  GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet<TData = Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    params?: GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet<TData = Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    params?: GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Mesocycle Analytics
+ */
+
+export function useGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet<TData = Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    params?: GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetQueryOptions(mesocycleId,params,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type getMesocycleMesocyclesMesocycleIdGetResponse200 = {
@@ -197,21 +434,91 @@ export const getGetMesocycleMesocyclesMesocycleIdGetUrl = (mesocycleId: number,)
  */
 export const getMesocycleMesocyclesMesocycleIdGet = async (mesocycleId: number, options?: RequestInit): Promise<getMesocycleMesocyclesMesocycleIdGetResponse> => {
 
-  const res = await fetch(getGetMesocycleMesocyclesMesocycleIdGetUrl(mesocycleId),
+  return apiMutator<getMesocycleMesocyclesMesocycleIdGetResponse>(getGetMesocycleMesocyclesMesocycleIdGetUrl(mesocycleId),
   {
     ...options,
     method: 'GET'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: getMesocycleMesocyclesMesocycleIdGetResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as getMesocycleMesocyclesMesocycleIdGetResponse
+
+
+export const getGetMesocycleMesocyclesMesocycleIdGetQueryKey = (mesocycleId: number,) => {
+    return [
+    `/mesocycles/${mesocycleId}`
+    ] as const;
+    }
+
+
+export const getGetMesocycleMesocyclesMesocycleIdGetQueryOptions = <TData = Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError = HTTPValidationError>(mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMesocycleMesocyclesMesocycleIdGetQueryKey(mesocycleId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>> = ({ signal }) => getMesocycleMesocyclesMesocycleIdGet(mesocycleId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: mesocycleId !== null && mesocycleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type GetMesocycleMesocyclesMesocycleIdGetQueryResult = NonNullable<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>>
+export type GetMesocycleMesocyclesMesocycleIdGetQueryError = HTTPValidationError
+
+
+export function useGetMesocycleMesocyclesMesocycleIdGet<TData = Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError = HTTPValidationError>(
+ mesocycleId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMesocycleMesocyclesMesocycleIdGet<TData = Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError = HTTPValidationError>(
+ mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>,
+          TError,
+          Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetMesocycleMesocyclesMesocycleIdGet<TData = Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError = HTTPValidationError>(
+ mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get Mesocycle
+ */
+
+export function useGetMesocycleMesocyclesMesocycleIdGet<TData = Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError = HTTPValidationError>(
+ mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getMesocycleMesocyclesMesocycleIdGet>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetMesocycleMesocyclesMesocycleIdGetQueryOptions(mesocycleId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type updateMesocycleMesocyclesMesocycleIdPatchResponse200 = {
@@ -247,21 +554,97 @@ export const getUpdateMesocycleMesocyclesMesocycleIdPatchUrl = (mesocycleId: num
 export const updateMesocycleMesocyclesMesocycleIdPatch = async (mesocycleId: number,
     mesocycleUpdate: MesocycleUpdate, options?: RequestInit): Promise<updateMesocycleMesocyclesMesocycleIdPatchResponse> => {
 
-  const res = await fetch(getUpdateMesocycleMesocyclesMesocycleIdPatchUrl(mesocycleId),
+  return apiMutator<updateMesocycleMesocyclesMesocycleIdPatchResponse>(getUpdateMesocycleMesocyclesMesocycleIdPatchUrl(mesocycleId),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(mesocycleUpdate)
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateMesocycleMesocyclesMesocycleIdPatchResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateMesocycleMesocyclesMesocycleIdPatchResponse
+
+
+export const getUpdateMesocycleMesocyclesMesocycleIdPatchQueryKey = (mesocycleId: number,
+    mesocycleUpdate?: MesocycleUpdate,) => {
+    return [
+    'PATCH', `/mesocycles/${mesocycleId}`, mesocycleUpdate
+    ] as const;
+    }
+
+
+export const getUpdateMesocycleMesocyclesMesocycleIdPatchQueryOptions = <TData = Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError = HTTPValidationError>(mesocycleId: number,
+    mesocycleUpdate: MesocycleUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getUpdateMesocycleMesocyclesMesocycleIdPatchQueryKey(mesocycleId,mesocycleUpdate);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>> = ({ signal }) => updateMesocycleMesocyclesMesocycleIdPatch(mesocycleId,mesocycleUpdate, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: mesocycleId !== null && mesocycleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type UpdateMesocycleMesocyclesMesocycleIdPatchQueryResult = NonNullable<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>>
+export type UpdateMesocycleMesocyclesMesocycleIdPatchQueryError = HTTPValidationError
+
+
+export function useUpdateMesocycleMesocyclesMesocycleIdPatch<TData = Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    mesocycleUpdate: MesocycleUpdate, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateMesocycleMesocyclesMesocycleIdPatch<TData = Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    mesocycleUpdate: MesocycleUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>,
+          TError,
+          Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useUpdateMesocycleMesocyclesMesocycleIdPatch<TData = Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    mesocycleUpdate: MesocycleUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Update Mesocycle
+ */
+
+export function useUpdateMesocycleMesocyclesMesocycleIdPatch<TData = Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError = HTTPValidationError>(
+ mesocycleId: number,
+    mesocycleUpdate: MesocycleUpdate, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof updateMesocycleMesocyclesMesocycleIdPatch>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getUpdateMesocycleMesocyclesMesocycleIdPatchQueryOptions(mesocycleId,mesocycleUpdate,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
 export type deleteMesocycleMesocyclesMesocycleIdDeleteResponse204 = {
@@ -296,20 +679,90 @@ export const getDeleteMesocycleMesocyclesMesocycleIdDeleteUrl = (mesocycleId: nu
  */
 export const deleteMesocycleMesocyclesMesocycleIdDelete = async (mesocycleId: number, options?: RequestInit): Promise<deleteMesocycleMesocyclesMesocycleIdDeleteResponse> => {
 
-  const res = await fetch(getDeleteMesocycleMesocyclesMesocycleIdDeleteUrl(mesocycleId),
+  return apiMutator<deleteMesocycleMesocyclesMesocycleIdDeleteResponse>(getDeleteMesocycleMesocyclesMesocycleIdDeleteUrl(mesocycleId),
   {
     ...options,
     method: 'DELETE'
 
 
   }
-)
+);}
 
 
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: deleteMesocycleMesocyclesMesocycleIdDeleteResponse['data'] = body ? JSON.parse(body) : undefined
-  return { data, status: res.status, headers: res.headers } as deleteMesocycleMesocyclesMesocycleIdDeleteResponse
+
+
+export const getDeleteMesocycleMesocyclesMesocycleIdDeleteQueryKey = (mesocycleId: number,) => {
+    return [
+    'DELETE', `/mesocycles/${mesocycleId}`
+    ] as const;
+    }
+
+
+export const getDeleteMesocycleMesocyclesMesocycleIdDeleteQueryOptions = <TData = Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError = HTTPValidationError>(mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDeleteMesocycleMesocyclesMesocycleIdDeleteQueryKey(mesocycleId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>> = ({ signal }) => deleteMesocycleMesocyclesMesocycleIdDelete(mesocycleId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: mesocycleId !== null && mesocycleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
 }
+
+export type DeleteMesocycleMesocyclesMesocycleIdDeleteQueryResult = NonNullable<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>>
+export type DeleteMesocycleMesocyclesMesocycleIdDeleteQueryError = HTTPValidationError
+
+
+export function useDeleteMesocycleMesocyclesMesocycleIdDelete<TData = Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError = HTTPValidationError>(
+ mesocycleId: number, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteMesocycleMesocyclesMesocycleIdDelete<TData = Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError = HTTPValidationError>(
+ mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>,
+          TError,
+          Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useDeleteMesocycleMesocyclesMesocycleIdDelete<TData = Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError = HTTPValidationError>(
+ mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Delete Mesocycle
+ */
+
+export function useDeleteMesocycleMesocyclesMesocycleIdDelete<TData = Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError = HTTPValidationError>(
+ mesocycleId: number, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteMesocycleMesocyclesMesocycleIdDelete>>, TError, TData>>, request?: SecondParameter<typeof apiMutator>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteMesocycleMesocyclesMesocycleIdDeleteQueryOptions(mesocycleId,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
 
 
