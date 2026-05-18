@@ -20,10 +20,13 @@
     "react-native": "0.81.5",
     "react-native-safe-area-context": "^5.7.0",
     "react-native-screens": "^4.24.0",
+    "react-native-url-polyfill": "^3.0.0",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "openapi-typescript": "^7.13.0",
+    "orval": "^8.10.0",
     "typescript": "~5.9.2"
   },
   "private": true
