@@ -11,4 +11,5 @@ export interface UserOverviewStatsResponse {
   total_sessions: number;
   completed_sessions: number;
   personal_record_count: number;
+  tracked_exercises_count: number;
 }

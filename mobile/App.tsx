@@ -2896,34 +2896,44 @@ function ProgressHubScreen({ navigation }: { navigation: any }) {
       </View>
 
       <View style={{ marginTop: 18, gap: 12 }}>
-        {PROGRESS_SECTIONS.map((section) => (
-          <Pressable
-            key={section.title}
-            onPress={() => {
-              if (section.path === "personalRecords") navigation.navigate("PersonalRecords");
-              else if (section.path === "exerciseProgress") navigation.navigate("ExerciseProgress", { id: "1" });
-              else if (section.path === "muscleBalance") navigation.navigate("MuscleBalance");
-            }}
-          >
-            <Card style={{ borderColor: `${section.color}22`, borderRadius: 28 }}>
-              <View style={styles.rowBetween}>
-                <View style={styles.rowGap}>
-                  <View style={[styles.sectionIconWrap, { width: 56, height: 56, backgroundColor: `${section.color}16` }]}>
-                    {section.path === "personalRecords" ? <Feather name="award" size={26} color={section.color} /> : null}
-                    {section.path === "exerciseProgress" ? <Feather name="trending-up" size={26} color={section.color} /> : null}
-                    {section.path === "muscleBalance" ? <Feather name="bar-chart-2" size={26} color={section.color} /> : null}
+        {PROGRESS_SECTIONS.map((section) => {
+          let badgeLabel = "badge" in section ? section.badge : "";
+          if ("badgeKey" in section) {
+            if (section.badgeKey === "prs") {
+              badgeLabel = `${overview.data?.stats.personal_record_count ?? 0} PRs total`;
+            } else if (section.badgeKey === "exercises") {
+              badgeLabel = `${overview.data?.stats.tracked_exercises_count ?? 0} exercises tracked`;
+            }
+          }
+          return (
+            <Pressable
+              key={section.title}
+              onPress={() => {
+                if (section.path === "personalRecords") navigation.navigate("PersonalRecords");
+                else if (section.path === "exerciseProgress") navigation.navigate("ExerciseProgress", { id: "1" });
+                else if (section.path === "muscleBalance") navigation.navigate("MuscleBalance");
+              }}
+            >
+              <Card style={{ borderColor: `${section.color}22`, borderRadius: 28 }}>
+                <View style={styles.rowBetween}>
+                  <View style={styles.rowGap}>
+                    <View style={[styles.sectionIconWrap, { width: 56, height: 56, backgroundColor: `${section.color}16` }]}>
+                      {section.path === "personalRecords" ? <Feather name="award" size={26} color={section.color} /> : null}
+                      {section.path === "exerciseProgress" ? <Feather name="trending-up" size={26} color={section.color} /> : null}
+                      {section.path === "muscleBalance" ? <Feather name="bar-chart-2" size={26} color={section.color} /> : null}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.cardTitle}>{section.title}</Text>
+                      <Text style={styles.detailLabel}>{section.desc}</Text>
+                      <Tag label={badgeLabel} color={section.color} />
+                    </View>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{section.title}</Text>
-                    <Text style={styles.detailLabel}>{section.desc}</Text>
-                    <Tag label={section.badge} color={section.color} />
-                  </View>
+                  <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.25)" />
-              </View>
-            </Card>
-          </Pressable>
-        ))}
+              </Card>
+            </Pressable>
+          );
+        })}
       </View>
 
       {latestPr ? (

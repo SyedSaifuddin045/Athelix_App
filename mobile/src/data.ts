@@ -481,14 +481,14 @@ export const PROGRESS_SECTIONS = [
     color: "#fbbf24",
     title: "Personal Records",
     desc: "All-time best lifts by exercise and record type",
-    badge: "9 PRs total",
+    badgeKey: "prs" as const,
   },
   {
     path: "exerciseProgress",
     color: "#00d4a8",
     title: "Exercise Progress",
     desc: "e1RM history, volume trends and overload signals",
-    badge: "16 exercises tracked",
+    badgeKey: "exercises" as const,
   },
   {
     path: "muscleBalance",
