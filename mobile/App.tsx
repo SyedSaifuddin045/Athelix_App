@@ -574,6 +574,48 @@ function EmptyCard({ title, text }: { title: string; text: string }) {
   );
 }
 
+function ConfirmDialog({
+  visible,
+  title,
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  destructive = false,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  destructive?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <Pressable style={styles.confirmBackdrop} onPress={onCancel}>
+        <View style={styles.confirmDialog}>
+          <Text style={styles.confirmTitle}>{title}</Text>
+          <Text style={styles.confirmMessage}>{message}</Text>
+          <View style={styles.confirmButtons}>
+            <Pressable onPress={onCancel} style={styles.confirmButtonCancel}>
+              <Text style={styles.confirmButtonText}>{cancelText}</Text>
+            </Pressable>
+            <Pressable
+              onPress={onConfirm}
+              style={[styles.confirmButtonConfirm, destructive ? { backgroundColor: "rgba(239,68,68,0.2)", borderColor: "rgba(239,68,68,0.3)" } : null]}
+            >
+              <Text style={[styles.confirmButtonText, destructive ? { color: COLORS.red } : null]}>{confirmText}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+}
+
 function Tag({
   label,
   color = COLORS.teal,
@@ -2091,6 +2133,7 @@ function ActiveWorkoutScreen({
   const [mood, setMood] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [showFinish, setShowFinish] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [error, setError] = useState("");
@@ -2218,29 +2261,31 @@ function ActiveWorkoutScreen({
     setShowExercisePicker(false);
   };
 
+  const confirmDiscard = async () => {
+    if (sessionId) {
+      try {
+        await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
+        queryClient.removeQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      } catch (err) {
+        Alert.alert("Error", getApiErrorMessage(err));
+        return;
+      }
+    }
+    setShowDiscardConfirm(false);
+    navigation.goBack();
+  };
+
   const discardWorkout = () => {
-    Alert.alert("Discard workout?", "This will delete the empty session draft.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Discard",
-        style: "destructive",
-        onPress: async () => {
-          if (sessionId) {
-            try {
-              await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
-              queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
-            } catch {
-              // Still leave the screen; the server can be cleaned up from history if needed.
-            }
-          }
-          navigation.goBack();
-        },
-      },
-    ]);
+    setShowDiscardConfirm(true);
   };
 
   const finishWorkout = async () => {
     if (!sessionId) return;
+    if (!auth.isAuthenticated) {
+      setError("Session expired. Please log in again.");
+      return;
+    }
     setError("");
     try {
       await updateWorkoutSessionWorkoutSessionsSessionIdPatch(sessionId, {
@@ -2255,7 +2300,13 @@ function ActiveWorkoutScreen({
       setShowFinish(false);
       navigation.replace("SessionDetail", { id: String(sessionId) });
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      console.error("Finish workout error:", err);
+      const msg = getApiErrorMessage(err);
+      if (msg.includes("fetch") || msg.includes("network")) {
+        setError("Network error. Check your connection and try again.");
+      } else {
+        setError(msg);
+      }
     }
   };
 
@@ -2435,6 +2486,17 @@ function ActiveWorkoutScreen({
           onSelect={(exercise) => addExercise(exercise)}
           onClose={() => setShowExercisePicker(false)}
         />
+
+        <ConfirmDialog
+          visible={showDiscardConfirm}
+          title="Discard Workout"
+          message="This will delete the session and all logged sets."
+          confirmText="Discard"
+          cancelText="Cancel"
+          destructive
+          onConfirm={confirmDiscard}
+          onCancel={() => setShowDiscardConfirm(false)}
+        />
       </Screen>
     </KeyboardAvoidingView>
   );
@@ -2507,29 +2569,61 @@ function SessionDetailScreen({ navigation, route }: { navigation: any; route?: {
   const queryClient = useQueryClient();
   const sessionId = toNumberId(route?.params?.id);
   const [showMenu, setShowMenu] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editMood, setEditMood] = useState("");
+  const [editNotes, setEditNotes] = useState("");
   const detail = useSessionDetailQuery(sessionId, auth.isAuthenticated);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
   const exerciseGroups = useMemo(() => groupSetsByExercise(detail.data?.sets ?? [], lookup), [detail.data?.sets, lookup]);
 
-  const handleDelete = () => {
-    setShowMenu(false);
-    Alert.alert("Delete this session?", "PRs will be recalculated.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          if (sessionId) await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
-          queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
-          queryClient.invalidateQueries({ queryKey: queryKeys.overview });
-          navigation.replace("WorkoutHistory");
-        },
-      },
-    ]);
+  const confirmDelete = async () => {
+    if (!sessionId) return;
+    try {
+      await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
+      queryClient.removeQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      setShowDeleteConfirm(false);
+      navigation.goBack();
+    } catch (err) {
+      Alert.alert("Error", getApiErrorMessage(err));
+    }
   };
 
-  if (detail.isPending) {
+  const handleDelete = () => {
+    setShowMenu(false);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleEdit = () => {
+    setShowMenu(false);
+    if (!detail.data) return;
+    setEditName(detail.data.name ?? "");
+    setEditMood(detail.data.mood ?? "");
+    setEditNotes(detail.data.notes ?? "");
+    setShowEdit(true);
+  };
+
+  const saveEdit = async () => {
+    if (!sessionId) return;
+    try {
+      await updateWorkoutSessionWorkoutSessionsSessionIdPatch(sessionId, {
+        name: editName || null,
+        mood: editMood || null,
+        notes: editNotes || null,
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      setShowEdit(false);
+    } catch (err) {
+      Alert.alert("Error", getApiErrorMessage(err));
+    }
+  };
+
+  if (detail.isPending || lookupQuery.isPending) {
     return (
       <Screen glowColor="rgba(0,180,140,0.12)">
         <BackHeader title="Session Detail" onBack={() => navigation.goBack()} />
@@ -2555,23 +2649,9 @@ function SessionDetailScreen({ navigation, route }: { navigation: any; route?: {
         title="Session Detail"
         onBack={() => navigation.goBack()}
         right={
-          <View style={{ position: "relative" }}>
-            <RoundButton onPress={() => setShowMenu((value) => !value)}>
-              <Feather name="more-horizontal" size={16} color="rgba(255,255,255,0.7)" />
-            </RoundButton>
-            {showMenu ? (
-              <View style={styles.menuPopover}>
-                <Pressable style={styles.menuItem} onPress={() => setShowMenu(false)}>
-                  <Feather name="edit-3" size={14} color="rgba(255,255,255,0.75)" />
-                  <Text style={styles.menuItemText}>Edit session</Text>
-                </Pressable>
-                <Pressable style={styles.menuItem} onPress={handleDelete}>
-                  <Feather name="trash-2" size={14} color={COLORS.red} />
-                  <Text style={[styles.menuItemText, { color: COLORS.red }]}>Delete session</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </View>
+          <RoundButton onPress={() => setShowMenu((value) => !value)}>
+            <Feather name="more-horizontal" size={16} color="rgba(255,255,255,0.7)" />
+          </RoundButton>
         }
       />
 
@@ -2635,6 +2715,82 @@ function SessionDetailScreen({ navigation, route }: { navigation: any; route?: {
           </Card>
         ))}
       </View>
+
+      <View style={{ marginTop: 24, marginBottom: 32 }}>
+        <PrimaryButton label="Done" onPress={() => navigation.goBack()} icon={<Feather name="check" size={18} color="#000000" />} />
+      </View>
+
+      <Modal visible={showEdit} transparent animationType="slide" onRequestClose={() => setShowEdit(false)}>
+        <View style={styles.modalScrim}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowEdit(false)} />
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Edit Session</Text>
+            <View style={{ marginTop: 16, gap: 14 }}>
+              <View>
+                <Text style={styles.inputLabel}>Workout Name</Text>
+                <TextInput
+                  style={styles.textArea}
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Workout name"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  multiline
+                />
+              </View>
+              <View>
+                <Text style={styles.inputLabel}>Mood (emoji)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editMood}
+                  onChangeText={setEditMood}
+                  placeholder="e.g. 😊"
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                />
+              </View>
+              <View>
+                <Text style={styles.inputLabel}>Notes</Text>
+                <TextInput
+                  style={styles.textArea}
+                  value={editNotes}
+                  onChangeText={setEditNotes}
+                  placeholder="Add notes..."
+                  placeholderTextColor="rgba(255,255,255,0.3)"
+                  multiline
+                />
+              </View>
+            </View>
+            <PrimaryButton label="Save Changes" onPress={() => void saveEdit()} icon={<Feather name="check" size={16} color="#000000" />} style={{ marginTop: 18 }} />
+            <PrimaryButton label="Cancel" onPress={() => setShowEdit(false)} subtle style={{ marginTop: 10 }} />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
+        <Pressable style={styles.menuModalBackdrop} onPress={() => setShowMenu(false)}>
+          <View style={styles.menuModalContent}>
+            <Pressable style={styles.menuItem} onPress={handleEdit} hitSlop={12}>
+              <Feather name="edit-3" size={14} color="rgba(255,255,255,0.75)" />
+              <Text style={styles.menuItemText}>Edit session</Text>
+            </Pressable>
+            <Pressable style={styles.menuItem} onPress={handleDelete} hitSlop={12}>
+              <Feather name="trash-2" size={14} color={COLORS.red} />
+              <Text style={[styles.menuItemText, { color: COLORS.red }]}>Delete session</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <ConfirmDialog
+        visible={showDeleteConfirm}
+        title="Delete Session"
+        message="This will permanently delete this workout session and recalculate PRs."
+        confirmText="Delete"
+        cancelText="Cancel"
+        destructive
+        onConfirm={confirmDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </Screen>
   );
 }
@@ -4174,7 +4330,20 @@ const styles = StyleSheet.create({
   sheetTitle: { color: COLORS.text, fontSize: 22, fontWeight: "900", textAlign: "center" },
   sheetSubtitle: { color: COLORS.muted, fontSize: 13, textAlign: "center", marginTop: 6 },
   historyMoodWrap: { width: 40, height: 40, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" },
-  menuPopover: { position: "absolute", top: 46, right: 0, width: 170, borderRadius: 18, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 6, zIndex: 10 },
+  menuModalBackdrop: { flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 60, paddingRight: 20 },
+  menuModalContent: { width: 170, borderRadius: 18, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 6 },
+  confirmBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", paddingHorizontal: 24 },
+  confirmDialog: { width: "100%", maxWidth: 320, borderRadius: 20, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", padding: 20, gap: 12 },
+  confirmTitle: { color: COLORS.text, fontSize: 17, fontWeight: "700", textAlign: "center" },
+  confirmMessage: { color: COLORS.muted, fontSize: 14, textAlign: "center", lineHeight: 20 },
+  confirmButtons: { flexDirection: "row", gap: 10, marginTop: 4 },
+  confirmButtonCancel: { flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" },
+  confirmButtonConfirm: { flex: 1, minHeight: 44, borderRadius: 12, backgroundColor: COLORS.teal, alignItems: "center", justifyContent: "center" },
+  confirmButtonText: { fontSize: 15, fontWeight: "700", color: COLORS.text },
+  menuPopoverScreen: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0, zIndex: 100 },
+  menuBackdrop: { flex: 1 },
+  menuPopoverContent: { position: "absolute", top: 56, right: 20, width: 170, borderRadius: 18, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 6 },
+  menuPopover: { position: "absolute", top: 46, right: 0, width: 170, borderRadius: 18, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 6, zIndex: 100 },
   menuItem: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 },
   menuItemText: { color: "rgba(255,255,255,0.75)", fontSize: 13 },
   exerciseHeader: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" },
@@ -4220,4 +4389,6 @@ const styles = StyleSheet.create({
   notificationRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 14, gap: 14 },
   dangerZone: { minHeight: 74, borderRadius: 18, borderWidth: 1, borderColor: "rgba(239,68,68,0.2)", backgroundColor: "rgba(239,68,68,0.06)", paddingHorizontal: 16, flexDirection: "row", alignItems: "center", gap: 12, marginTop: 10 },
   listMeta: { color: "rgba(255,255,255,0.34)", fontSize: 10 },
+  inputLabel: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginBottom: 6 },
+  textArea: { width: "100%", minHeight: 80, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: COLORS.text, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, textAlignVertical: "top" },
 });
