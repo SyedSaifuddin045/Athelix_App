@@ -20,4 +20,5 @@ limit?: number;
  * @minimum 0
  */
 offset?: number;
+tracked?: boolean;
 };

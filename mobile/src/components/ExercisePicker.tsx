@@ -60,6 +60,7 @@ export type ExercisePickerProps = {
   title?: string;
   subtitle?: string;
   enabled?: boolean;
+  trackedOnly?: boolean;
 };
 
 export function ExercisePicker({
@@ -72,6 +73,7 @@ export function ExercisePicker({
   title = "Exercise Library",
   subtitle,
   enabled = true,
+  trackedOnly,
 }: ExercisePickerProps) {
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState("All");
@@ -86,8 +88,9 @@ export function ExercisePicker({
       equipment: equipment !== "All" ? equipment : undefined,
       limit: 100,
       offset: 0,
+      ...(trackedOnly ? { tracked: true } : {}),
     }),
-    [equipment, muscle, query],
+    [equipment, muscle, query, trackedOnly],
   );
   const exercisesQuery = useExercisesQuery(exerciseParams, enabled);
 

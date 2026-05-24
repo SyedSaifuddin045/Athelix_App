@@ -23,16 +23,12 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import {
-  BODYWEIGHT_CHART,
   DIFFICULTY_COLORS,
   EXERCISE_DETAILS,
   EXERCISE_EQUIPMENT,
   EXERCISE_FALLBACK,
   EXERCISE_MUSCLES,
-  EXERCISE_NAMES,
   EXERCISE_PROGRESS_PERIODS,
-  EXERCISE_PROGRESS_SERIES,
-  EXERCISE_PROGRESS_VOLUME,
   FITNESS_LEVELS,
   GENDERS,
   GOALS,
@@ -130,7 +126,7 @@ export type RootStackParamList = {
   MesocycleList: undefined;
   MesocycleDetail: { id: string };
   PersonalRecords: undefined;
-  ExerciseProgress: { id: string };
+  ExerciseProgress: { id?: string };
   MuscleBalance: undefined;
   BodyweightHistory: undefined;
   Settings: undefined;
@@ -1560,7 +1556,7 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
         </Card>
       ) : null}
 
-      <Pressable onPress={() => navigation.navigate("ExerciseProgress", { id: id ?? "1" })} style={{ marginTop: 14 }}>
+      <Pressable onPress={() => navigation.navigate("ExerciseProgress", { id: id ?? "0025" })} style={{ marginTop: 14 }}>
         <Card>
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
@@ -3066,7 +3062,7 @@ function ProgressHubScreen({ navigation }: { navigation: any }) {
               key={section.title}
               onPress={() => {
                 if (section.path === "personalRecords") navigation.navigate("PersonalRecords");
-                else if (section.path === "exerciseProgress") navigation.navigate("ExerciseProgress", { id: "1" });
+                else if (section.path === "exerciseProgress") navigation.navigate("ExerciseProgress");
                 else if (section.path === "muscleBalance") navigation.navigate("MuscleBalance");
               }}
             >
@@ -3209,27 +3205,76 @@ function PersonalRecordsScreen({ navigation }: { navigation: any }) {
   );
 }
 
-function ExerciseProgressScreen({ navigation, route }: { navigation: any; route: { params: { id: string } } }) {
+function ExerciseProgressScreen({ navigation, route }: { navigation: any; route: { params: { id?: string } } }) {
   const auth = useAuth();
-  const { id } = route.params;
+  const routeId = route.params?.id;
+  const [selectedId, setSelectedId] = useState<string | undefined>(routeId);
+  const fromPicker = !routeId;
   const [period, setPeriod] = useState("3M");
-  const progress = useExerciseProgressQuery(id, undefined, auth.isAuthenticated);
-  const e1rmData =
-    progress.data?.e1rm_history.map((item) => ({ label: formatShortDate(item.performed_at), value: item.default_e1rm ?? item.weight_kg ?? 0 })) ?? [];
-  const volumeData =
+  const progress = useExerciseProgressQuery(selectedId, undefined, auth.isAuthenticated && !!selectedId);
+
+  const now = new Date();
+  const periodDays: Record<string, number | null> = { "1M": 30, "3M": 90, "6M": 180, "1Y": 365, All: null };
+  const cutoffDays = periodDays[period] ?? null;
+  const cutoffDate = cutoffDays ? new Date(now.getTime() - cutoffDays * 86400000) : null;
+
+  const rawE1rmData =
+    progress.data?.e1rm_history.map((item) => ({
+      label: formatShortDate(item.performed_at),
+      value: item.default_e1rm ?? item.weight_kg ?? 0,
+      performed_at: item.performed_at,
+    })) ?? [];
+  const rawVolumeData =
     progress.data?.weekly_volume_history.map((item, index, array) => ({
       label: formatShortDate(item.week_start),
       value: item.volume_load,
       highlight: index === array.length - 1,
+      week_start: item.week_start,
     })) ?? [];
+
+  const e1rmData = cutoffDate
+    ? rawE1rmData.filter((item) => new Date(item.performed_at) >= cutoffDate)
+    : rawE1rmData;
+  const volumeData = cutoffDate
+    ? rawVolumeData.filter((item) => new Date(item.week_start) >= cutoffDate)
+    : rawVolumeData;
+
   const current = e1rmData.at(-1)?.value ?? 0;
   const gain = current - (e1rmData[0]?.value ?? current);
-  const exerciseName = progress.data?.exercise_name ?? EXERCISE_NAMES[id ?? "1"]?.name ?? "Exercise";
+
+  const allTimestamps = [
+    ...(progress.data?.e1rm_history ?? []).map((i) => new Date(i.performed_at).getTime()),
+    ...(progress.data?.weekly_volume_history ?? []).map((i) => new Date(i.week_start).getTime()),
+  ];
+  const earliestDataDate = allTimestamps.length ? new Date(Math.min(...allTimestamps)) : now;
+  const availablePeriods = EXERCISE_PROGRESS_PERIODS.filter((p) => {
+    const days = periodDays[p];
+    if (days === null) return true;
+    return earliestDataDate <= new Date(now.getTime() - days * 86400000);
+  });
+
+  if (!selectedId) {
+    return (
+      <Screen glowColor="rgba(0,180,140,0.12)">
+        <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
+        <View style={{ marginTop: 18, flex: 1 }}>
+          <Text style={[styles.sectionCardTitle, { marginBottom: 14 }]}>Your Tracked Exercises</Text>
+          <ExercisePicker
+            variant="browse"
+            onNavigate={(exerciseId) => setSelectedId(exerciseId)}
+            enabled={auth.isAuthenticated}
+            trackedOnly
+            subtitle="Exercises you've logged in workouts"
+          />
+        </View>
+      </Screen>
+    );
+  }
 
   if (progress.isPending) {
     return (
       <Screen glowColor="rgba(0,180,140,0.12)">
-        <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
+        <BackHeader title="Exercise Progress" onBack={fromPicker ? () => setSelectedId(undefined) : () => navigation.goBack()} />
         <LoadingCard label="Loading progress..." />
       </Screen>
     );
@@ -3238,15 +3283,17 @@ function ExerciseProgressScreen({ navigation, route }: { navigation: any; route:
   if (progress.isError) {
     return (
       <Screen glowColor="rgba(0,180,140,0.12)">
-        <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
+        <BackHeader title="Exercise Progress" onBack={fromPicker ? () => setSelectedId(undefined) : () => navigation.goBack()} />
         <ErrorCard error={progress.error} onRetry={() => progress.refetch()} />
       </Screen>
     );
   }
 
+  const exerciseName = progress.data?.exercise_name ?? "Exercise";
+
   return (
     <Screen glowColor="rgba(0,180,140,0.12)">
-      <BackHeader title={exerciseName} subtitle="Exercise Progress" onBack={() => navigation.goBack()} />
+      <BackHeader title={exerciseName} subtitle="Exercise Progress" onBack={fromPicker ? () => setSelectedId(undefined) : () => navigation.goBack()} />
 
       <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
         <CompactStatCard label="Current e1RM" value={`${current} kg`} valueColor={COLORS.teal} />
@@ -3254,35 +3301,39 @@ function ExerciseProgressScreen({ navigation, route }: { navigation: any; route:
         <CompactStatCard label="All-time PR" value={`${current} kg`} valueColor={COLORS.gold} />
       </View>
 
-      <Card style={{ marginTop: 16 }}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.sectionCardTitle}>e1RM History</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
-            {EXERCISE_PROGRESS_PERIODS.map((entry) => (
-              <Pressable
-                key={entry}
-                onPress={() => setPeriod(entry)}
-                style={[
-                  styles.periodChip,
-                  period === entry ? { backgroundColor: "rgba(0,212,168,0.2)", borderColor: "rgba(0,212,168,0.35)" } : null,
-                ]}
-              >
-                <Text style={[styles.periodChipText, period === entry ? { color: COLORS.teal } : null]}>{entry}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-        <View style={{ marginTop: 14 }}>
-          <TrendChart data={e1rmData.length ? e1rmData : EXERCISE_PROGRESS_SERIES} color={COLORS.teal} height={128} />
-        </View>
-      </Card>
+      {e1rmData.length > 0 ? (
+        <Card style={{ marginTop: 16 }}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.sectionCardTitle}>e1RM History</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+              {availablePeriods.map((entry) => (
+                <Pressable
+                  key={entry}
+                  onPress={() => setPeriod(entry)}
+                  style={[
+                    styles.periodChip,
+                    period === entry ? { backgroundColor: "rgba(0,212,168,0.2)", borderColor: "rgba(0,212,168,0.35)" } : null,
+                  ]}
+                >
+                  <Text style={[styles.periodChipText, period === entry ? { color: COLORS.teal } : null]}>{entry}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+          <View style={{ marginTop: 14 }}>
+            <TrendChart data={e1rmData} color={COLORS.teal} height={128} />
+          </View>
+        </Card>
+      ) : null}
 
-      <Card style={{ marginTop: 14 }}>
-        <Text style={styles.sectionCardTitle}>Weekly Volume</Text>
-        <View style={{ marginTop: 12 }}>
-          <VerticalBars data={volumeData.length ? volumeData : EXERCISE_PROGRESS_VOLUME.map((item) => ({ label: item.label, value: item.value, highlight: item.highlight }))} height={90} />
-        </View>
-      </Card>
+      {volumeData.length > 0 ? (
+        <Card style={{ marginTop: 14 }}>
+          <Text style={styles.sectionCardTitle}>Weekly Volume</Text>
+          <View style={{ marginTop: 12 }}>
+            <VerticalBars data={volumeData} height={90} />
+          </View>
+        </Card>
+      ) : null}
 
       <View style={{ marginTop: 18 }}>
         <SectionEyebrow>Recent Overloads</SectionEyebrow>
@@ -3315,12 +3366,12 @@ function ExerciseProgressScreen({ navigation, route }: { navigation: any; route:
 function MuscleBalanceScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
   const [period, setPeriod] = useState("1W");
-  const weeks = period === "1W" ? 1 : period === "4W" ? 4 : period === "8W" ? 8 : 12;
+  const weeks = period === "1W" ? 1 : period === "2W" ? 2 : period === "4W" ? 4 : 8;
   const report = useMuscleBalanceQuery({ weeks }, auth.isAuthenticated);
   const muscleData =
     report.data?.items.map((item, index) => ({
       muscle: item.muscle_group,
-      sets: Math.round(item.average_weekly_sets),
+      avgWeeklySets: item.average_weekly_sets,
       completedSets: item.completed_sets,
       target: item.minimum_weekly_sets,
       color: [COLORS.teal, COLORS.green, COLORS.gold, COLORS.purple, COLORS.blue, COLORS.orange][index % 6],
@@ -3361,7 +3412,7 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
         <CompactStatCard label="Under Target" value={String(underTarget.length)} valueColor={COLORS.orange} />
         <CompactStatCard
           label="Over Target"
-          value={String(muscleData.filter((item) => item.sets > item.target * 1.1).length)}
+          value={String(muscleData.filter((item) => item.avgWeeklySets > item.target * 1.1).length)}
           valueColor={COLORS.green}
         />
       </View>
@@ -3377,14 +3428,11 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
               <View style={styles.rowBetween}>
                 <Text style={styles.smallStrongText}>{item.muscle}</Text>
                 <Text style={styles.listMeta}>
-                  {item.sets}/{item.target}
+                  {item.avgWeeklySets.toFixed(1)}/wk · target {item.target}/wk
                 </Text>
               </View>
               <View style={{ marginTop: 8 }}>
-                <ProgressBar value={(item.target / Math.max(item.target, item.sets, 1)) * 100} backgroundColor="rgba(255,255,255,0.08)" color="rgba(255,255,255,0.14)" />
-                <View style={{ marginTop: -6 }}>
-                  <ProgressBar value={(item.sets / Math.max(item.target, item.sets, 1)) * 100} color={item.color} />
-                </View>
+                <ProgressBar value={Math.min(100, (item.avgWeeklySets / item.target) * 100)} color={item.color} />
               </View>
             </View>
           ))}
@@ -3395,21 +3443,24 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
         <SectionEyebrow>Breakdown</SectionEyebrow>
         <View style={{ gap: 10, marginTop: 12 }}>
           {muscleData.map((item) => {
-            const status = getMuscleStatus(item.sets, item.target);
+            const status = getMuscleStatus(item.avgWeeklySets, item.target);
             return (
               <Card key={item.muscle}>
                 <View style={styles.rowBetween}>
                   <Text style={styles.listRowTitle}>{item.muscle}</Text>
                   <View style={styles.rowGap}>
                     <Text style={styles.listMeta}>
-                      {item.sets}/{item.target} sets
+                      {item.completedSets} sets in {weeks}w
                     </Text>
                     <Tag label={status.label} color={status.color} />
                   </View>
                 </View>
                 <View style={{ marginTop: 12 }}>
-                  <ProgressBar value={Math.min(100, (item.sets / item.target) * 100)} color={item.color} />
+                  <ProgressBar value={Math.min(100, (item.avgWeeklySets / item.target) * 100)} color={item.color} />
                 </View>
+                <Text style={[styles.detailLabel, { marginTop: 6 }]}>
+                  {item.avgWeeklySets.toFixed(1)}/wk · target {item.target}/wk{!item.meetsMinimum ? " · behind" : ""}
+                </Text>
               </Card>
             );
           })}
@@ -3439,7 +3490,7 @@ function ProfileScreen({ navigation }: { navigation: any }) {
           badge: overview.data?.latest_body_weight_log ? formatKg(overview.data.latest_body_weight_log.weight_kg) : undefined,
         },
         { label: "Personal Records", icon: <Feather name="award" size={15} color={COLORS.gold} />, route: "PersonalRecords" as keyof RootStackParamList, color: COLORS.gold },
-        { label: "Exercise Progress", icon: <Feather name="trending-up" size={15} color={COLORS.teal} />, route: "ExerciseProgress" as keyof RootStackParamList, color: COLORS.teal, id: "1" },
+        { label: "Exercise Progress", icon: <Feather name="trending-up" size={15} color={COLORS.teal} />, route: "ExerciseProgress" as keyof RootStackParamList, color: COLORS.teal },
       ],
     },
     {
@@ -3743,7 +3794,7 @@ function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
     mutationFn: async () =>
       createBodyWeightLogUsersMeBodyWeightLogsPost({
         weight_kg: Number(newWeight),
-        logged_at: new Date().toISOString(),
+        logged_at: new Date().toISOString().split("T")[0],
         notes: newNote || null,
       }),
     onSuccess: () => {
@@ -3793,9 +3844,11 @@ function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
         <Text style={styles.detailLabel}>{entries.length > 1 ? `vs. oldest entry (${previous} kg)` : "Add entries to track change"}</Text>
       </View>
 
-      <Card style={{ marginTop: 16 }}>
-        <TrendChart data={chartData.length ? chartData : BODYWEIGHT_CHART} color={COLORS.teal} height={128} referenceValue={latest || undefined} />
-      </Card>
+      {chartData.length > 0 ? (
+        <Card style={{ marginTop: 16 }}>
+          <TrendChart data={chartData} color={COLORS.teal} height={128} referenceValue={latest || undefined} />
+        </Card>
+      ) : null}
 
       {logs.isPending ? <LoadingCard label="Loading bodyweight logs..." /> : null}
       {logs.isError ? <ErrorCard error={logs.error} onRetry={() => logs.refetch()} /> : null}
@@ -3849,6 +3902,7 @@ function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
                 placeholderTextColor="rgba(255,255,255,0.28)"
                 style={styles.modalMetricInput}
                 keyboardType="decimal-pad"
+                contextMenuHidden
               />
             </View>
             <View style={{ marginTop: 16 }}>
