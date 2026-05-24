@@ -3366,18 +3366,76 @@ function ExerciseProgressScreen({ navigation, route }: { navigation: any; route:
 function MuscleBalanceScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
   const [period, setPeriod] = useState("1W");
+  const [expanded, setExpanded] = useState<string | null>(null);
   const weeks = period === "1W" ? 1 : period === "2W" ? 2 : period === "4W" ? 4 : 8;
   const report = useMuscleBalanceQuery({ weeks }, auth.isAuthenticated);
-  const muscleData =
-    report.data?.items.map((item, index) => ({
-      muscle: item.muscle_group,
-      avgWeeklySets: item.average_weekly_sets,
-      completedSets: item.completed_sets,
-      target: item.minimum_weekly_sets,
-      color: [COLORS.teal, COLORS.green, COLORS.gold, COLORS.purple, COLORS.blue, COLORS.orange][index % 6],
-      meetsMinimum: item.meets_minimum,
-    })) ?? [];
-  const underTarget = muscleData.filter((item) => !item.meetsMinimum);
+  const items = report.data?.items ?? [];
+  const strongItems = items.filter((item) => item.status === "Strong");
+  const balancedItems = items.filter((item) => item.status === "Balanced");
+  const needsAttentionItems = items.filter((item) => item.status !== "Strong" && item.status !== "Balanced");
+
+  function statusColor(status: string) {
+    if (status === "Strong") return COLORS.green;
+    if (status === "Balanced") return COLORS.gold;
+    if (status === "Undertrained") return COLORS.orange;
+    return COLORS.red;
+  }
+
+  function sectionHeaderColor(group: string) {
+    if (group === "strong") return COLORS.green;
+    if (group === "balanced") return COLORS.gold;
+    return COLORS.orange;
+  }
+
+  function renderItems(groupItems: (typeof items), groupKey: string) {
+    if (groupItems.length === 0) return null;
+    const headerColor = sectionHeaderColor(groupKey);
+    return (
+      <View style={{ marginTop: 18 }}>
+        <SectionEyebrow color={headerColor}>{groupKey === "strong" ? "Strong Areas" : groupKey === "balanced" ? "Balanced" : "Needs Attention"}</SectionEyebrow>
+        <View style={{ gap: 10, marginTop: 10 }}>
+          {groupItems.map((item) => {
+            const isExpanded = expanded === item.muscle_group;
+            const color = statusColor(item.status);
+            return (
+              <Pressable key={item.muscle_group} onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
+                <Card>
+                  <View style={styles.rowBetween}>
+                    <Text style={styles.listRowTitle}>{item.muscle_group}</Text>
+                    <View style={styles.rowGap}>
+                      <Text style={[styles.detailLabel, { minWidth: 32, textAlign: "right" }]}>{item.score}</Text>
+                      <Tag label={item.status} color={color} />
+                    </View>
+                  </View>
+                  <View style={{ marginTop: 10 }}>
+                    <ProgressBar value={item.score} color={color} />
+                  </View>
+                  <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginTop: 8, lineHeight: 16 }}>
+                    {item.recommendation}
+                  </Text>
+                  {item.exercises.length > 0 && (
+                    <View style={{ marginTop: 10, borderTopWidth: isExpanded ? 1 : 0, borderTopColor: "rgba(255,255,255,0.06)", paddingTop: isExpanded ? 8 : 0 }}>
+                      {isExpanded && item.exercises.map((ex, i) => (
+                        <View key={i} style={[styles.rowBetween, { marginTop: i > 0 ? 4 : 0 }]}>
+                          <Text style={[styles.detailLabel, { flex: 1 }]}>{ex.exercise_name}</Text>
+                          <Text style={styles.detailLabel}>
+                            {ex.completed_sets.toFixed(1)} sets ({ex.average_weekly_sets.toFixed(1)}/wk)
+                          </Text>
+                        </View>
+                      ))}
+                      <Text style={[styles.detailLabel, { marginTop: 4, textAlign: "right" }]}>
+                        {item.weekly_sets.toFixed(1)} sets · {item.average_weekly_sets.toFixed(1)}/wk
+                      </Text>
+                    </View>
+                  )}
+                </Card>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    );
+  }
 
   return (
     <Screen glowColor="rgba(139,92,246,0.15)">
@@ -3403,70 +3461,14 @@ function MuscleBalanceScreen({ navigation }: { navigation: any }) {
         ))}
       </View>
 
-      <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
-        <CompactStatCard
-          label="On Track"
-          value={String(muscleData.filter((item) => item.meetsMinimum).length)}
-          valueColor={COLORS.teal}
-        />
-        <CompactStatCard label="Under Target" value={String(underTarget.length)} valueColor={COLORS.orange} />
-        <CompactStatCard
-          label="Over Target"
-          value={String(muscleData.filter((item) => item.avgWeeklySets > item.target * 1.1).length)}
-          valueColor={COLORS.green}
-        />
-      </View>
-
       {report.isPending ? <LoadingCard label="Loading muscle balance..." /> : null}
       {report.isError ? <ErrorCard error={report.error} onRetry={() => report.refetch()} /> : null}
 
-      <Card style={{ marginTop: 16 }}>
-        <Text style={styles.sectionCardTitle}>Sets by Muscle Group</Text>
-        <View style={{ marginTop: 16, gap: 12 }}>
-          {muscleData.map((item) => (
-            <View key={item.muscle}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.smallStrongText}>{item.muscle}</Text>
-                <Text style={styles.listMeta}>
-                  {item.avgWeeklySets.toFixed(1)}/wk · target {item.target}/wk
-                </Text>
-              </View>
-              <View style={{ marginTop: 8 }}>
-                <ProgressBar value={Math.min(100, (item.avgWeeklySets / item.target) * 100)} color={item.color} />
-              </View>
-            </View>
-          ))}
-        </View>
-      </Card>
+      {renderItems(strongItems, "strong")}
+      {renderItems(balancedItems, "balanced")}
+      {renderItems(needsAttentionItems, "needs-attention")}
 
-      <View style={{ marginTop: 18 }}>
-        <SectionEyebrow>Breakdown</SectionEyebrow>
-        <View style={{ gap: 10, marginTop: 12 }}>
-          {muscleData.map((item) => {
-            const status = getMuscleStatus(item.avgWeeklySets, item.target);
-            return (
-              <Card key={item.muscle}>
-                <View style={styles.rowBetween}>
-                  <Text style={styles.listRowTitle}>{item.muscle}</Text>
-                  <View style={styles.rowGap}>
-                    <Text style={styles.listMeta}>
-                      {item.completedSets} sets in {weeks}w
-                    </Text>
-                    <Tag label={status.label} color={status.color} />
-                  </View>
-                </View>
-                <View style={{ marginTop: 12 }}>
-                  <ProgressBar value={Math.min(100, (item.avgWeeklySets / item.target) * 100)} color={item.color} />
-                </View>
-                <Text style={[styles.detailLabel, { marginTop: 6 }]}>
-                  {item.avgWeeklySets.toFixed(1)}/wk · target {item.target}/wk{!item.meetsMinimum ? " · behind" : ""}
-                </Text>
-              </Card>
-            );
-          })}
-          {!report.isPending && muscleData.length === 0 ? <EmptyCard title="No muscle data" text="Complete workouts to generate analytics." /> : null}
-        </View>
-      </View>
+      {!report.isPending && items.length === 0 ? <EmptyCard title="No muscle data" text="Complete workouts to generate analytics." /> : null}
     </Screen>
   );
 }

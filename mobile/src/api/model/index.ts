@@ -43,6 +43,7 @@ export * from './mesocycleResponse';
 export * from './mesocycleUpdate';
 export * from './muscleBalanceReportResponse';
 export * from './muscleGroupBalanceItemResponse';
+export * from './muscleGroupExerciseItemResponse';
 export * from './personalRecordResponse';
 export * from './progressiveOverloadResponse';
 export * from './refreshTokenRequest';
