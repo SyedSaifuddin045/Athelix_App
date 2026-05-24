@@ -10,6 +10,7 @@ export interface WorkoutTemplateExerciseResponse {
   id: number;
   template_id: number;
   exercise_id: string;
+  exercise_name: string | null;
   order_index: number;
   target_sets: number | null;
   target_reps: number | null;

@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { GestureHandlerRootView, PanGestureHandler, State } from 'react-native-gesture-handler';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
+  LayoutAnimation,
   LayoutChangeEvent,
   Modal,
   Platform,
@@ -32,7 +35,7 @@ import {
   FITNESS_LEVELS,
   GENDERS,
   GOALS,
-  MESO_VOLUME_DATA,
+  MESOCYCLE_GOALS,
   MUSCLE_PERIODS,
   PROGRESS_SECTIONS,
   RECORD_TYPES,
@@ -127,7 +130,7 @@ export type RootStackParamList = {
   MesocycleDetail: { id: string };
   PersonalRecords: undefined;
   ExerciseProgress: { id?: string };
-  MuscleBalance: undefined;
+  MuscleBalance: { mesocycleId?: number } | undefined;
   BodyweightHistory: undefined;
   Settings: undefined;
 };
@@ -188,6 +191,7 @@ function getMuscleStatus(sets: number, target: number) {
 type TemplateDraftExercise = TemplateExercise & {
   exerciseId: string;
   templateExerciseId?: number;
+  setCount: number;
 };
 
 type WorkoutDraftSet = WorkoutSet & {
@@ -210,6 +214,14 @@ function numberOrNull(value: string) {
   if (!value.trim()) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function rpeError(value: string): string | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return "RPE must be a number";
+  if (parsed < 1 || parsed > 10) return "RPE must be between 1 and 10";
+  return null;
 }
 
 function parseRestSeconds(value: string) {
@@ -331,16 +343,15 @@ function templateDraftFromDetail(detail: WorkoutTemplateDetailResponse, lookup: 
       id: String(item.id),
       templateExerciseId: item.id,
       exerciseId: item.exercise_id,
-      name: nameForExercise(item.exercise_id, lookup),
+      name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup),
       emoji: exerciseEmoji(lookup.get(item.exercise_id)),
       notes: item.notes ?? "",
-      sets: [
-        {
-          reps: item.target_reps ? String(item.target_reps) : "8",
-          rpe: item.target_rpe ? String(item.target_rpe) : "7",
-          rest: item.rest_seconds ? String(Math.round(item.rest_seconds / 60)) : "2",
-        },
-      ],
+      setCount: Math.max(1, item.target_sets ?? 1),
+      sets: [{
+        reps: item.target_reps ? String(item.target_reps) : "8",
+        rpe: item.target_rpe ? String(item.target_rpe) : "7",
+        rest: item.rest_seconds ? String(Math.round(item.rest_seconds / 60)) : "2",
+      }],
     }));
 }
 
@@ -953,11 +964,15 @@ function MiniInput({
   onChangeText,
   placeholder,
   strike,
+  error,
+  keyboardType,
 }: {
   value: string;
   onChangeText: (value: string) => void;
   placeholder?: string;
   strike?: boolean;
+  error?: boolean;
+  keyboardType?: "default" | "numeric";
 }) {
   return (
     <TextInput
@@ -965,8 +980,8 @@ function MiniInput({
       onChangeText={onChangeText}
       placeholder={placeholder}
       placeholderTextColor="rgba(255,255,255,0.25)"
-      style={[styles.miniInput, strike ? { textDecorationLine: "line-through" } : null]}
-      keyboardType="default"
+      style={[styles.miniInput, strike ? { textDecorationLine: "line-through" } : null, error ? { borderColor: COLORS.red, borderWidth: 1.5 } : null]}
+      keyboardType={keyboardType ?? "default"}
     />
   );
 }
@@ -1737,6 +1752,70 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
   );
 }
 
+const MINUTES = [0, 1, 2, 3, 4, 5];
+const SECONDS = [0, 10, 15, 20, 30, 45];
+
+function PickerColumn({ values, selected, onSelect, label, itemWidth = 64 }: {
+  values: number[];
+  selected: number;
+  onSelect: (v: number) => void;
+  label: string;
+  itemWidth?: number;
+}) {
+  const ITEM_H = 44;
+  const flatRef = useRef<FlatList>(null);
+  const listHeight = ITEM_H * 5;
+
+  useEffect(() => {
+    const idx = values.indexOf(selected);
+    if (idx >= 0) {
+      flatRef.current?.scrollToIndex({ index: idx, animated: false, viewPosition: 0 });
+    }
+  }, []);
+
+  return (
+    <View style={{ alignItems: "center", width: itemWidth }}>
+      <Text style={[styles.fieldLabel, { marginBottom: 4, textAlign: "center" }]}>{label}</Text>
+      <View style={{ height: listHeight, overflow: "hidden", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.03)" }}>
+        <FlatList
+          ref={flatRef}
+          data={values}
+          keyExtractor={(v) => String(v)}
+          snapToInterval={ITEM_H}
+          decelerationRate="fast"
+          showsVerticalScrollIndicator={false}
+          getItemLayout={(_, idx) => ({ length: ITEM_H, offset: ITEM_H * idx, index: idx })}
+          onMomentumScrollEnd={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
+            onSelect(values[idx] ?? values[0]);
+          }}
+          renderItem={({ item, index }) => {
+            const isSelected = item === selected;
+            return (
+              <Pressable
+                onPress={() => {
+                  flatRef.current?.scrollToIndex({ index, animated: true });
+                  onSelect(item);
+                }}
+                style={{ height: ITEM_H, justifyContent: "center", alignItems: "center" }}
+              >
+                <Text style={{
+                  color: isSelected ? COLORS.text : "rgba(255,255,255,0.3)",
+                  fontSize: isSelected ? 20 : 14,
+                  fontWeight: isSelected ? "700" : "400",
+                  opacity: isSelected ? 1 : 0.5,
+                }}>
+                  {String(item).padStart(2, "0")}
+                </Text>
+              </Pressable>
+            );
+          }}
+        />
+      </View>
+    </View>
+  );
+}
+
 function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: { params?: { id?: string } } }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
@@ -1745,15 +1824,30 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
   const isEdit = !!templateId;
   const [name, setName] = useState("");
   const [exercises, setExercises] = useState<TemplateDraftExercise[]>([]);
-  const [expanded, setExpanded] = useState<string | null>(isEdit ? "1" : null);
+  const [expanded, setExpanded] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [saveError, setSaveError] = useState("");
   const detail = useTemplateDetailQuery(templateId, auth.isAuthenticated && isEdit);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
+  const initialized = useRef(false);
 
   useEffect(() => {
-    if (!detail.data) return;
+    if (!detail.data || lookup.size === 0) return;
+    if (initialized.current) {
+      setExercises((prev) =>
+        prev.map((ex) => {
+          const resolved = nameForExercise(ex.exerciseId, lookup);
+          return {
+            ...ex,
+            name: resolved !== ex.exerciseId ? resolved : ex.name,
+            emoji: exerciseEmoji(lookup.get(ex.exerciseId)),
+          };
+        }),
+      );
+      return;
+    }
+    initialized.current = true;
     setName(detail.data.name);
     setExercises(templateDraftFromDetail(detail.data, lookup));
     setExpanded(detail.data.exercises[0] ? String(detail.data.exercises[0].id) : null);
@@ -1762,6 +1856,12 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
   const saveTemplate = useMutation({
     mutationFn: async () => {
       if (!name.trim()) throw new Error("Template name is required.");
+
+      for (const exercise of exercises) {
+        const rpe = exercise.sets[0]?.rpe ?? "";
+        const err = rpeError(rpe);
+        if (err) throw new Error(`"${exercise.name}": ${err}`);
+      }
       const template =
         isEdit && templateId
           ? successData(await updateWorkoutTemplateWorkoutTemplatesTemplateIdPatch(templateId, { name: name.trim() }))
@@ -1778,14 +1878,14 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
       }
 
       for (const [index, exercise] of exercises.entries()) {
-        const firstSet = exercise.sets[0];
+        const config = exercise.sets[0];
         const payload = {
           exercise_id: exercise.exerciseId,
           order_index: index,
-          target_sets: exercise.sets.length,
-          target_reps: firstSet ? numberOrNull(firstSet.reps) : null,
-          target_rpe: firstSet ? numberOrNull(firstSet.rpe) : null,
-          rest_seconds: firstSet ? parseRestSeconds(firstSet.rest) : null,
+          target_sets: exercise.setCount,
+          target_reps: config ? numberOrNull(config.reps) : null,
+          target_rpe: config ? numberOrNull(config.rpe) : null,
+          rest_seconds: config ? parseRestSeconds(config.rest) : null,
           notes: exercise.notes || null,
         };
 
@@ -1810,6 +1910,8 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
     onError: (err) => setSaveError(getApiErrorMessage(err)),
   });
 
+  const REST_PRESETS = ["0:30", "1:00", "1:30", "2:00", "2:30", "3:00", "5:00"];
+
   const addExercise = (exercise: ExerciseResponse) => {
     const nextId = Date.now().toString();
     const nextExercise: TemplateDraftExercise = {
@@ -1818,6 +1920,7 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
       name: exercise.name,
       emoji: exerciseEmoji(exercise),
       notes: "",
+      setCount: 1,
       sets: [{ reps: "8", rpe: "7", rest: "2:00" }],
     };
     setExercises((current) => [...current, nextExercise]);
@@ -1825,28 +1928,18 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
     setShowExercisePicker(false);
   };
 
-  const addSet = (exerciseId: string) => {
-    setExercises((current) =>
-      current.map((exercise) =>
-        exercise.id === exerciseId
-          ? {
-              ...exercise,
-              sets: [...exercise.sets, { reps: "8", rpe: "7", rest: "2:00" }],
-            }
-          : exercise,
+  const setSetCount = (exerciseId: string, delta: number) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === exerciseId ? { ...ex, setCount: Math.max(1, ex.setCount + delta) } : ex,
       ),
     );
   };
 
-  const updateSet = (exerciseId: string, index: number, field: "reps" | "rpe" | "rest", value: string) => {
-    setExercises((current) =>
-      current.map((exercise) =>
-        exercise.id === exerciseId
-          ? {
-              ...exercise,
-              sets: exercise.sets.map((set, setIndex) => (setIndex === index ? { ...set, [field]: value } : set)),
-            }
-          : exercise,
+  const updateSingleConfig = (exerciseId: string, field: "reps" | "rpe" | "rest", value: string) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === exerciseId ? { ...ex, sets: [{ ...ex.sets[0], [field]: value }] } : ex,
       ),
     );
   };
@@ -1861,12 +1954,144 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
     setExercises((current) => current.filter((exercise) => exercise.id !== exerciseId));
   };
 
-  const removeSet = (exerciseId: string, index: number) => {
-    setExercises((current) =>
-      current.map((exercise) =>
-        exercise.id === exerciseId ? { ...exercise, sets: exercise.sets.filter((_, setIndex) => setIndex !== index) } : exercise,
-      ),
-    );
+  const moveExercise = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= exercises.length) return;
+    setExercises((prev) => {
+      const updated = [...prev];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+      return updated;
+    });
+  };
+
+  const [showTimerModal, setShowTimerModal] = useState(false);
+  const [timerExerciseId, setTimerExerciseId] = useState<string | null>(null);
+  const [customMinutes, setCustomMinutes] = useState(1);
+  const [customSeconds, setCustomSeconds] = useState(30);
+
+  const resetCustomTime = () => {
+    setCustomMinutes(1);
+    setCustomSeconds(30);
+  };
+
+  const [dragActiveId, setDragActiveId] = useState<string | null>(null);
+  const draggedIdRef = useRef<string | null>(null);
+  const gapOffsetsRef = useRef(new Map<string, Animated.Value>());
+  const cardHeightsRef = useRef(new Map<string, number>());
+  const dragStartIdxRef = useRef(0);
+  const dragFinalRef = useRef(0);
+  const CARD_H_DEFAULT = 76;
+
+  const draggedHeight = (id: string) => cardHeightsRef.current.get(id) ?? CARD_H_DEFAULT;
+
+  const cumulativeSwaps = (startIdx: number, dy: number): number => {
+    let swaps = 0;
+    let accH = 0;
+    if (dy > 0) {
+      for (let i = startIdx + 1; i < exercises.length; i++) {
+        const nh = cardHeightsRef.current.get(exercises[i].id) ?? CARD_H_DEFAULT;
+        accH += nh;
+        if (dy >= accH - nh / 2) {
+          swaps = i - startIdx;
+        } else {
+          break;
+        }
+      }
+    } else if (dy < 0) {
+      const absDY = Math.abs(dy);
+      for (let i = startIdx - 1; i >= 0; i--) {
+        const nh = cardHeightsRef.current.get(exercises[i].id) ?? CARD_H_DEFAULT;
+        accH += nh;
+        if (absDY >= accH - nh / 2) {
+          swaps = i - startIdx;
+        } else {
+          break;
+        }
+      }
+    }
+    return swaps;
+  };
+
+  const getGap = (id: string) => {
+    let val = gapOffsetsRef.current.get(id);
+    if (!val) {
+      val = new Animated.Value(0);
+      gapOffsetsRef.current.set(id, val);
+    }
+    return val;
+  };
+
+  // Clean up stale gap entries
+  const activeIds = new Set(exercises.map((ex) => ex.id));
+  gapOffsetsRef.current.forEach((_, id) => {
+    if (!activeIds.has(id)) gapOffsetsRef.current.delete(id);
+  });
+
+  const setAllGaps = (draggedId: string, translationY: number) => {
+    const startIdx = dragStartIdxRef.current;
+    const h = draggedHeight(draggedId);
+    const swaps = cumulativeSwaps(startIdx, translationY);
+    const targetIdx = Math.max(0, Math.min(exercises.length - 1, startIdx + swaps));
+
+    exercises.forEach((ex, idx) => {
+      const val = getGap(ex.id);
+      if (ex.id === draggedId) {
+        val.setValue(translationY);
+      } else {
+        let offset = 0;
+        if (targetIdx > startIdx && idx > startIdx && idx <= targetIdx) {
+          offset = -h;
+        } else if (targetIdx < startIdx && idx >= targetIdx && idx < startIdx) {
+          offset = h;
+        }
+        val.setValue(offset);
+      }
+    });
+  };
+
+  const resetAllGaps = () => {
+    exercises.forEach((ex) => {
+      const val = gapOffsetsRef.current.get(ex.id);
+      if (val) val.setValue(0);
+    });
+  };
+
+  const handleDragMove = (translationY: number, exerciseId: string) => {
+    if (draggedIdRef.current !== exerciseId) return;
+    dragFinalRef.current = translationY;
+    setAllGaps(exerciseId, translationY);
+  };
+
+  const handleDragEnd = (exerciseId: string) => {
+    const startIdx = dragStartIdxRef.current;
+    const rawDy = dragFinalRef.current;
+    const swaps = cumulativeSwaps(startIdx, rawDy);
+    const targetIdx = Math.max(0, Math.min(exercises.length - 1, startIdx + swaps));
+
+    if (targetIdx !== startIdx) {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setExercises((prev) => {
+        const updated = [...prev];
+        const [moved] = updated.splice(startIdx, 1);
+        updated.splice(targetIdx, 0, moved);
+        return updated;
+      });
+    }
+
+    draggedIdRef.current = null;
+    resetAllGaps();
+  };
+
+  const draggingId = dragActiveId;
+  const dragStartIdx = dragStartIdxRef.current;
+  const rawDy = dragFinalRef.current;
+  const dragSwaps = cumulativeSwaps(dragStartIdx, rawDy);
+  const dragTargetIdx = draggingId ? Math.max(0, Math.min(exercises.length - 1, dragStartIdx + dragSwaps)) : -1;
+
+  const setRestTime = (exerciseId: string, rest: string) => {
+    updateSingleConfig(exerciseId, "rest", rest);
+    setShowTimerModal(false);
+    setTimerExerciseId(null);
   };
 
   return (
@@ -1899,64 +2124,174 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
       />
 
       <View style={{ gap: 12, marginTop: 16 }}>
-        {exercises.map((exercise) => (
-          <Card key={exercise.id} style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
-            <View style={styles.rowBetween}>
-              <View style={[styles.rowGap, { flex: 1 }]}>
-                <MaterialCommunityIcons name="drag-vertical" size={16} color="rgba(255,255,255,0.24)" />
-                <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
-                <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
-              </View>
-              <View style={styles.rowGap}>
-                <Pressable onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))}>
-                  <Feather name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={16} color="rgba(255,255,255,0.44)" />
-                </Pressable>
-                <Pressable onPress={() => removeExercise(exercise.id)}>
-                  <Feather name="trash-2" size={15} color="rgba(239,68,68,0.7)" />
-                </Pressable>
-              </View>
-            </View>
-
-            {expanded === exercise.id ? (
-              <View style={{ marginTop: 14 }}>
-                <View style={styles.templateGridHeader}>
-                  {["Set", "Reps", "RPE", "Rest"].map((label) => (
-                    <Text key={label} style={styles.gridHeaderText}>
-                      {label}
-                    </Text>
-                  ))}
-                </View>
-                <View style={{ gap: 8 }}>
-                  {exercise.sets.map((set, index) => (
-                    <View key={`${exercise.id}-${index}`} style={styles.templateGridRow}>
-                      <View style={styles.templateSetIndex}>
-                        <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>{index + 1}</Text>
-                        {exercise.sets.length > 1 ? (
-                          <Pressable onPress={() => removeSet(exercise.id, index)}>
-                            <Feather name="trash-2" size={11} color="rgba(239,68,68,0.7)" />
-                          </Pressable>
-                        ) : null}
-                      </View>
-                      <MiniInput value={set.reps} onChangeText={(value) => updateSet(exercise.id, index, "reps", value)} />
-                      <MiniInput value={set.rpe} onChangeText={(value) => updateSet(exercise.id, index, "rpe", value)} />
-                      <MiniInput value={set.rest} onChangeText={(value) => updateSet(exercise.id, index, "rest", value)} />
-                    </View>
-                  ))}
-                </View>
-                <Pressable onPress={() => addSet(exercise.id)} style={styles.dashedButton}>
-                  <Feather name="plus" size={13} color={COLORS.teal} />
-                  <Text style={styles.dashedButtonText}>Add Set</Text>
-                </Pressable>
-                <TextInput
-                  value={exercise.notes}
-                  onChangeText={(value) => updateNote(exercise.id, value)}
-                  placeholder="Notes (optional)..."
-                  placeholderTextColor="rgba(255,255,255,0.28)"
-                  style={[styles.input, { marginTop: 12 }]}
-                />
+        {exercises.map((exercise, index) => (
+          <View key={exercise.id} style={{ position: "relative" }}>
+            {draggingId && index === dragTargetIdx && exercise.id !== draggingId ? (
+              <View style={{
+                backgroundColor: "rgba(0,212,168,0.04)",
+                borderWidth: 1.5,
+                borderStyle: "dashed",
+                borderColor: "rgba(0,212,168,0.3)",
+                borderRadius: 24,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 12,
+                opacity: 0.55,
+              }}>
+                <Text style={{ fontSize: 18, opacity: 0.5 }}>
+                  {exercises.find((ex) => ex.id === draggingId)?.emoji ?? "⚡"}
+                </Text>
+                <Text style={{ color: COLORS.teal, fontSize: 13, fontWeight: "600", fontStyle: "italic" }}>
+                  {exercises.find((ex) => ex.id === draggingId)?.name ?? ""}
+                </Text>
               </View>
             ) : null}
-          </Card>
+            <View onLayout={(e) => cardHeightsRef.current.set(exercise.id, e.nativeEvent.layout.height)}>
+              <Animated.View style={{
+                transform: [{ translateY: getGap(exercise.id) }],
+              }}>
+                <View style={[styles.card, {
+                  paddingHorizontal: 14,
+                  paddingVertical: 14,
+                  zIndex: dragActiveId === exercise.id ? 100 : 1,
+                  elevation: dragActiveId === exercise.id ? 10 : 1,
+                }, dragActiveId === exercise.id ? {
+                  borderColor: COLORS.teal,
+                  borderWidth: 1.5,
+                  backgroundColor: "rgba(0,212,168,0.06)",
+                  ...shadow(COLORS.teal),
+                } : null]}>
+                  <PanGestureHandler
+                    onGestureEvent={(e) => handleDragMove(e.nativeEvent.translationY, exercise.id)}
+                    onHandlerStateChange={(e) => {
+                      if (e.nativeEvent.state === State.ACTIVE) {
+                        draggedIdRef.current = exercise.id;
+                        dragStartIdxRef.current = exercises.findIndex((ex) => ex.id === exercise.id);
+                        dragFinalRef.current = 0;
+                        setDragActiveId(exercise.id);
+                      } else if (e.nativeEvent.state === State.END || e.nativeEvent.state === State.CANCELLED || e.nativeEvent.state === State.FAILED) {
+                        handleDragEnd(exercise.id);
+                        setDragActiveId(null);
+                      }
+                    }}
+                    activateAfterLongPress={300}
+                    minDist={5}
+                  >
+                    <View>
+                      <View style={styles.rowBetween}>
+                        <View style={[styles.rowGap, { flex: 1 }]}>
+                          <MaterialCommunityIcons name="drag-vertical" size={18} color={dragActiveId === exercise.id ? COLORS.teal : "rgba(255,255,255,0.3)"} />
+                          <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
+                          <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </PanGestureHandler>
+
+                  {expanded === exercise.id ? (
+                        <View style={{ marginTop: 14, gap: 12 }}>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                            <View style={{ minWidth: 80 }}>
+                              <Text style={styles.fieldLabel}>Reps</Text>
+                              <MiniInput
+                                value={exercise.sets[0]?.reps ?? "8"}
+                                onChangeText={(value) => updateSingleConfig(exercise.id, "reps", value)}
+                              />
+                            </View>
+                            <View>
+                              <Text style={styles.fieldLabel}>Sets</Text>
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                                <Pressable
+                                  onPress={() => setSetCount(exercise.id, -1)}
+                                  style={[styles.stepperBtn, { opacity: exercise.setCount <= 1 ? 0.3 : 1 }]}
+                                  disabled={exercise.setCount <= 1}
+                                >
+                                  <Feather name="minus" size={14} color={COLORS.text} />
+                                </Pressable>
+                                <Text style={[styles.listRowTitle, { minWidth: 22, textAlign: "center" }]}>
+                                  {exercise.setCount}
+                                </Text>
+                                <Pressable onPress={() => setSetCount(exercise.id, 1)} style={styles.stepperBtn}>
+                                  <Feather name="plus" size={14} color={COLORS.text} />
+                                </Pressable>
+                              </View>
+                            </View>
+                            <View style={{ minWidth: 60 }}>
+                              <Text style={styles.fieldLabel}>RPE</Text>
+                              <MiniInput
+                                value={exercise.sets[0]?.rpe ?? "7"}
+                                onChangeText={(value) => updateSingleConfig(exercise.id, "rpe", value)}
+                                error={(() => {
+                                  const n = Number(exercise.sets[0]?.rpe);
+                                  return exercise.sets[0]?.rpe !== "" && (isNaN(n) || n < 1 || n > 10);
+                                })()}
+                                keyboardType="numeric"
+                              />
+                              {(() => {
+                                const n = Number(exercise.sets[0]?.rpe);
+                                const invalid = exercise.sets[0]?.rpe !== "" && (isNaN(n) || n < 1 || n > 10);
+                                return invalid ? <Text style={{ color: COLORS.red, fontSize: 9, marginTop: 4, textAlign: "center" }}>1–10</Text> : null;
+                              })()}
+                            </View>
+                            <View>
+                              <Text style={styles.fieldLabel}>Rest</Text>
+                              <Pressable
+                                onPress={() => {
+                                  const current = exercise.sets[0]?.rest ?? "2:00";
+                                  const parts = current.includes(":") ? current.split(":") : [current, "0"];
+                                  setCustomMinutes(Number(parts[0]) || 2);
+                                  setCustomSeconds(Number(parts[1]) || 0);
+                                  setTimerExerciseId(exercise.id);
+                                  setShowTimerModal(true);
+                                }}
+                                style={styles.restChip}
+                              >
+                                <Feather name="clock" size={12} color="rgba(255,255,255,0.5)" />
+                                <Text style={styles.restChipText}>{exercise.sets[0]?.rest ?? "2:00"}</Text>
+                              </Pressable>
+                            </View>
+                          </View>
+                          <TextInput
+                            value={exercise.notes}
+                            onChangeText={(value) => updateNote(exercise.id, value)}
+                            placeholder="Notes (optional)..."
+                            placeholderTextColor="rgba(255,255,255,0.28)"
+                            style={[styles.input, { marginTop: 4 }]}
+                          />
+                        </View>
+                      ) : null}
+                </View>
+              </Animated.View>
+            </View>
+
+            <Animated.View style={{
+              position: "absolute",
+              right: 14,
+              top: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              zIndex: 999,
+              transform: [{ translateY: getGap(exercise.id) }],
+            }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
+                <Pressable onPress={() => moveExercise(index, index - 1)} hitSlop={8}>
+                  <Feather name="chevron-up" size={15} color="rgba(255,255,255,0.3)" />
+                </Pressable>
+                <Pressable onPress={() => moveExercise(index, index + 1)} hitSlop={8}>
+                  <Feather name="chevron-down" size={15} color="rgba(255,255,255,0.3)" />
+                </Pressable>
+              </View>
+              <View style={{ width: 1, height: 16, marginHorizontal: 8, backgroundColor: "rgba(255,255,255,0.1)" }} />
+              <Pressable onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))} hitSlop={8}>
+                <Feather name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={17} color="rgba(255,255,255,0.6)" />
+              </Pressable>
+              <Pressable onPress={() => removeExercise(exercise.id)} hitSlop={8} style={{ marginLeft: 10 }}>
+                <Feather name="trash-2" size={15} color="rgba(239,68,68,0.6)" />
+              </Pressable>
+            </Animated.View>
+          </View>
         ))}
 
         <Pressable onPress={() => setShowExercisePicker(true)}>
@@ -1988,9 +2323,46 @@ function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: 
         onSelect={(exercise) => addExercise(exercise)}
         onClose={() => setShowExercisePicker(false)}
       />
+
+      <Modal visible={showTimerModal} transparent animationType="slide" onRequestClose={() => setShowTimerModal(false)}>
+        <View style={styles.modalScrim}>
+          <Pressable style={styles.modalBackdrop} onPress={() => { setShowTimerModal(false); resetCustomTime(); }} />
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Rest Timer</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18, justifyContent: "center" }}>
+              {REST_PRESETS.map((preset) => (
+                <Pressable
+                  key={preset}
+                  onPress={() => timerExerciseId && setRestTime(timerExerciseId, preset)}
+                  style={styles.chipButton}
+                >
+                  <Text style={styles.chipButtonText}>{preset}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={{ marginTop: 20, alignItems: "center" }}>
+              <Text style={[styles.fieldLabel, { marginBottom: 10 }]}>Custom</Text>
+              <View style={{ flexDirection: "row", gap: 12, justifyContent: "center", alignItems: "flex-end" }}>
+                <PickerColumn values={MINUTES} selected={customMinutes} onSelect={setCustomMinutes} label="Min" itemWidth={56} />
+                <Text style={{ fontSize: 24, fontWeight: "900", color: COLORS.text, paddingBottom: 18 }}>:</Text>
+                <PickerColumn values={SECONDS} selected={customSeconds} onSelect={setCustomSeconds} label="Sec" itemWidth={56} />
+              </View>
+              <PrimaryButton
+                label={`Set ${String(customMinutes).padStart(2, "0")}:${String(customSeconds).padStart(2, "0")}`}
+                onPress={() => timerExerciseId && setRestTime(timerExerciseId, `${customMinutes}:${String(customSeconds).padStart(2, "0")}`)}
+                subtle
+                style={{ marginTop: 14 }}
+              />
+            </View>
+            <PrimaryButton label="Done" onPress={() => { setShowTimerModal(false); resetCustomTime(); }} style={{ marginTop: 12 }} />
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
+
 
 function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
   const auth = useAuth();
@@ -2143,11 +2515,21 @@ function ActiveWorkoutScreen({
   }, []);
 
   useEffect(() => {
-    if (!template.data || exercises.length > 0) return;
+    if (!template.data || lookup.size === 0) return;
+    if (exercises.length > 0) {
+      setExercises((prev) =>
+        prev.map((ex) => ({
+          ...ex,
+          name: nameForExercise(ex.exerciseId, lookup),
+          emoji: exerciseEmoji(lookup.get(ex.exerciseId)),
+        })),
+      );
+      return;
+    }
     const draft = workoutDraftFromTemplate(template.data, lookup);
     setExercises(draft);
     setExpanded(draft[0]?.id ?? null);
-  }, [exercises.length, lookup, template.data]);
+  }, [lookup, template.data]);
 
   const completedSets = exercises.flatMap((exercise) => exercise.sets.filter((set) => set.done && !set.warmup)).length;
   const totalSets = exercises.flatMap((exercise) => exercise.sets.filter((set) => !set.warmup)).length;
@@ -2158,6 +2540,9 @@ function ActiveWorkoutScreen({
       if (set.serverId) await deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete(sessionId, set.serverId);
       return undefined;
     }
+
+    const rpeErr = rpeError(set.rpe);
+    if (rpeErr) throw new Error(`"${exercise.name}": ${rpeErr}`);
 
     const setNumber = exercise.sets.filter((item) => !item.warmup).findIndex((item) => item.id === set.id) + 1;
     const payload = {
@@ -2795,17 +3180,25 @@ function MesocycleListScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const mesocycles = useMesocyclesQuery(auth.isAuthenticated);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newMesoName, setNewMesoName] = useState("");
+  const [newMesoGoal, setNewMesoGoal] = useState<string | null>(null);
+  const [newMesoWeeks, setNewMesoWeeks] = useState("6");
   const createMeso = useMutation({
     mutationFn: async () =>
       createMesocycleMesocyclesPost({
-        name: "New Mesocycle",
-        goal: "Improve strength",
+        name: newMesoName || "New Mesocycle",
+        goal: newMesoGoal,
         started_on: new Date().toISOString().slice(0, 10),
-        weeks: 6,
+        weeks: newMesoWeeks ? Number(newMesoWeeks) : null,
       }),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.mesocycles });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      setShowCreateModal(false);
+      setNewMesoName("");
+      setNewMesoGoal(null);
+      setNewMesoWeeks("6");
       navigation.navigate("MesocycleDetail", { id: String(successData(response).id) });
     },
   });
@@ -2818,7 +3211,7 @@ function MesocycleListScreen({ navigation }: { navigation: any }) {
         onBack={() => navigation.goBack()}
         right={
           <Pressable
-            onPress={() => createMeso.mutate()}
+            onPress={() => setShowCreateModal(true)}
             style={[styles.smallAccentButton, { backgroundColor: "rgba(139,92,246,0.15)", borderColor: "rgba(139,92,246,0.3)" }]}
           >
             <Feather name="plus" size={14} color={COLORS.purple} />
@@ -2884,6 +3277,73 @@ function MesocycleListScreen({ navigation }: { navigation: any }) {
           <EmptyCard title="No mesocycles yet" text="Create a block when you want advanced planning." />
         ) : null}
       </View>
+
+      <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
+        <View style={styles.modalScrim}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setShowCreateModal(false)} />
+          <View style={styles.bottomSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>New Mesocycle</Text>
+
+            <View style={{ marginTop: 20 }}>
+              <Text style={styles.fieldLabel}>Name</Text>
+              <TextInput
+                value={newMesoName}
+                onChangeText={setNewMesoName}
+                placeholder="e.g. Summer Strength Block"
+                placeholderTextColor="rgba(255,255,255,0.28)"
+                style={styles.input}
+                autoFocus
+              />
+            </View>
+
+            <View style={{ marginTop: 16 }}>
+              <Text style={styles.fieldLabel}>Goal (optional)</Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {MESOCYCLE_GOALS.map((goal) => (
+                  <Pressable
+                    key={goal.value}
+                    onPress={() => setNewMesoGoal(newMesoGoal === goal.value ? null : goal.value)}
+                    style={[
+                      styles.chipButton,
+                      newMesoGoal === goal.value ? { backgroundColor: "rgba(139,92,246,0.2)", borderColor: "rgba(139,92,246,0.5)" } : null,
+                    ]}
+                  >
+                    <Text style={[styles.chipButtonText, newMesoGoal === goal.value ? { color: COLORS.text } : null]}>
+                      {goal.label}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+
+            <View style={{ marginTop: 16 }}>
+              <Text style={styles.fieldLabel}>Weeks (optional)</Text>
+              <TextInput
+                value={newMesoWeeks}
+                onChangeText={setNewMesoWeeks}
+                placeholder="e.g. 6"
+                placeholderTextColor="rgba(255,255,255,0.28)"
+                style={styles.input}
+                keyboardType="number-pad"
+              />
+            </View>
+
+            <PrimaryButton
+              label={createMeso.isPending ? "Creating..." : "Create"}
+              onPress={() => createMeso.mutate()}
+              disabled={createMeso.isPending}
+              icon={<Feather name="check" size={16} color="#000000" />}
+              style={{ marginTop: 22 }}
+            />
+            <PrimaryButton label="Cancel" onPress={() => setShowCreateModal(false)} subtle style={{ marginTop: 10 }} />
+
+            {createMeso.isError ? (
+              <Text style={[styles.errorText, { marginTop: 10, textAlign: "center" }]}>{getApiErrorMessage(createMeso.error)}</Text>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -2927,10 +3387,7 @@ function MesocycleDetailScreen({ navigation, route }: { navigation: any; route?:
   const meso = detail.data;
   const summary = analytics.data?.current_block_summary;
   const delta = analytics.data?.comparison_to_previous;
-  const volumeData = meso.sessions.map((session) => ({
-    label: formatShortDate(session.started_at),
-    value: session.total_volume ?? 0,
-  }));
+  const muscleBalance = analytics.data?.muscle_balance;
   const start = new Date(meso.started_on).getTime();
   const end = meso.ended_on ? new Date(meso.ended_on).getTime() : start + (meso.weeks ?? 0) * 7 * 24 * 60 * 60 * 1000;
   const progress = end > start ? Math.max(0, Math.min(100, ((Date.now() - start) / (end - start)) * 100)) : 0;
@@ -2970,16 +3427,6 @@ function MesocycleDetailScreen({ navigation, route }: { navigation: any; route?:
         </View>
       </Card>
 
-      <Card style={{ marginTop: 14 }}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.sectionCardTitle}>Weekly Volume</Text>
-        <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>kg lifted</Text>
-        </View>
-        <View style={{ marginTop: 14 }}>
-          <TrendChart data={volumeData.length ? volumeData : MESO_VOLUME_DATA.map((item) => ({ label: item.label, value: item.value }))} color={COLORS.purple} labelEvery={1} height={110} />
-        </View>
-      </Card>
-
       <Card style={{ marginTop: 14, backgroundColor: "rgba(139,92,246,0.07)", borderColor: "rgba(139,92,246,0.2)" }}>
         <View style={styles.rowGap}>
           <Feather name="lock" size={13} color={COLORS.purple} />
@@ -2996,7 +3443,7 @@ function MesocycleDetailScreen({ navigation, route }: { navigation: any; route?:
           <AnalyticsCard label="Total Sets" value={String(summary?.total_sets ?? 0)} sub="current block" color={COLORS.green} />
           <AnalyticsCard label="Avg Session RPE" value={summary?.average_session_rpe?.toFixed(1) ?? "-"} sub="current block" color={COLORS.green} />
         </View>
-        <Pressable onPress={() => navigation.navigate("MuscleBalance")} style={styles.analyticsLink}>
+        <Pressable onPress={() => navigation.navigate("MuscleBalance", { mesocycleId: mesocycleId })} style={styles.analyticsLink}>
           <View style={styles.rowGap}>
             <Feather name="bar-chart-2" size={14} color={COLORS.purple} />
             <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>Muscle Balance Analysis</Text>
@@ -3363,12 +3810,13 @@ function ExerciseProgressScreen({ navigation, route }: { navigation: any; route:
   );
 }
 
-function MuscleBalanceScreen({ navigation }: { navigation: any }) {
+function MuscleBalanceScreen({ navigation, route }: { navigation: any; route?: { params?: { mesocycleId?: number | null } } }) {
   const auth = useAuth();
   const [period, setPeriod] = useState("1W");
   const [expanded, setExpanded] = useState<string | null>(null);
   const weeks = period === "1W" ? 1 : period === "2W" ? 2 : period === "4W" ? 4 : 8;
-  const report = useMuscleBalanceQuery({ weeks }, auth.isAuthenticated);
+  const mesocycleId = route?.params?.mesocycleId ?? undefined;
+  const report = useMuscleBalanceQuery({ weeks, mesocycle_id: mesocycleId }, auth.isAuthenticated);
   const items = report.data?.items ?? [];
   const strongItems = items.filter((item) => item.status === "Strong");
   const balancedItems = items.filter((item) => item.status === "Balanced");
@@ -4164,11 +4612,13 @@ function AppNavigator() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </QueryClientProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
     </SafeAreaProvider>
   );
 }
@@ -4356,14 +4806,16 @@ const styles = StyleSheet.create({
   saveChip: { minHeight: 34, borderRadius: 12, backgroundColor: COLORS.teal, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
   saveChipText: { color: "#000000", fontSize: 12, fontWeight: "800" },
   templateNameInput: { marginTop: 16, minHeight: 58, borderRadius: 18, fontSize: 16, fontWeight: "700" },
-  templateGridHeader: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 8, marginBottom: 10 },
-  templateGridRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  templateSetIndex: { width: 44, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4 },
-  gridHeaderText: { flex: 1, color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 },
+  stepperBtn: { width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  restChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.04)" },
+  restChipText: { color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: "600" },
   miniInput: { flex: 1, minWidth: 0, minHeight: 38, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: COLORS.text, textAlign: "center", fontSize: 13, paddingHorizontal: 4 },
+  gridHeaderText: { flex: 1, color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 },
   dashedButton: { marginTop: 10, minHeight: 42, borderRadius: 14, borderWidth: 1, borderStyle: "dashed", borderColor: "rgba(0,212,168,0.25)", backgroundColor: "rgba(0,212,168,0.08)", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 6 },
   dashedButtonText: { color: COLORS.teal, fontSize: 12, fontWeight: "700" },
   selectableRow: { minHeight: 54, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, backgroundColor: "rgba(255,255,255,0.03)", justifyContent: "center", paddingHorizontal: 14 },
+  chipButton: { paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.04)" },
+  chipButtonText: { color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600" },
   radioOuter: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   radioInner: { width: 8, height: 8, borderRadius: 4 },
   stickyCard: { marginTop: 0, borderRadius: 0, marginHorizontal: -20, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 14, borderLeftWidth: 0, borderRightWidth: 0, borderTopWidth: 0 },

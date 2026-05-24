@@ -643,6 +643,14 @@ export const GOALS = [
   "Athletic performance",
 ];
 
+export const MESOCYCLE_GOALS = [
+  { label: "Strength", value: "strength" },
+  { label: "Hypertrophy", value: "hypertrophy" },
+  { label: "Endurance", value: "endurance" },
+  { label: "Weight Loss", value: "weight_loss" },
+  { label: "Maintenance", value: "maintenance" },
+] as const;
+
 export const BODYWEIGHT_ENTRIES = [
   { id: "1", date: "Mar 18, 2026", weight: 82.4, note: "Morning, post-workout" },
   { id: "2", date: "Mar 15, 2026", weight: 82.7, note: "" },
