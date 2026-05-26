@@ -1,0 +1,37 @@
+name: E2E (iOS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-ios:
+    name: Detox (iOS)
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Install CocoaPods
+        run: pod install --project-directory=ios
+
+      - name: Build iOS app (debug)
+        run: npx detox build --configuration ios.sim.debug
+
+      - name: Run Detox tests
+        run: npx detox test --configuration ios.sim.debug --cleanup
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detox-artifacts
+          path: artifacts/

@@ -1,0 +1,427 @@
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { Feather } from "@expo/vector-icons";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+import { useAuth } from "../auth/AuthProvider";
+import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
+import {
+  deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete,
+  updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch,
+  createExerciseSetWorkoutSessionsSessionIdSetsPost,
+  updateWorkoutSessionWorkoutSessionsSessionIdPatch,
+  deleteWorkoutSessionWorkoutSessionsSessionIdDelete,
+} from "../api/endpoints/workout-sessions/workout-sessions";
+import { getApiErrorMessage } from "../api/client";
+import { queryKeys } from "../api/queryKeys";
+import { COLORS } from "../theme/colors";
+import { styles } from "../theme/styles";
+import { Card, LoadingCard } from "../components/ui/Card";
+import { Screen } from "../components/ui/Layout";
+import { SectionEyebrow, ProgressBar } from "../components/ui/Indicators";
+import { MiniInput } from "../components/ui/Input";
+import { PrimaryButton } from "../components/ui/Button";
+import { ConfirmDialog } from "../components/ui/Modal";
+import { ExercisePicker } from "../components/ExercisePicker";
+import { exerciseLookup, workoutDraftFromTemplate, successData, WorkoutDraftExercise, WorkoutDraftSet } from "../utils/mapping";
+import { nameForExercise, exerciseEmoji } from "../utils/display";
+import { formatTime } from "../utils/format";
+import { numberOrNull, rpeError } from "../utils/validation";
+import { toNumberId } from "../utils/helpers";
+
+export function ActiveWorkoutScreen({
+  navigation,
+  route,
+}: {
+  navigation: any;
+  route?: { params?: { sessionId?: number; templateId?: string; mesocycleId?: string | null } };
+}) {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const sessionId = route?.params?.sessionId;
+  const templateId = toNumberId(route?.params?.templateId);
+  const [elapsed, setElapsed] = useState(0);
+  const [exercises, setExercises] = useState<WorkoutDraftExercise[]>([]);
+  const [mood, setMood] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [showFinish, setShowFinish] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [error, setError] = useState("");
+  const template = useTemplateDetailQuery(templateId, auth.isAuthenticated && !!templateId);
+  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setElapsed((value) => value + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!template.data || lookup.size === 0) return;
+    if (exercises.length > 0) {
+      setExercises((prev) =>
+        prev.map((ex) => ({
+          ...ex,
+          name: nameForExercise(ex.exerciseId, lookup),
+          emoji: exerciseEmoji(lookup.get(ex.exerciseId)),
+        })),
+      );
+      return;
+    }
+    const draft = workoutDraftFromTemplate(template.data, lookup);
+    setExercises(draft);
+    setExpanded(draft[0]?.id ?? null);
+  }, [lookup, template.data]);
+
+  const completedSets = exercises.flatMap((exercise) => exercise.sets.filter((set) => set.done && !set.warmup)).length;
+  const totalSets = exercises.flatMap((exercise) => exercise.sets.filter((set) => !set.warmup)).length;
+
+  const persistSet = async (exercise: WorkoutDraftExercise, set: WorkoutDraftSet, shouldComplete: boolean) => {
+    if (!sessionId) throw new Error("Session was not created.");
+    if (!shouldComplete) {
+      if (set.serverId) await deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete(sessionId, set.serverId);
+      return undefined;
+    }
+
+    const rpeErr = rpeError(set.rpe);
+    if (rpeErr) throw new Error(`"${exercise.name}": ${rpeErr}`);
+
+    const setNumber = exercise.sets.filter((item) => !item.warmup).findIndex((item) => item.id === set.id) + 1;
+    const payload = {
+      exercise_id: exercise.exerciseId,
+      set_number: Math.max(1, setNumber),
+      set_type: set.warmup ? "warmup" : ("working" as const),
+      reps: numberOrNull(set.reps),
+      weight_kg: numberOrNull(set.weight),
+      rpe: numberOrNull(set.rpe),
+      is_pr: false,
+      notes: null,
+      logged_at: new Date().toISOString(),
+    };
+
+    if (set.serverId) {
+      const response = await updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch(sessionId, set.serverId, payload);
+      return successData(response).id;
+    }
+    const response = await createExerciseSetWorkoutSessionsSessionIdSetsPost(sessionId, payload);
+    return successData(response).id;
+  };
+
+  const toggleSet = async (exerciseId: string, setId: string) => {
+    const exercise = exercises.find((item) => item.id === exerciseId);
+    const set = exercise?.sets.find((item) => item.id === setId);
+    if (!exercise || !set) return;
+    const shouldComplete = !set.done;
+    setError("");
+    try {
+      const serverId = await persistSet(exercise, set, shouldComplete);
+      setExercises((current) =>
+        current.map((currentExercise) =>
+          currentExercise.id === exerciseId
+            ? {
+                ...currentExercise,
+                sets: currentExercise.sets.map((currentSet) =>
+                  currentSet.id === setId ? { ...currentSet, done: shouldComplete, serverId: shouldComplete ? serverId : undefined } : currentSet,
+                ),
+              }
+            : currentExercise,
+        ),
+      );
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const updateSet = (exerciseId: string, setId: string, field: "weight" | "reps" | "rpe", value: string) => {
+    setExercises((current) =>
+      current.map((exercise) =>
+        exercise.id === exerciseId
+          ? {
+              ...exercise,
+              sets: exercise.sets.map((set) => (set.id === setId ? { ...set, [field]: value } : set)),
+            }
+          : exercise,
+      ),
+    );
+  };
+
+  const addSet = (exerciseId: string) => {
+    setExercises((current) =>
+      current.map((exercise) =>
+        exercise.id === exerciseId
+          ? {
+              ...exercise,
+              sets: [
+                ...exercise.sets,
+                {
+                  id: Date.now().toString(),
+                  weight: exercise.sets.filter((set) => !set.warmup).at(-1)?.weight ?? "60",
+                  reps: exercise.sets.filter((set) => !set.warmup).at(-1)?.reps ?? "8",
+                  rpe: "",
+                  done: false,
+                  warmup: false,
+                },
+              ],
+            }
+          : exercise,
+      ),
+    );
+  };
+
+  const addExercise = (exercise: any) => {
+    const nextId = Date.now().toString();
+    const nextExercise: WorkoutDraftExercise = {
+      id: nextId,
+      exerciseId: exercise.id,
+      name: exercise.name,
+      emoji: exerciseEmoji(exercise),
+      notes: "",
+      sets: [{ id: `${nextId}-1`, weight: "60", reps: "8", rpe: "", done: false, warmup: false }],
+    };
+    setExercises((current) => [...current, nextExercise]);
+    setExpanded(nextId);
+    setShowExercisePicker(false);
+  };
+
+  const confirmDiscard = async () => {
+    if (sessionId) {
+      try {
+        await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
+        queryClient.removeQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      } catch (err) {
+        Alert.alert("Error", getApiErrorMessage(err));
+        return;
+      }
+    }
+    setShowDiscardConfirm(false);
+    navigation.goBack();
+  };
+
+  const discardWorkout = () => {
+    setShowDiscardConfirm(true);
+  };
+
+  const finishWorkout = async () => {
+    if (!sessionId) return;
+    if (!auth.isAuthenticated) {
+      setError("Session expired. Please log in again.");
+      return;
+    }
+    setError("");
+    try {
+      await updateWorkoutSessionWorkoutSessionsSessionIdPatch(sessionId, {
+        finished_at: new Date().toISOString(),
+        is_completed: true,
+        mood,
+        notes: note || null,
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      setShowFinish(false);
+      navigation.replace("SessionDetail", { id: String(sessionId) });
+    } catch (err) {
+      const msg = getApiErrorMessage(err);
+      if (msg.includes("fetch") || msg.includes("network")) {
+        setError("Network error. Check your connection and try again.");
+      } else {
+        setError(msg);
+      }
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <Screen glowColor="rgba(0,0,0,0)">
+        <Card style={[styles.stickyCard, { marginTop: 0 }]}>
+          <View style={styles.rowBetween}>
+            <Pressable style={styles.dangerPill} onPress={discardWorkout}>
+              <Feather name="x" size={13} color={COLORS.red} />
+              <Text style={styles.dangerPillText}>Discard</Text>
+            </Pressable>
+            <View style={{ alignItems: "center" }}>
+              <Text style={styles.timerText}>{formatTime(elapsed)}</Text>
+              <Text style={styles.timerSubtext}>
+                {completedSets}/{totalSets} work sets done
+              </Text>
+            </View>
+            <Pressable style={styles.finishPill} onPress={() => setShowFinish(true)}>
+              <Feather name="check" size={13} color="#000000" />
+              <Text style={styles.finishPillText}>Finish</Text>
+            </Pressable>
+          </View>
+          <View style={{ marginTop: 14 }}>
+            <ProgressBar value={totalSets ? (completedSets / totalSets) * 100 : 0} color={COLORS.teal} />
+          </View>
+        </Card>
+
+        {template.isPending && templateId ? <LoadingCard label="Loading template workout..." /> : null}
+        {error ? (
+          <View style={[styles.errorBox, { marginTop: 12 }]}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <View style={{ marginTop: 16, gap: 12 }}>
+          {exercises.map((exercise) => {
+            const done = exercise.sets.filter((set) => set.done && !set.warmup).length;
+            const total = exercise.sets.filter((set) => !set.warmup).length;
+            return (
+              <Card key={exercise.id} style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+                <Pressable onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))} style={styles.rowBetween}>
+                  <View style={[styles.rowGap, { flex: 1 }]}>
+                    <Text style={{ fontSize: 22 }}>{exercise.emoji}</Text>
+                    <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
+                  </View>
+                  <View style={styles.rowGap}>
+                    <Text style={styles.listMeta}>
+                      {done}/{total}
+                    </Text>
+                    <Feather name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={15} color="rgba(255,255,255,0.42)" />
+                  </View>
+                </Pressable>
+                {expanded === exercise.id ? (
+                  <View style={{ marginTop: 14 }}>
+                    <View style={styles.workoutGridHeader}>
+                      {["Set", "kg", "Reps", "RPE", ""].map((label) => (
+                        <Text key={label} style={[styles.gridHeaderText, label === "" ? { width: 36 } : { flex: 1 }]}>
+                          {label}
+                        </Text>
+                      ))}
+                    </View>
+                    <View style={{ gap: 8 }}>
+                      {exercise.sets.map((set) => (
+                        <View key={set.id} style={[styles.workoutGridRow, set.done ? { opacity: 0.56 } : null]}>
+                          <View style={styles.workoutGridIndex}>
+                            <Text style={[styles.smallStrongText, { color: set.warmup ? COLORS.orange : "rgba(255,255,255,0.55)" }]}>
+                              {set.warmup ? "W" : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
+                            </Text>
+                          </View>
+                          <MiniInput
+                            value={set.weight}
+                            onChangeText={(value) => updateSet(exercise.id, set.id, "weight", value)}
+                            strike={set.done}
+                          />
+                          <MiniInput
+                            value={set.reps}
+                            onChangeText={(value) => updateSet(exercise.id, set.id, "reps", value)}
+                            strike={set.done}
+                          />
+                          <MiniInput
+                            value={set.rpe}
+                            onChangeText={(value) => updateSet(exercise.id, set.id, "rpe", value)}
+                            placeholder="-"
+                          />
+                          <Pressable
+                            onPress={() => void toggleSet(exercise.id, set.id)}
+                            style={[styles.doneToggle, set.done ? { backgroundColor: COLORS.teal, borderColor: COLORS.teal } : null]}
+                          >
+                            {set.done ? <Feather name="check" size={15} color="#000000" /> : null}
+                          </Pressable>
+                        </View>
+                      ))}
+                    </View>
+                    <Pressable style={styles.dashedButton} onPress={() => addSet(exercise.id)}>
+                      <Feather name="plus" size={13} color={COLORS.teal} />
+                      <Text style={styles.dashedButtonText}>Add Set</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </Card>
+            );
+          })}
+
+          <Pressable onPress={() => setShowExercisePicker(true)}>
+            <View style={styles.dashedAddCard}>
+              <View style={[styles.addCircle, { backgroundColor: "rgba(0,212,168,0.12)" }]}>
+                <Feather name="plus" size={18} color={COLORS.teal} />
+              </View>
+              <Text style={[styles.cardTitle, { color: "rgba(255,255,255,0.58)" }]}>Add Exercise</Text>
+            </View>
+          </Pressable>
+
+          <Card>
+            <SectionEyebrow>Session Notes</SectionEyebrow>
+            <View style={[styles.rowGap, { marginTop: 12, flexWrap: "wrap" }]}>
+              {["😴", "😐", "😊", "💪", "🔥"].map((entry) => (
+                <Pressable
+                  key={entry}
+                  onPress={() => setMood(entry)}
+                  style={[
+                    styles.moodButton,
+                    mood === entry ? { backgroundColor: "rgba(0,212,168,0.2)", borderColor: "rgba(0,212,168,0.4)" } : null,
+                  ]}
+                >
+                  <Text style={{ fontSize: 20 }}>{entry}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={[styles.rowGap, { alignItems: "flex-start", marginTop: 14 }]}>
+              <Feather name="file-text" size={14} color="rgba(255,255,255,0.3)" style={{ marginTop: 10 }} />
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder="How did this session feel? Any notes..."
+                placeholderTextColor="rgba(255,255,255,0.28)"
+                style={styles.notesInput}
+                multiline
+              />
+            </View>
+          </Card>
+        </View>
+
+        <Modal visible={showFinish} transparent animationType="slide" onRequestClose={() => setShowFinish(false)}>
+          <View style={styles.modalScrim}>
+            <Pressable style={styles.modalBackdrop} onPress={() => setShowFinish(false)} />
+            <View style={styles.bottomSheet}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>Finish Workout?</Text>
+              <Text style={styles.sheetSubtitle}>
+                {formatTime(elapsed)} elapsed - {completedSets}/{totalSets} sets completed
+              </Text>
+              <View style={[styles.rowGap, { marginTop: 16, flexWrap: "wrap" }]}>
+                <Feather name="smile" size={16} color={COLORS.teal} />
+                {["😴", "😐", "😊", "💪", "🔥"].map((entry) => (
+                  <Pressable key={entry} onPress={() => setMood(entry)} style={{ opacity: mood && mood !== entry ? 0.45 : 1 }}>
+                    <Text style={{ fontSize: 24 }}>{entry}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <PrimaryButton
+                label="Finish & Save"
+                onPress={() => void finishWorkout()}
+                icon={<Feather name="check" size={16} color="#000000" />}
+                style={{ marginTop: 18 }}
+              />
+              <PrimaryButton label="Keep going" onPress={() => setShowFinish(false)} subtle style={{ marginTop: 10 }} />
+            </View>
+          </View>
+        </Modal>
+
+        <ExercisePicker
+          variant="pick"
+          visible={showExercisePicker}
+          title="Add Exercise"
+          enabled={auth.isAuthenticated}
+          onSelect={(exercise) => addExercise(exercise)}
+          onClose={() => setShowExercisePicker(false)}
+        />
+
+        <ConfirmDialog
+          visible={showDiscardConfirm}
+          title="Discard Workout"
+          message="This will delete the session and all logged sets."
+          confirmText="Discard"
+          cancelText="Cancel"
+          destructive
+          onConfirm={confirmDiscard}
+          onCancel={() => setShowDiscardConfirm(false)}
+        />
+      </Screen>
+    </KeyboardAvoidingView>
+  );
+}
