@@ -406,16 +406,16 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
                   </PanGestureHandler>
 
                   {expanded === exercise.id ? (
-                    <View style={{ marginTop: 14, gap: 12 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
-                        <View style={{ minWidth: 80 }}>
+                    <View style={{ marginTop: 14, gap: 14 }}>
+                      <View style={{ flexDirection: "row", gap: 12 }}>
+                        <View style={{ flex: 1 }}>
                           <Text style={styles.fieldLabel}>Reps</Text>
                           <MiniInput
                             value={exercise.sets[0]?.reps ?? "8"}
                             onChangeText={(value) => updateSingleConfig(exercise.id, "reps", value)}
                           />
                         </View>
-                        <View>
+                        <View style={{ flex: 1 }}>
                           <Text style={styles.fieldLabel}>Sets</Text>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                             <Pressable
@@ -433,7 +433,9 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
                             </Pressable>
                           </View>
                         </View>
-                        <View style={{ minWidth: 60 }}>
+                      </View>
+                      <View style={{ flexDirection: "row", gap: 12 }}>
+                        <View style={{ flex: 1 }}>
                           <Text style={styles.fieldLabel}>RPE</Text>
                           <MiniInput
                             value={exercise.sets[0]?.rpe ?? "7"}
@@ -450,7 +452,7 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
                             return invalid ? <Text style={{ color: COLORS.red, fontSize: 9, marginTop: 4, textAlign: "center" }}>1–10</Text> : null;
                           })()}
                         </View>
-                        <View>
+                        <View style={{ flex: 1 }}>
                           <Text style={styles.fieldLabel}>Rest</Text>
                           <Pressable
                             onPress={() => {

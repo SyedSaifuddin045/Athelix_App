@@ -65,7 +65,7 @@ export function ExerciseProgressScreen({ navigation, route }: { navigation: any;
 
   if (!selectedId) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.12)">
+      <Screen glowColor="rgba(0,180,140,0.12)" scroll={false} contentContainerStyle={styles.scrollContent}>
         <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
         <View style={{ marginTop: 18, flex: 1 }}>
           <Text style={[styles.sectionCardTitle, { marginBottom: 14 }]}>Your Tracked Exercises</Text>

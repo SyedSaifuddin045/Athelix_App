@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
@@ -75,6 +76,7 @@ export function ExercisePicker({
   enabled = true,
   trackedOnly,
 }: ExercisePickerProps) {
+  const screenHeight = useWindowDimensions().height;
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState("All");
   const [equipment, setEquipment] = useState("All");
@@ -263,40 +265,43 @@ export function ExercisePicker({
           )}
         />
       ) : (
-        <View style={styles.pickListWrap}>
-          <ScrollView contentContainerStyle={styles.listContent}>
-            {exercisesQuery.isPending ? (
+        <FlatList
+          data={exercisesQuery.data?.items ?? []}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          style={{ flex: 1 }}
+          ListEmptyComponent={
+            exercisesQuery.isPending ? (
               <View style={styles.centerState}>
                 <ActivityIndicator size="small" color={COLORS.teal} />
                 <Text style={styles.stateText}>Loading exercises...</Text>
               </View>
-            ) : null}
-            {exercisesQuery.isError ? null : null}
-            {(exercisesQuery.data?.items ?? []).map((exercise) => (
-              <Pressable key={exercise.id} onPress={() => onSelect?.(exercise)}>
-                <View style={styles.exerciseCard}>
-                  <View style={styles.emojiWrap}>
-                    <Text style={styles.emoji}>{exerciseEmoji(exercise)}</Text>
-                  </View>
-                  <View style={styles.exerciseBody}>
-                    <Text style={styles.exerciseName}>{exercise.name}</Text>
-                    <Text style={styles.exerciseDetail}>
-                      {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
-                    </Text>
-                  </View>
-                  <Feather name="plus" size={16} color={COLORS.teal} />
-                </View>
-              </Pressable>
-            ))}
-            {!exercisesQuery.isPending && (exercisesQuery.data?.items ?? []).length === 0 ? (
+            ) : (
               <View style={styles.centerState}>
                 <Text style={styles.stateEmoji}>🔍</Text>
                 <Text style={styles.stateTitle}>No exercises found</Text>
                 <Text style={styles.stateText}>Try a different search term</Text>
               </View>
-            ) : null}
-          </ScrollView>
-        </View>
+            )
+          }
+          renderItem={({ item: exercise }) => (
+            <Pressable key={exercise.id} onPress={() => onSelect?.(exercise)}>
+              <View style={styles.exerciseCard}>
+                <View style={styles.emojiWrap}>
+                  <Text style={styles.emoji}>{exerciseEmoji(exercise)}</Text>
+                </View>
+                <View style={styles.exerciseBody}>
+                  <Text style={styles.exerciseName}>{exercise.name}</Text>
+                  <Text style={styles.exerciseDetail}>
+                    {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
+                  </Text>
+                </View>
+                <Feather name="plus" size={16} color={COLORS.teal} />
+              </View>
+            </Pressable>
+          )}
+        />
       )}
     </View>
   );
@@ -306,7 +311,7 @@ export function ExercisePicker({
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
         <View style={styles.modalScrim}>
           <Pressable style={styles.modalBackdrop} onPress={onClose} />
-          <View style={styles.bottomSheet}>
+          <View style={[styles.bottomSheet, { height: screenHeight * 0.75 }]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{title}</Text>
               <Pressable onPress={onClose} hitSlop={8}>
@@ -488,10 +493,6 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingBottom: 34,
   },
-  pickListWrap: {
-    maxHeight: 360,
-    marginTop: 14,
-  },
   centerState: {
     alignItems: "center",
     paddingVertical: 40,
@@ -575,10 +576,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
+    overflow: "hidden",
     paddingHorizontal: 24,
     paddingTop: 14,
-    paddingBottom: 26,
-    maxHeight: "80%",
+    paddingBottom: 34,
   },
   sheetHeader: {
     flexDirection: "row",
