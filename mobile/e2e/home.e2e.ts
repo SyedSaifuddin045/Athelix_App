@@ -1,7 +1,18 @@
+import { execSync } from "child_process";
 import { device, element, by, expect } from "detox";
+
+function clearKeychain() {
+  const dir = `${process.env.HOME}/Library/Developer/CoreSimulator/Devices/${device.id}/data/Library/Keychains`;
+  try {
+    execSync(`rm -rf "${dir}"`);
+  } catch {
+    // First run — dir doesn't exist yet
+  }
+}
 
 describe("Home screen", () => {
   beforeAll(async () => {
+    clearKeychain();
     await device.launchApp({ newInstance: true });
   });
 
@@ -11,7 +22,7 @@ describe("Home screen", () => {
 
   async function login() {
     await element(by.id("email-input")).typeText("test@test.com");
-    await element(by.id("password-input")).typeText("password123");
+    await element(by.id("password-input")).typeText("Password@123");
     await element(by.text("Sign In")).tap();
   }
 

@@ -13,14 +13,14 @@ module.exports = {
     "ios.debug": {
       type: "ios.app",
       build:
-        "expo run:ios --configuration Debug --platform simulator",
+        "expo run:ios --configuration Debug",
       binaryPath:
         "ios/build/Build/Products/Debug-iphonesimulator/mobile.app",
     },
     "ios.release": {
       type: "ios.app",
       build:
-        "expo run:ios --configuration Release --platform simulator",
+        "expo run:ios --configuration Release",
       binaryPath:
         "ios/build/Build/Products/Release-iphonesimulator/mobile.app",
     },
@@ -39,7 +39,7 @@ module.exports = {
     simulator: {
       type: "ios.simulator",
       device: {
-        type: "iPhone 16 Pro",
+        type: "iPhone 17 Pro",
       },
     },
     emulator: {
