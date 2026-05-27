@@ -1,22 +1,39 @@
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { useRef } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { View, StatusBar } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useSafeAreaInsets, SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
+import type { NavigationContainerRef } from "@react-navigation/native";
+import { PostHogProvider } from "posthog-react-native";
 
 import { queryClient } from "./src/api/queryClient";
 import { AuthProvider } from "./src/auth/AuthProvider";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { COLORS } from "./src/theme/colors";
+import { getPostHogConfig } from "./src/analytics/posthog";
+import { useScreenTracking } from "./src/analytics/useScreenTracking";
+import type { RootStackParamList } from "./src/types/navigation";
+
+const { apiKey, options } = getPostHogConfig();
 
 export default function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
+          <PostHogProvider
+            apiKey={apiKey}
+            options={options}
+            autocapture={{
+              captureScreens: false,
+              captureTouches: true,
+            }}
+          >
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </PostHogProvider>
         </QueryClientProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
@@ -25,10 +42,16 @@ export default function App() {
 
 function AppContent() {
   const insets = useSafeAreaInsets();
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const { onReady, onStateChange } = useScreenTracking(navigationRef);
+
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.root, paddingTop: insets.top }}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.root} translucent={false} />
       <NavigationContainer
+        ref={navigationRef}
+        onReady={onReady}
+        onStateChange={onStateChange}
         theme={{
           dark: true,
           colors: {

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Alert, Pressable, Switch, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePostHog } from "posthog-react-native";
+
 import { useAuth } from "../auth/AuthProvider";
 import { useCurrentUserQuery } from "../api/queries";
 import { updateCurrentUserUsersMePatch } from "../api/endpoints/users/users";
@@ -15,10 +17,12 @@ import { LabeledInput } from "../components/ui/Input";
 import { getApiErrorMessage } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import { successData } from "../utils/mapping";
+import { Events } from "../analytics/events";
 
 export function SettingsScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const currentUser = useCurrentUserQuery(auth.isAuthenticated);
   const [form, setForm] = useState({
     username: "",
@@ -51,6 +55,10 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
       auth.setUser(successData(response));
       queryClient.invalidateQueries({ queryKey: queryKeys.currentUser });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      posthog.capture(Events.ACCOUNT_SETTINGS_UPDATED, {
+        changed_username: currentUser.data?.username !== form.username.trim(),
+        changed_email: currentUser.data?.email !== form.email.trim(),
+      });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },
@@ -150,7 +158,14 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
                   </View>
                   <Switch
                     value={notifications[key]}
-                    onValueChange={() => setNotifications((current) => ({ ...current, [key]: !current[key] }))}
+                    onValueChange={() => {
+                      const newValue = !notifications[key];
+                      setNotifications((current) => ({ ...current, [key]: newValue }));
+                      posthog.capture(Events.NOTIFICATION_SETTING_CHANGED, {
+                        setting_name: key,
+                        new_value: newValue,
+                      });
+                    }}
                     trackColor={{ false: "rgba(255,255,255,0.18)", true: COLORS.teal }}
                     thumbColor="#ffffff"
                   />

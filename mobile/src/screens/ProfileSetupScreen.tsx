@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { usePostHog } from "posthog-react-native";
+
 import { useAuth } from "../auth/AuthProvider";
 import { useProfileQuery } from "../api/queries";
 import { upsertCurrentUserProfileUsersMeProfilePut } from "../api/endpoints/users/users";
@@ -16,10 +18,12 @@ import { LabeledInput, ChipWrap, SelectableRow } from "../components/ui/Input";
 import { getApiErrorMessage } from "../api/client";
 import { numberOrNull } from "../utils/validation";
 import { queryKeys } from "../api/queryKeys";
+import { Events } from "../analytics/events";
 
 export function ProfileSetupScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const profileQuery = useProfileQuery(auth.isAuthenticated);
   const [form, setForm] = useState({
     displayName: "",
@@ -62,6 +66,17 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.profile });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      posthog.capture(Events.PROFILE_SETUP_COMPLETED, {
+        fitness_level: form.fitnessLevel || null,
+        goal: form.goal || null,
+        unit: form.unit,
+        has_body_stats: !!form.height && !!form.weight,
+      });
+      const superProps: Record<string, string> = {};
+      if (form.fitnessLevel) superProps.fitness_level = form.fitnessLevel;
+      if (form.goal) superProps.primary_goal = form.goal;
+      superProps.preferred_unit = form.unit;
+      posthog.register(superProps);
       navigation.replace("MainTabs");
     },
     onError: (err) => setError(getApiErrorMessage(err)),

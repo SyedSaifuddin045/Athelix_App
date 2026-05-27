@@ -4,6 +4,8 @@ import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { PanGestureHandler, State } from "react-native-gesture-handler";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { usePostHog } from "posthog-react-native";
+
 import { useAuth } from "../auth/AuthProvider";
 import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
 import {
@@ -28,6 +30,7 @@ import { nameForExercise, exerciseEmoji } from "../utils/display";
 import type { TemplateDraftExercise } from "../utils/mapping";
 import { rpeError, numberOrNull, parseRestSeconds } from "../utils/validation";
 import { toNumberId, shadow } from "../utils/helpers";
+import { Events } from "../analytics/events";
 
 const MINUTES = [0, 1, 2, 3, 4, 5];
 const SECONDS = [0, 10, 15, 20, 30, 45];
@@ -35,6 +38,7 @@ const SECONDS = [0, 10, 15, 20, 30, 45];
 export function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: { params?: { id?: string } } }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const id = route.params?.id;
   const templateId = toNumberId(id);
   const isEdit = !!templateId;
@@ -118,9 +122,25 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
 
       return template;
     },
-    onSuccess: () => {
+    onSuccess: (template) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.templates });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      const totalTargetSets = exercises.reduce((sum, ex) => sum + ex.setCount, 0);
+      if (isEdit) {
+        posthog.capture(Events.TEMPLATE_EDITED, {
+          template_id: String(template.id),
+          template_name: name.trim(),
+          exercise_count: exercises.length,
+          total_target_sets: totalTargetSets,
+        });
+      } else {
+        posthog.capture(Events.TEMPLATE_CREATED, {
+          template_id: String(template.id),
+          template_name: name.trim(),
+          exercise_count: exercises.length,
+          total_target_sets: totalTargetSets,
+        });
+      }
       navigation.replace("TemplateList");
     },
     onError: (err) => setSaveError(getApiErrorMessage(err)),

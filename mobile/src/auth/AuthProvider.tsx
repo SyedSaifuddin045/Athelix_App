@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePostHog } from "posthog-react-native";
 
 import { getApiErrorMessage, setUnauthorizedHandler } from "../api/client";
 import { loginUserAuthLoginPost, refreshTokensAuthRefreshPost, registerUserAuthRegisterPost } from "../api/endpoints/auth/auth";
@@ -7,6 +8,7 @@ import { getCurrentUserOverviewUsersMeOverviewGet } from "../api/endpoints/users
 import type { AuthResponse, LoginRequest, RegisterRequest, UserResponse } from "../api/model";
 import { queryKeys } from "../api/queryKeys";
 import { clearAuthTokens, getRefreshToken, persistAuthTokens, restoreAccessExpiry } from "../api/tokenStore";
+import { Events } from "../analytics/events";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -29,6 +31,7 @@ function isAuthSuccess(response: { status: number; data: unknown }): response is
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUser] = useState<UserResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,11 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = useCallback(async () => {
+    posthog.capture(Events.USER_LOGGED_OUT);
+    posthog.reset();
     await clearAuthTokens();
     setUser(null);
     setStatus("unauthenticated");
     queryClient.clear();
-  }, [queryClient]);
+  }, [posthog, queryClient]);
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
@@ -76,11 +81,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await persistAuthTokens(refreshed.data);
         const overview = await getCurrentUserOverviewUsersMeOverviewGet();
         if (!cancelled) {
-          setUser(overview.data.user);
+          const userData = overview.data.user;
+          setUser(userData);
           setStatus("authenticated");
           setError(null);
           queryClient.setQueryData(queryKeys.overview, overview.data);
-          queryClient.setQueryData(queryKeys.authMe, overview.data.user);
+          queryClient.setQueryData(queryKeys.authMe, userData);
+          posthog.identify(String(userData.id), {
+            $set: { email: userData.email, username: userData.username },
+          });
         }
       } catch (err) {
         await clearAuthTokens();
@@ -103,8 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await loginUserAuthLoginPost(payload);
       if (!isAuthSuccess(response)) throw new Error("Login failed");
       await applyAuth(response.data);
+      posthog.identify(String(response.data.user.id), {
+        $set: { email: response.data.user.email, username: response.data.user.username },
+      });
+      posthog.capture(Events.USER_LOGGED_IN);
     },
-    [applyAuth],
+    [applyAuth, posthog],
   );
 
   const register = useCallback(
@@ -112,8 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await registerUserAuthRegisterPost(payload);
       if (!isAuthSuccess(response)) throw new Error("Registration failed");
       await applyAuth(response.data);
+      posthog.identify(String(response.data.user.id), {
+        $set: { email: response.data.user.email, username: response.data.user.username },
+        $set_once: { first_seen: new Date().toISOString() },
+      });
+      posthog.capture(Events.USER_SIGNED_UP, { email: response.data.user.email });
     },
-    [applyAuth],
+    [applyAuth, posthog],
   );
 
   const value = useMemo<AuthContextValue>(

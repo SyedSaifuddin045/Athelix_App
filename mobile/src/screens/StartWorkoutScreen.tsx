@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { usePostHog } from "posthog-react-native";
+
 import { useAuth } from "../auth/AuthProvider";
 import { useTemplatesQuery, useMesocyclesQuery } from "../api/queries";
 import { createWorkoutSessionWorkoutSessionsPost } from "../api/endpoints/workout-sessions/workout-sessions";
@@ -19,10 +21,12 @@ import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { toNumberId } from "../utils/helpers";
 import { successData } from "../utils/mapping";
 import { formatShortDate } from "../utils/format";
+import { Events } from "../analytics/events";
 
 export function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const id = route?.params?.id;
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(id ?? null);
   const [selectedMeso, setSelectedMeso] = useState<string | null>(null);
@@ -41,6 +45,21 @@ export function StartWorkoutScreen({ navigation, route }: { navigation: any; rou
       return successData(response);
     },
     onSuccess: (session, variables) => {
+      const template = templates.data?.find((item) => String(item.id) === variables.templateId);
+      const hasTemplate = !!variables.templateId;
+      posthog.capture(Events.WORKOUT_STARTED, {
+        source: hasTemplate ? "template" : "empty",
+        has_mesocycle: !!selectedMeso,
+        ...(hasTemplate && template
+          ? { template_id: variables.templateId, template_name: template.name }
+          : {}),
+      });
+      if (hasTemplate && template && variables.templateId) {
+        posthog.capture(Events.TEMPLATE_USED, {
+          template_id: variables.templateId,
+          template_name: template.name,
+        });
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
       navigation.replace("ActiveWorkout", {
         sessionId: session.id,

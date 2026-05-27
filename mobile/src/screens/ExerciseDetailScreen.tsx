@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
+import { usePostHog } from "posthog-react-native";
 import { useAuth } from "../auth/AuthProvider";
 import { useExerciseDetailQuery } from "../api/queries";
 import { mapExerciseDetail } from "../utils/mapping";
@@ -10,12 +12,24 @@ import { Screen } from "../components/ui/Layout";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow, Tag } from "../components/ui/Indicators";
+import { Events } from "../analytics/events";
 
 function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: { params: { id: string } } }) {
   const auth = useAuth();
+  const posthog = usePostHog();
   const { id } = route.params;
   const exerciseQuery = useExerciseDetailQuery(id, auth.isAuthenticated);
   const exercise = exerciseQuery.data ? mapExerciseDetail(exerciseQuery.data) : (EXERCISE_DETAILS[id ?? ""] ?? EXERCISE_FALLBACK);
+
+  useEffect(() => {
+    if (exercise) {
+      posthog.capture(Events.EXERCISE_DETAIL_VIEWED, {
+        exercise_name: exercise.name,
+        exercise_id: id,
+        muscle_group: exercise.primaryMuscle,
+      });
+    }
+  }, [id, exercise?.name]);
 
   if (exerciseQuery.isPending) {
     return (

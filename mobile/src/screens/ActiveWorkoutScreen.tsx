@@ -3,6 +3,8 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressa
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+import { usePostHog } from "posthog-react-native";
+
 import { useAuth } from "../auth/AuthProvider";
 import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
 import {
@@ -28,6 +30,7 @@ import { nameForExercise, exerciseEmoji } from "../utils/display";
 import { formatTime } from "../utils/format";
 import { numberOrNull, rpeError } from "../utils/validation";
 import { toNumberId } from "../utils/helpers";
+import { Events } from "../analytics/events";
 
 export function ActiveWorkoutScreen({
   navigation,
@@ -38,6 +41,7 @@ export function ActiveWorkoutScreen({
 }) {
   const auth = useAuth();
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const sessionId = route?.params?.sessionId;
   const templateId = toNumberId(route?.params?.templateId);
   const [elapsed, setElapsed] = useState(0);
@@ -184,6 +188,11 @@ export function ActiveWorkoutScreen({
     setExercises((current) => [...current, nextExercise]);
     setExpanded(nextId);
     setShowExercisePicker(false);
+    posthog.capture(Events.EXERCISE_ADDED, {
+      exercise_name: exercise.name,
+      exercise_id: exercise.id,
+      exercise_muscle: exercise.muscle_group ?? exercise.primary_muscle ?? undefined,
+    });
   };
 
   const confirmDiscard = async () => {
@@ -197,6 +206,11 @@ export function ActiveWorkoutScreen({
         return;
       }
     }
+    const loggedSets = exercises.flatMap((ex) => ex.sets.filter((s) => s.done)).length;
+    posthog.capture(Events.WORKOUT_DISCARDED, {
+      duration_minutes: Math.floor(elapsed / 60),
+      sets_logged: loggedSets,
+    });
     setShowDiscardConfirm(false);
     navigation.goBack();
   };
@@ -222,6 +236,14 @@ export function ActiveWorkoutScreen({
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+      posthog.capture(Events.WORKOUT_COMPLETED, {
+        duration_minutes: Math.floor(elapsed / 60),
+        total_sets: totalSets,
+        work_sets: completedSets,
+        total_exercises: exercises.length,
+        has_notes: !!note,
+        ...(mood ? { mood } : {}),
+      });
       setShowFinish(false);
       navigation.replace("SessionDetail", { id: String(sessionId) });
     } catch (err) {
