@@ -197,9 +197,14 @@ describe("HomeScreen", () => {
 
   it("shows weekly activity stats", async () => {
     const qc = setupQueryClient(mockOverview);
+    const todayGetDay = new Date().getDay();
+    const todayDataIndex = todayGetDay === 0 ? 6 : todayGetDay - 1;
+    const startIndex = Math.max(0, todayDataIndex - 4);
+    const daysToShow = mockOverview.weekly_activity.slice(startIndex, todayDataIndex + 1);
+    const workoutDaysCount = daysToShow.reduce((sum: number, d: { value: number }) => sum + d.value, 0);
     const { getByText } = renderHomeScreen(qc);
     await waitFor(() => {
-      expect(getByText("5 / 7 days")).toBeTruthy();
+      expect(getByText(`${workoutDaysCount} / ${daysToShow.length} days`)).toBeTruthy();
       expect(getByText("Day Streak")).toBeTruthy();
       expect(getByText("Workouts")).toBeTruthy();
     });

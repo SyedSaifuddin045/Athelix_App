@@ -22,6 +22,13 @@ function HomeScreen({ navigation }: { navigation: any }) {
   const latestSession = data?.latest_completed_session;
   const latestWeight = data?.latest_body_weight_log;
   const activeMeso = data?.active_mesocycle;
+  const weeklyData = data?.weekly_activity ?? [];
+  const todayGetDay = new Date().getDay();
+  const todayDataIndex = todayGetDay === 0 ? 6 : todayGetDay - 1;
+  const startIndex = Math.max(0, todayDataIndex - 4);
+  const daysToShow = weeklyData.slice(startIndex, todayDataIndex + 1);
+  const daysCount = daysToShow.length;
+  const workoutDaysCount = daysToShow.reduce((sum, d) => sum + d.value, 0);
 
   useEffect(() => {
     if (data && !data.has_profile) navigation.navigate("ProfileSetup");
@@ -89,11 +96,17 @@ function HomeScreen({ navigation }: { navigation: any }) {
         <View style={styles.rowBetween}>
           <Text style={styles.sectionCardTitle}>This Week</Text>
           <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>
-            {data?.weekly_activity.reduce((sum, d) => sum + d.value, 0) ?? 0} / 7 days
+            {workoutDaysCount} / {daysCount} days
           </Text>
         </View>
         <View style={{ marginTop: 16 }}>
-          <VerticalBars data={data?.weekly_activity.map((item, index) => ({ day: item.day, value: item.value, highlight: index === 6 })) ?? []} />
+          <VerticalBars
+            data={daysToShow.map((item, index) => ({
+              day: item.day,
+              value: item.value,
+              highlight: index === daysToShow.length - 1 && item.value === 1,
+            }))}
+          />
         </View>
         <View style={styles.statRowDivider} />
         <View style={styles.threeUp}>
