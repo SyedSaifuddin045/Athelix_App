@@ -35,7 +35,7 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.14)">
+    <Screen>
       <BackHeader
         title="Templates"
         subtitle={`${templates.data?.length ?? 0} saved`}
@@ -74,7 +74,7 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
                 {template.is_public ? <Tag label="Public" color={COLORS.blue} /> : <Tag label="Private" color={COLORS.teal} />}
               </View>
               <Pressable
-                style={[styles.smallActionTag, { backgroundColor: "rgba(0,212,168,0.13)", borderColor: "rgba(0,212,168,0.32)" }]}
+                style={[styles.smallActionTag, { backgroundColor: "rgba(255,90,54,0.13)", borderColor: "rgba(255,90,54,0.32)" }]}
                 onPress={() => navigation.navigate("StartWorkout", { id: String(template.id) })}
               >
                 <Feather name="play" size={11} color={COLORS.teal} />

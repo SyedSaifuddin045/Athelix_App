@@ -33,7 +33,7 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
 
   if (exerciseQuery.isPending) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.16)">
+      <Screen>
         <BackHeader title="Exercise Detail" onBack={() => navigation.goBack()} />
         <LoadingCard label="Loading exercise..." />
       </Screen>
@@ -42,7 +42,7 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
 
   if (exerciseQuery.isError) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.16)">
+      <Screen>
         <BackHeader title="Exercise Detail" onBack={() => navigation.goBack()} />
         <ErrorCard error={exerciseQuery.error} onRetry={() => exerciseQuery.refetch()} />
       </Screen>
@@ -50,7 +50,7 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
   }
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.16)">
+    <Screen>
       <BackHeader
         title="Exercise Detail"
         onBack={() => navigation.goBack()}
@@ -110,7 +110,7 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
       </Card>
 
       {exercise.tips.length > 0 ? (
-        <Card style={{ marginTop: 14, backgroundColor: "rgba(0,212,168,0.06)", borderColor: "rgba(0,212,168,0.18)" }}>
+        <Card style={{ marginTop: 14, backgroundColor: "rgba(255,90,54,0.06)", borderColor: "rgba(255,90,54,0.18)" }}>
           <SectionEyebrow color={COLORS.teal}>Pro Tips</SectionEyebrow>
           <View style={{ marginTop: 12, gap: 10 }}>
             {exercise.tips.map((tip) => (

@@ -67,9 +67,9 @@ export const MAIN_TABS = [
 ] as const;
 
 export const RECENT_PRS = [
-  { exercise: "Bench Press", value: "110 kg", date: "3 days ago", color: "#00d4a8" },
+  { exercise: "Bench Press", value: "110 kg", date: "3 days ago", color: "#FF5A36" },
   { exercise: "Squat", value: "145 kg", date: "1 week ago", color: "#22c55e" },
-  { exercise: "Deadlift", value: "185 kg", date: "2 weeks ago", color: "#00d4a8" },
+  { exercise: "Deadlift", value: "185 kg", date: "2 weeks ago", color: "#FF5A36" },
   { exercise: "OHP", value: "78 kg", date: "2 weeks ago", color: "#22c55e" },
 ];
 
@@ -204,7 +204,7 @@ export const TRAIN_SECTIONS = [
     title: "Templates",
     desc: "Saved workout plans and routines",
     path: "templateList",
-    color: "#00d4a8",
+    color: "#FF5A36",
     badgeKey: "templates" as const,
   },
   {
@@ -225,14 +225,14 @@ export const TRAIN_SECTIONS = [
 ] as const;
 
 export const START_WORKOUT_TEMPLATES = [
-  { id: "1", name: "Upper Body Push", exercises: 5, sets: 20, duration: "~55 min", color: "#00d4a8", lastUsed: "Yesterday" },
+  { id: "1", name: "Upper Body Push", exercises: 5, sets: 20, duration: "~55 min", color: "#FF5A36", lastUsed: "Yesterday" },
   { id: "2", name: "Lower Body Power", exercises: 5, sets: 22, duration: "~65 min", color: "#22c55e", lastUsed: "3 days ago" },
   { id: "3", name: "Pull Day", exercises: 6, sets: 24, duration: "~55 min", color: "#3b82f6", lastUsed: "4 days ago" },
   { id: "4", name: "Upper Body Pull", exercises: 5, sets: 18, duration: "~50 min", color: "#8b5cf6", lastUsed: "1 week ago" },
 ];
 
 export const MESOCYCLES = [
-  { id: "1", name: "Strength Block", week: "Week 3/6", color: "#00d4a8" },
+  { id: "1", name: "Strength Block", week: "Week 3/6", color: "#FF5A36" },
   { id: "2", name: "Hypertrophy Phase", week: "Not started", color: "#8b5cf6" },
 ];
 
@@ -243,7 +243,7 @@ export const TEMPLATE_LIST = [
     exercises: ["Bench Press", "OHP", "Incline DB Press", "Lateral Raise", "Tricep Dips"],
     duration: "~55 min",
     sets: 20,
-    color: "#00d4a8",
+    color: "#FF5A36",
     lastUsed: "Yesterday",
   },
   {
@@ -425,7 +425,7 @@ export const MESOCYCLE_LIST = [
     endDate: "Apr 13, 2026",
     status: "active",
     sessions: 14,
-    color: "#00d4a8",
+    color: "#FF5A36",
   },
   {
     id: "2",
@@ -454,7 +454,7 @@ export const MESOCYCLE_LIST = [
 ];
 
 export const MESOCYCLE_STATUS: Record<string, { bg: string; color: string; label: string }> = {
-  active: { bg: "rgba(0,212,168,0.15)", color: "#00d4a8", label: "Active" },
+  active: { bg: "rgba(255,90,54,0.15)", color: "#FF5A36", label: "Active" },
   planned: { bg: "rgba(139,92,246,0.15)", color: "#8b5cf6", label: "Planned" },
   completed: { bg: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.45)", label: "Completed" },
 };
@@ -485,7 +485,7 @@ export const PROGRESS_SECTIONS = [
   },
   {
     path: "exerciseProgress",
-    color: "#00d4a8",
+    color: "#FF5A36",
     title: "Exercise Progress",
     desc: "e1RM history, volume trends and overload signals",
     badgeKey: "exercises" as const,
@@ -501,7 +501,7 @@ export const PROGRESS_SECTIONS = [
 
 export const PROGRESS_QUICK_STATS = [
   { label: "Total PRs", value: "9", color: "#fbbf24" },
-  { label: "Best e1RM", value: "205kg", color: "#00d4a8" },
+  { label: "Best e1RM", value: "205kg", color: "#FF5A36" },
   { label: "This Month", value: "3 PRs", color: "#22c55e" },
 ];
 
@@ -602,10 +602,10 @@ export const EXERCISE_OVERLOADS = [
 ];
 
 export const MUSCLE_DATA = [
-  { muscle: "Chest", sets: 18, target: 16, color: "#00d4a8" },
+  { muscle: "Chest", sets: 18, target: 16, color: "#FF5A36" },
   { muscle: "Back", sets: 22, target: 20, color: "#22c55e" },
   { muscle: "Shoulders", sets: 14, target: 16, color: "#f59e0b" },
-  { muscle: "Quadriceps", sets: 16, target: 16, color: "#00d4a8" },
+  { muscle: "Quadriceps", sets: 16, target: 16, color: "#FF5A36" },
   { muscle: "Hamstrings", sets: 10, target: 12, color: "#ef4444" },
   { muscle: "Glutes", sets: 8, target: 12, color: "#ef4444" },
   { muscle: "Biceps", sets: 9, target: 10, color: "#f59e0b" },

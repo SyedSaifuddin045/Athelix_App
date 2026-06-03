@@ -66,11 +66,14 @@ export function ActiveWorkoutScreen({
     if (!template.data || lookup.size === 0) return;
     if (exercises.length > 0) {
       setExercises((prev) =>
-        prev.map((ex) => ({
-          ...ex,
-          name: nameForExercise(ex.exerciseId, lookup),
-          emoji: exerciseEmoji(lookup.get(ex.exerciseId)),
-        })),
+        prev.map((ex) => {
+          const resolved = nameForExercise(ex.exerciseId, lookup);
+          return {
+            ...ex,
+            name: resolved ?? ex.name,
+            emoji: exerciseEmoji(lookup.get(ex.exerciseId)),
+          };
+        }),
       );
       return;
     }
@@ -258,7 +261,7 @@ export function ActiveWorkoutScreen({
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <Screen glowColor="rgba(0,0,0,0)">
+      <Screen>
         <Card style={[styles.stickyCard, { marginTop: 0 }]}>
           <View style={styles.rowBetween}>
             <Pressable style={styles.dangerPill} onPress={discardWorkout}>
@@ -359,7 +362,7 @@ export function ActiveWorkoutScreen({
 
           <Pressable onPress={() => setShowExercisePicker(true)}>
             <View style={styles.dashedAddCard}>
-              <View style={[styles.addCircle, { backgroundColor: "rgba(0,212,168,0.12)" }]}>
+              <View style={[styles.addCircle, { backgroundColor: "rgba(255,90,54,0.12)" }]}>
                 <Feather name="plus" size={18} color={COLORS.teal} />
               </View>
               <Text style={[styles.cardTitle, { color: "rgba(255,255,255,0.58)" }]}>Add Exercise</Text>
@@ -375,7 +378,7 @@ export function ActiveWorkoutScreen({
                   onPress={() => setMood(entry)}
                   style={[
                     styles.moodButton,
-                    mood === entry ? { backgroundColor: "rgba(0,212,168,0.2)", borderColor: "rgba(0,212,168,0.4)" } : null,
+                    mood === entry ? { backgroundColor: "rgba(255,90,54,0.2)", borderColor: "rgba(255,90,54,0.4)" } : null,
                   ]}
                 >
                   <Text style={{ fontSize: 20 }}>{entry}</Text>

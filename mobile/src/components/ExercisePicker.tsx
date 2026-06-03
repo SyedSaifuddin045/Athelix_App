@@ -18,15 +18,15 @@ import type { ExerciseResponse } from "../api/model";
 import { getApiErrorMessage } from "../api/client";
 
 const COLORS = {
-  root: "#040707",
-  screen: "#080e0e",
+  root: "#111111",
+  screen: "#111111",
   text: "#ffffff",
   muted: "rgba(255,255,255,0.42)",
   faint: "rgba(255,255,255,0.28)",
   border: "rgba(255,255,255,0.08)",
   card: "rgba(255,255,255,0.04)",
   cardSoft: "rgba(255,255,255,0.06)",
-  teal: "#00d4a8",
+  teal: "#FF5A36",
   green: "#22c55e",
   gold: "#fbbf24",
   orange: "#f59e0b",
@@ -383,8 +383,8 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.09)",
   },
   filterButtonActive: {
-    backgroundColor: "rgba(0,212,168,0.2)",
-    borderColor: "rgba(0,212,168,0.35)",
+    backgroundColor: "rgba(255,90,54,0.2)",
+    borderColor: "rgba(255,90,54,0.35)",
   },
   filterPanel: {
     marginTop: 14,
@@ -423,8 +423,8 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
   },
   filterChipActive: {
-    backgroundColor: "rgba(0,212,168,0.15)",
-    borderColor: "rgba(0,212,168,0.35)",
+    backgroundColor: "rgba(255,90,54,0.15)",
+    borderColor: "rgba(255,90,54,0.35)",
   },
   filterChipText: {
     color: "rgba(255,255,255,0.5)",
@@ -446,9 +446,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: "rgba(0,212,168,0.15)",
+    backgroundColor: "rgba(255,90,54,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(0,212,168,0.3)",
+    borderColor: "rgba(255,90,54,0.3)",
   },
   activeFilterText: {
     color: COLORS.teal,

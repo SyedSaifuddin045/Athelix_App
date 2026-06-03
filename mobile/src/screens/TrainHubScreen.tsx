@@ -15,7 +15,7 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
   const overview = useOverviewQuery(auth.isAuthenticated);
   return (
-    <Screen glowColor="rgba(0,180,140,0.18)">
+    <Screen>
       <View style={styles.tabIntro}>
         <SectionEyebrow>Train</SectionEyebrow>
         <Text style={styles.tabTitle}>Workouts</Text>

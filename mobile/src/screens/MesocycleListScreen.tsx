@@ -45,7 +45,7 @@ export function MesocycleListScreen({ navigation }: { navigation: any }) {
   });
 
   return (
-    <Screen glowColor="rgba(139,92,246,0.16)">
+    <Screen>
       <BackHeader
         title="Mesocycles"
         subtitle="Block periodization planning"

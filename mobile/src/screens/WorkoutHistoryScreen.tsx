@@ -28,7 +28,7 @@ export function WorkoutHistoryScreen({ navigation }: { navigation: any }) {
   }, [sessions.data]);
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.12)">
+    <Screen>
       <BackHeader title="Workout History" subtitle={`${sessions.data?.length ?? 0} sessions`} onBack={() => navigation.goBack()} />
       <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
         <CompactStatCard label="Total Sessions" value={String(sessions.data?.length ?? 0)} />

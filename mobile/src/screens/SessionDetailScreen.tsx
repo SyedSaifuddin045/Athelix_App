@@ -82,7 +82,7 @@ export function SessionDetailScreen({ navigation, route }: { navigation: any; ro
 
   if (detail.isPending || lookupQuery.isPending) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.12)">
+      <Screen>
         <BackHeader title="Session Detail" onBack={() => navigation.goBack()} />
         <LoadingCard label="Loading session..." />
       </Screen>
@@ -91,7 +91,7 @@ export function SessionDetailScreen({ navigation, route }: { navigation: any; ro
 
   if (detail.isError || !detail.data) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.12)">
+      <Screen>
         <BackHeader title="Session Detail" onBack={() => navigation.goBack()} />
         <ErrorCard error={detail.error} onRetry={() => detail.refetch()} />
       </Screen>
@@ -101,7 +101,7 @@ export function SessionDetailScreen({ navigation, route }: { navigation: any; ro
   const session = detail.data;
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.12)">
+    <Screen>
       <BackHeader
         title="Session Detail"
         onBack={() => navigation.goBack()}

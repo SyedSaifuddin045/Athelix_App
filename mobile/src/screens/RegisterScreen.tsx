@@ -55,7 +55,7 @@ function RegisterScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.18)" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
+    <Screen contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
       <View style={[styles.headerRow, { paddingTop: 10 }]}>
         <View style={styles.headerLeft}>
           <RoundButton onPress={() => navigation.replace("Login")}>

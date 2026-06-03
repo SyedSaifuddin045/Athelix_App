@@ -34,7 +34,7 @@ function LoginScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.22)" contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
+    <Screen contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
       <View style={styles.authTop}>
         <View style={styles.authLogo}>
           <Text style={styles.splashEmoji}>💪</Text>

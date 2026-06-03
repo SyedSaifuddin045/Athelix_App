@@ -41,7 +41,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
   ];
 
   return (
-    <Screen glowColor="rgba(100,60,200,0.14)">
+    <Screen>
       <View style={styles.mainHeader}>
         <Text style={styles.headerTitle}>Profile</Text>
         <RoundButton onPress={() => navigation.navigate("Settings")}>

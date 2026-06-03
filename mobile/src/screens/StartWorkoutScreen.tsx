@@ -70,14 +70,14 @@ export function StartWorkoutScreen({ navigation, route }: { navigation: any; rou
   });
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.2)">
+    <Screen>
       <BackHeader title="Start Workout" subtitle="Choose how to begin" onBack={() => navigation.goBack()} />
 
       <Pressable onPress={() => startSession.mutate({ templateId: null })} style={{ marginTop: 18 }} disabled={startSession.isPending}>
-        <Card style={{ borderColor: "rgba(0,212,168,0.3)", backgroundColor: "rgba(0,212,168,0.12)" }}>
+        <Card style={{ borderColor: "rgba(255,90,54,0.3)", backgroundColor: "rgba(255,90,54,0.12)" }}>
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
-              <View style={[styles.sectionIconWrapSmall, { backgroundColor: "rgba(0,212,168,0.2)" }]}>
+              <View style={[styles.sectionIconWrapSmall, { backgroundColor: "rgba(255,90,54,0.2)" }]}>
                 <Feather name="zap" size={22} color={COLORS.teal} />
               </View>
               <View style={{ flex: 1 }}>
@@ -115,8 +115,8 @@ export function StartWorkoutScreen({ navigation, route }: { navigation: any; rou
             <Pressable key={template.id} onPress={() => setSelectedTemplate((current) => (current === String(template.id) ? null : String(template.id)))}>
               <Card
                 style={{
-                  borderColor: selectedTemplate === String(template.id) ? "rgba(0,212,168,0.44)" : COLORS.border,
-                  backgroundColor: selectedTemplate === String(template.id) ? "rgba(0,212,168,0.12)" : COLORS.card,
+                  borderColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.44)" : COLORS.border,
+                  backgroundColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.12)" : COLORS.card,
                 }}
               >
                 <View style={styles.rowBetween}>

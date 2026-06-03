@@ -69,7 +69,7 @@ export function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.12)">
+    <Screen>
       <BackHeader
         title="Bodyweight"
         onBack={() => navigation.goBack()}

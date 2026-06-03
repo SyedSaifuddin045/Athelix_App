@@ -38,7 +38,7 @@ export function MesocycleDetailScreen({ navigation, route }: { navigation: any; 
 
   if (detail.isPending) {
     return (
-      <Screen glowColor="rgba(139,92,246,0.16)">
+      <Screen>
         <BackHeader title="Mesocycle" onBack={() => navigation.goBack()} />
         <LoadingCard label="Loading mesocycle..." />
       </Screen>
@@ -47,7 +47,7 @@ export function MesocycleDetailScreen({ navigation, route }: { navigation: any; 
 
   if (detail.isError || !detail.data) {
     return (
-      <Screen glowColor="rgba(139,92,246,0.16)">
+      <Screen>
         <BackHeader title="Mesocycle" onBack={() => navigation.goBack()} />
         <ErrorCard error={detail.error} onRetry={() => detail.refetch()} />
       </Screen>
@@ -62,7 +62,7 @@ export function MesocycleDetailScreen({ navigation, route }: { navigation: any; 
   const progress = end > start ? Math.max(0, Math.min(100, ((Date.now() - start) / (end - start)) * 100)) : 0;
 
   return (
-    <Screen glowColor="rgba(139,92,246,0.16)">
+    <Screen>
       <BackHeader
         title="Mesocycle"
         onBack={() => navigation.goBack()}

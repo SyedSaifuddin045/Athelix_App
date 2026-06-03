@@ -65,7 +65,7 @@ export function ExerciseProgressScreen({ navigation, route }: { navigation: any;
 
   if (!selectedId) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.12)" scroll={false} contentContainerStyle={styles.scrollContent}>
+      <Screen scroll={false} contentContainerStyle={styles.scrollContent}>
         <BackHeader title="Exercise Progress" onBack={() => navigation.goBack()} />
         <View style={{ marginTop: 18, flex: 1 }}>
           <Text style={[styles.sectionCardTitle, { marginBottom: 14 }]}>Your Tracked Exercises</Text>
@@ -83,7 +83,7 @@ export function ExerciseProgressScreen({ navigation, route }: { navigation: any;
 
   if (progress.isPending) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.12)">
+      <Screen>
         <BackHeader title="Exercise Progress" onBack={fromPicker ? () => setSelectedId(undefined) : () => navigation.goBack()} />
         <LoadingCard label="Loading progress..." />
       </Screen>
@@ -92,7 +92,7 @@ export function ExerciseProgressScreen({ navigation, route }: { navigation: any;
 
   if (progress.isError) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.12)">
+      <Screen>
         <BackHeader title="Exercise Progress" onBack={fromPicker ? () => setSelectedId(undefined) : () => navigation.goBack()} />
         <ErrorCard error={progress.error} onRetry={() => progress.refetch()} />
       </Screen>
@@ -102,7 +102,7 @@ export function ExerciseProgressScreen({ navigation, route }: { navigation: any;
   const exerciseName = progress.data?.exercise_name ?? "Exercise";
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.12)">
+    <Screen>
       <BackHeader title={exerciseName} subtitle="Exercise Progress" onBack={fromPicker ? () => setSelectedId(undefined) : () => navigation.goBack()} />
 
       <View style={[styles.threeUpGrid, { marginTop: 18 }]}>
@@ -122,7 +122,7 @@ export function ExerciseProgressScreen({ navigation, route }: { navigation: any;
                   onPress={() => setPeriod(entry)}
                   style={[
                     styles.periodChip,
-                    period === entry ? { backgroundColor: "rgba(0,212,168,0.2)", borderColor: "rgba(0,212,168,0.35)" } : null,
+                    period === entry ? { backgroundColor: "rgba(255,90,54,0.2)", borderColor: "rgba(255,90,54,0.35)" } : null,
                   ]}
                 >
                   <Text style={[styles.periodChipText, period === entry ? { color: COLORS.teal } : null]}>{entry}</Text>

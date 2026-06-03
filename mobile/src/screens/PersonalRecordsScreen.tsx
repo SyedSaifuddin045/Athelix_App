@@ -15,7 +15,7 @@ import { exerciseLookup, recordValue } from "../utils/mapping";
 import { exerciseEmoji } from "../utils/display";
 
 function nameForExercise(id: string, lookup: Map<string, ExerciseResponse>) {
-  return lookup.get(id)?.name ?? id;
+  return lookup.get(id)?.name ?? null;
 }
 
 export function PersonalRecordsScreen({ navigation }: { navigation: any }) {
@@ -32,7 +32,7 @@ export function PersonalRecordsScreen({ navigation }: { navigation: any }) {
     const groups = new Map<string, PersonalRecordResponse[]>();
     (records.data ?? []).forEach((record) => {
       const name = nameForExercise(record.exercise_id, lookup);
-      if (normalized && !name.toLowerCase().includes(normalized) && !record.exercise_id.toLowerCase().includes(normalized)) return;
+      if (normalized && !(name ?? "").toLowerCase().includes(normalized) && !record.exercise_id.toLowerCase().includes(normalized)) return;
       groups.set(record.exercise_id, [...(groups.get(record.exercise_id) ?? []), record]);
     });
     return Array.from(groups.entries()).map(([exerciseId, items]) => ({ exerciseId, records: items }));
@@ -40,7 +40,7 @@ export function PersonalRecordsScreen({ navigation }: { navigation: any }) {
   const recordTypes = ["All", ...(appConfig.data?.supported_values.personal_record_types ?? RECORD_TYPES.filter((type) => type !== "All"))];
 
   return (
-    <Screen glowColor="rgba(251,191,36,0.14)">
+    <Screen>
       <BackHeader title="Personal Records" subtitle="Automatically tracked" onBack={() => navigation.goBack()} />
 
       <Card style={{ marginTop: 18 }}>
@@ -85,7 +85,7 @@ export function PersonalRecordsScreen({ navigation }: { navigation: any }) {
           <Card key={entry.exerciseId} style={{ paddingVertical: 0 }}>
             <Pressable style={styles.exerciseHeader} onPress={() => navigation.navigate("ExerciseProgress", { id: entry.exerciseId })}>
               <Text style={{ fontSize: 20 }}>{exerciseEmoji(exercise)}</Text>
-              <Text style={[styles.listRowTitle, { flex: 1 }]}>{nameForExercise(entry.exerciseId, lookup)}</Text>
+              <Text style={[styles.listRowTitle, { flex: 1 }]}>{nameForExercise(entry.exerciseId, lookup) ?? entry.exerciseId}</Text>
               <View style={styles.rowGapTiny}>
                 <Feather name="trending-up" size={13} color="rgba(255,255,255,0.32)" />
                 <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.22)" />

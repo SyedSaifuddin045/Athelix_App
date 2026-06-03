@@ -83,7 +83,7 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
   });
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.18)">
+    <Screen>
       <BackHeader
         title="Profile Setup"
         subtitle="Tell us about yourself"

@@ -30,11 +30,11 @@ function SplashScreen({ navigation }: { navigation: any }) {
   }, [appConfig.isPending, auth.status, navigation]);
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.24)" scroll={false} contentContainerStyle={styles.centeredContent}>
+    <Screen scroll={false} contentContainerStyle={styles.centeredContent}>
       <View style={styles.splashLogo}>
         <Text style={styles.splashEmoji}>💪</Text>
       </View>
-      <Text style={styles.splashTitle}>{appConfig.data?.app_name ?? "Athelix"}</Text>
+      <Text style={styles.splashTitle}>{appConfig.data?.app_name.replace(/_API$/, "") ?? "Athelix"}</Text>
       <Text style={styles.splashSubtitle}>Your training, elevated.</Text>
       <View style={styles.splashProgressCard}>
         <Text style={styles.splashProgressValue}>{progress}%</Text>
@@ -44,7 +44,7 @@ function SplashScreen({ navigation }: { navigation: any }) {
           <Text style={styles.errorText}>{appConfig.isError ? getApiErrorMessage(appConfig.error) : auth.error}</Text>
         ) : null}
       </View>
-      <Text style={styles.splashFooter}>{appConfig.data ? `${appConfig.data.app_name} v${appConfig.data.version}` : "Athelix"}</Text>
+      <Text style={styles.splashFooter}>{appConfig.data ? `${appConfig.data.app_name.replace(/_API$/, "")} v${appConfig.data.version}` : "Athelix"}</Text>
     </Screen>
   );
 }

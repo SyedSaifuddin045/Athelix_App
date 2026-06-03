@@ -19,7 +19,7 @@ export function ProgressHubScreen({ navigation }: { navigation: any }) {
   const overview = useOverviewQuery(auth.isAuthenticated);
   const latestPr = overview.data?.recent_personal_records[0];
   return (
-    <Screen glowColor="rgba(251,191,36,0.1)">
+    <Screen>
       <View style={styles.tabIntro}>
         <SectionEyebrow>Analytics</SectionEyebrow>
         <Text style={styles.tabTitle}>Progress</Text>

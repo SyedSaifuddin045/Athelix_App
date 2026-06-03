@@ -21,7 +21,7 @@ export function initialsFor(name: string) {
 }
 
 export function nameForExercise(id: string, lookup: Map<string, any>) {
-  return lookup.get(id)?.name ?? id;
+  return lookup.get(id)?.name ?? null;
 }
 
 export function exerciseEmoji(

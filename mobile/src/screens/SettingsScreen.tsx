@@ -71,7 +71,7 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
   };
 
   return (
-    <Screen glowColor="rgba(100,60,200,0.1)">
+    <Screen>
       <BackHeader
         title="Account Settings"
         onBack={() => navigation.goBack()}

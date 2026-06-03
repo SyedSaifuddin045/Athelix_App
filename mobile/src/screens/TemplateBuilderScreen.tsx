@@ -60,7 +60,7 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
           const resolved = nameForExercise(ex.exerciseId, lookup);
           return {
             ...ex,
-            name: resolved !== ex.exerciseId ? resolved : ex.name,
+            name: resolved ?? ex.name,
             emoji: exerciseEmoji(lookup.get(ex.exerciseId)),
           };
         }),
@@ -101,6 +101,7 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
         const config = exercise.sets[0];
         const payload = {
           exercise_id: exercise.exerciseId,
+          exercise_name: exercise.name,
           order_index: index,
           target_sets: exercise.setCount,
           target_reps: config ? numberOrNull(config.reps) : null,
@@ -330,7 +331,7 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
   };
 
   return (
-    <Screen glowColor="rgba(0,0,0,0)" contentContainerStyle={{ paddingBottom: 28 }}>
+    <Screen contentContainerStyle={{ paddingBottom: 28 }}>
       <View style={styles.builderTopBar}>
         <RoundButton onPress={() => navigation.goBack()}>
           <Feather name="arrow-left" size={16} color={COLORS.text} />
@@ -363,10 +364,10 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
           <View key={exercise.id} style={{ position: "relative" }}>
             {draggingId && index === dragTargetIdx && exercise.id !== draggingId ? (
               <View style={{
-                backgroundColor: "rgba(0,212,168,0.04)",
+                backgroundColor: "rgba(255,90,54,0.04)",
                 borderWidth: 1.5,
                 borderStyle: "dashed",
-                borderColor: "rgba(0,212,168,0.3)",
+                borderColor: "rgba(255,90,54,0.3)",
                 borderRadius: 24,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
@@ -395,7 +396,7 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
                 }, dragActiveId === exercise.id ? {
                   borderColor: COLORS.teal,
                   borderWidth: 1.5,
-                  backgroundColor: "rgba(0,212,168,0.06)",
+                  backgroundColor: "rgba(255,90,54,0.06)",
                   ...shadow(COLORS.teal),
                 } : null]}>
                   <PanGestureHandler
@@ -533,7 +534,7 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
 
         <Pressable onPress={() => setShowExercisePicker(true)}>
           <View style={styles.dashedAddCard}>
-            <View style={[styles.addCircle, { backgroundColor: "rgba(0,212,168,0.12)" }]}>
+            <View style={[styles.addCircle, { backgroundColor: "rgba(255,90,54,0.12)" }]}>
               <Feather name="plus" size={18} color={COLORS.teal} />
             </View>
             <View>

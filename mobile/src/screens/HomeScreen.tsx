@@ -29,7 +29,7 @@ function HomeScreen({ navigation }: { navigation: any }) {
 
   if (overview.isPending) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.22)">
+      <Screen>
         <LoadingCard label="Loading your dashboard..." />
       </Screen>
     );
@@ -37,14 +37,14 @@ function HomeScreen({ navigation }: { navigation: any }) {
 
   if (overview.isError) {
     return (
-      <Screen glowColor="rgba(0,180,140,0.22)">
+      <Screen>
         <ErrorCard error={overview.error} onRetry={() => overview.refetch()} />
       </Screen>
     );
   }
 
   return (
-    <Screen glowColor="rgba(0,180,140,0.22)">
+    <Screen>
       <View style={styles.mainHeader}>
         <Pressable style={styles.homeIdentity} onPress={() => navigation.navigate("Profile")}>
           <View style={styles.avatarBubble}>
@@ -67,7 +67,7 @@ function HomeScreen({ navigation }: { navigation: any }) {
         onPress={() => (activeMeso ? navigation.navigate("MesocycleDetail", { id: String(activeMeso.id) }) : navigation.navigate("MesocycleList"))}
         style={styles.inlineSection}
       >
-        <Card style={{ borderColor: "rgba(0,212,168,0.22)", backgroundColor: "rgba(0,212,168,0.1)" }}>
+        <Card style={{ borderColor: "rgba(255,90,54,0.22)", backgroundColor: "rgba(255,90,54,0.1)" }}>
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
               <View style={styles.bannerIcon}>

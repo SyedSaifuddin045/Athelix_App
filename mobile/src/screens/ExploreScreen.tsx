@@ -7,7 +7,7 @@ import { Screen } from "../components/ui/Layout";
 function ExploreScreen({ navigation }: { navigation: any }) {
   const auth = useAuth();
   return (
-    <Screen glowColor="rgba(0,120,180,0.16)" scroll={false} contentContainerStyle={styles.scrollContent}>
+    <Screen scroll={false} contentContainerStyle={styles.scrollContent}>
       <ExercisePicker
         variant="browse"
         title="Exercise Library"

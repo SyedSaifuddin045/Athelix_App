@@ -54,7 +54,7 @@ export function RoundButton({
       style={[
         styles.roundButton,
         accent
-          ? { backgroundColor: "rgba(0,212,168,0.16)", borderColor: "rgba(0,212,168,0.32)" }
+          ? { backgroundColor: "rgba(255,90,54,0.16)", borderColor: "rgba(255,90,54,0.32)" }
           : null,
       ]}
     >

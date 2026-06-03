@@ -84,7 +84,7 @@ export function templateDraftFromDetail(
       id: String(item.id),
       templateExerciseId: item.id,
       exerciseId: item.exercise_id,
-      name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup),
+      name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup) ?? item.exercise_id,
       emoji: exerciseEmoji(lookup.get(item.exercise_id)),
       notes: item.notes ?? "",
       setCount: Math.max(1, item.target_sets ?? 1),
@@ -110,7 +110,7 @@ export function workoutDraftFromTemplate(
       return {
         id: String(item.id),
         exerciseId: item.exercise_id,
-        name: nameForExercise(item.exercise_id, lookup),
+      name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup) ?? item.exercise_id,
         emoji: exerciseEmoji(lookup.get(item.exercise_id)),
         notes: item.notes ?? "",
         sets: Array.from({ length: totalSets }, (_, index) => ({
@@ -135,7 +135,7 @@ export function groupSetsByExercise(
     if (!groups[key]) {
       groups[key] = {
         exerciseId: key,
-        name: nameForExercise(key, lookup),
+        name: nameForExercise(key, lookup) ?? key,
         emoji: exerciseEmoji(lookup.get(key)),
         sets: [],
       };

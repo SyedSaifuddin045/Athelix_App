@@ -87,7 +87,7 @@ export function MuscleBalanceScreen({ navigation, route }: { navigation: any; ro
   }
 
   return (
-    <Screen glowColor="rgba(139,92,246,0.15)">
+    <Screen>
       <BackHeader
         title="Muscle Balance"
         onBack={() => navigation.goBack()}
