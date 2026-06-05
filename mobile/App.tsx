@@ -10,6 +10,7 @@ import { PostHogProvider } from "posthog-react-native";
 import { queryClient } from "./src/api/queryClient";
 import { AuthProvider } from "./src/auth/AuthProvider";
 import { AppNavigator } from "./src/navigation/AppNavigator";
+import { ErrorBoundary } from "./src/components/ui/ErrorBoundary";
 import { COLORS } from "./src/theme/colors";
 import { getPostHogConfig } from "./src/analytics/posthog";
 import { useScreenTracking } from "./src/analytics/useScreenTracking";
@@ -48,30 +49,32 @@ function AppContent() {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.root, paddingTop: insets.top }}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.root} translucent={false} />
-      <NavigationContainer
-        ref={navigationRef}
-        onReady={onReady}
-        onStateChange={onStateChange}
-        theme={{
-          dark: true,
-          colors: {
-            primary: COLORS.teal,
-            background: COLORS.root,
-            card: COLORS.screen,
-            text: COLORS.text,
-            border: COLORS.border,
-            notification: COLORS.teal,
-          },
-          fonts: {
-            regular: { fontFamily: "System", fontWeight: "400" as const },
-            medium: { fontFamily: "System", fontWeight: "500" as const },
-            bold: { fontFamily: "System", fontWeight: "700" as const },
-            heavy: { fontFamily: "System", fontWeight: "800" as const },
-          },
-        }}
-      >
-        <AppNavigator />
-      </NavigationContainer>
+      <ErrorBoundary>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={onReady}
+          onStateChange={onStateChange}
+          theme={{
+            dark: true,
+            colors: {
+              primary: COLORS.teal,
+              background: COLORS.root,
+              card: COLORS.screen,
+              text: COLORS.text,
+              border: COLORS.border,
+              notification: COLORS.teal,
+            },
+            fonts: {
+              regular: { fontFamily: "System", fontWeight: "400" as const },
+              medium: { fontFamily: "System", fontWeight: "500" as const },
+              bold: { fontFamily: "System", fontWeight: "700" as const },
+              heavy: { fontFamily: "System", fontWeight: "800" as const },
+            },
+          }}
+        >
+          <AppNavigator />
+        </NavigationContainer>
+      </ErrorBoundary>
     </View>
   );
 }
