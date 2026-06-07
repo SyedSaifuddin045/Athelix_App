@@ -1,15 +1,7 @@
-declare const process:
-  | {
-      env?: Record<string, string | undefined>;
-    }
-  | undefined;
-
 export const DEFAULT_API_BASE_URL = "http://localhost:8000";
 
 let runtimeApiBaseUrl =
-  typeof process !== "undefined"
-    ? process?.env?.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL
-    : DEFAULT_API_BASE_URL;
+  process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
 
 export function getApiBaseUrl() {
   return runtimeApiBaseUrl.replace(/\/+$/, "");
