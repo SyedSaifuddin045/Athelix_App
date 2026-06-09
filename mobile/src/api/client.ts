@@ -1,12 +1,4 @@
 import { getApiBaseUrl, toApiUrl } from "./config";
-import {
-  clearAuthTokens,
-  getAccessToken,
-  getRefreshToken,
-  hasUsableAccessToken,
-  persistAuthTokens,
-} from "./tokenStore";
-import type { AuthResponse } from "./model";
 
 export type FieldError = {
   field?: string;
@@ -31,25 +23,55 @@ export class ApiError extends Error {
 
 type RetryInit = RequestInit & { __didRetry?: boolean };
 
-type GlobalWithFetchBackup = typeof globalThis & {
-  __athelixOriginalFetch?: typeof globalThis.fetch;
-};
-
-const globalScope = globalThis as GlobalWithFetchBackup;
+const globalScope = globalThis as typeof globalThis & { __athelixOriginalFetch?: typeof globalThis.fetch };
 const originalFetch = globalScope.__athelixOriginalFetch ?? globalThis.fetch.bind(globalThis);
 globalScope.__athelixOriginalFetch = originalFetch;
 let installed = false;
-let unauthorizedHandler: (() => void) | null = null;
+
+let clerkSessionToken: string | null = null;
+let tokenResolve: ((token: string | null) => void) | null = null;
+let tokenPromise: Promise<string | null> | null = null;
+
+export function updateClerkToken(token: string | null) {
+  clerkSessionToken = token;
+  if (tokenResolve) {
+    tokenResolve(token);
+    tokenPromise = null;
+    tokenResolve = null;
+  }
+}
+
+async function ensureToken(): Promise<string | null> {
+  if (clerkSessionToken !== null) return clerkSessionToken;
+  if (tokenPromise) return tokenPromise;
+  tokenPromise = new Promise((resolve) => {
+    tokenResolve = resolve;
+  });
+  const timeoutPromise = new Promise<null>((resolve) => {
+    setTimeout(() => {
+      if (tokenPromise) {
+        tokenPromise = null;
+        tokenResolve = null;
+        resolve(null);
+      }
+    }, 6000);
+  });
+  return Promise.race([tokenPromise, timeoutPromise]);
+}
+
+let refreshTokenHandler: (() => Promise<string | null>) | null = null;
+
+export function setRefreshTokenHandler(handler: (() => Promise<string | null>) | null) {
+  refreshTokenHandler = handler;
+}
 
 function isPublicPath(url: string) {
   const path = url.replace(getApiBaseUrl(), "");
   return (
-    path.startsWith("/auth/login") ||
-    path.startsWith("/auth/register") ||
-    path.startsWith("/auth/refresh") ||
     path.startsWith("/meta/app-config") ||
     path.startsWith("/health") ||
     path === "/" ||
+    path.startsWith("/auth/webhook") ||
     path.startsWith("/db-")
   );
 }
@@ -102,30 +124,6 @@ function normalizeError(body: unknown, status: number) {
   return new ApiError(message, status, body, fieldErrors);
 }
 
-async function refreshAccessToken() {
-  const refreshToken = await getRefreshToken();
-  if (!refreshToken) return false;
-
-  const response = await originalFetch(`${getApiBaseUrl()}/auth/refresh`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-
-  if (!response.ok) {
-    await clearAuthTokens();
-    unauthorizedHandler?.();
-    return false;
-  }
-
-  const auth = (await response.json()) as AuthResponse;
-  await persistAuthTokens(auth);
-  return true;
-}
-
 function mergeHeaders(input?: HeadersInit) {
   const headers = new Headers(input);
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
@@ -141,16 +139,24 @@ export async function apiFetch(input: RequestInfo | URL, init?: RetryInit): Prom
     headers.set("Content-Type", "application/json");
   }
 
-  if (!isPublicPath(urlString) && hasUsableAccessToken()) {
-    const token = getAccessToken();
-    if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (!isPublicPath(urlString)) {
+    const token = clerkSessionToken ?? (await ensureToken());
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
   }
 
   const response = await originalFetch(url, { ...init, headers });
 
   if (response.status === 401 && !init?.__didRetry && !isPublicPath(urlString)) {
-    const refreshed = await refreshAccessToken();
-    if (refreshed) return apiFetch(input, { ...init, __didRetry: true });
+    if (refreshTokenHandler) {
+      const newToken = await refreshTokenHandler();
+      if (newToken) {
+        updateClerkToken(newToken);
+        return apiFetch(input, { ...init, __didRetry: true });
+      }
+    }
+    throw new ApiError("Session expired. Please sign in again.", 401);
   }
 
   if (!response.ok) {
@@ -172,10 +178,6 @@ export function installApiFetchInterceptor() {
   if (installed) return;
   installed = true;
   globalThis.fetch = apiFetch as typeof globalThis.fetch;
-}
-
-export function setUnauthorizedHandler(handler: (() => void) | null) {
-  unauthorizedHandler = handler;
 }
 
 export function getApiErrorMessage(error: unknown) {

@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { usePostHog } from "posthog-react-native";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useTemplatesQuery, useMesocyclesQuery } from "../api/queries";
 import { createWorkoutSessionWorkoutSessionsPost } from "../api/endpoints/workout-sessions/workout-sessions";
 import { getApiErrorMessage } from "../api/client";
@@ -24,14 +24,14 @@ import { formatShortDate } from "../utils/format";
 import { Events } from "../analytics/events";
 
 export function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const id = route?.params?.id;
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(id ?? null);
   const [selectedMeso, setSelectedMeso] = useState<string | null>(null);
-  const templates = useTemplatesQuery(auth.isAuthenticated);
-  const mesocycles = useMesocyclesQuery(auth.isAuthenticated);
+  const templates = useTemplatesQuery(isAuthenticated);
+  const mesocycles = useMesocyclesQuery(isAuthenticated);
   const startSession = useMutation({
     mutationFn: async ({ templateId }: { templateId?: string | null }) => {
       const template = templates.data?.find((item) => String(item.id) === templateId);

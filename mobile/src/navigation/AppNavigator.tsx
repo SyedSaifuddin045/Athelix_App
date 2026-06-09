@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useAuth } from "@clerk/expo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import type { RootStackParamList } from "../types/navigation";
@@ -21,36 +23,72 @@ import { ExerciseProgressScreen } from "../screens/ExerciseProgressScreen";
 import { MuscleBalanceScreen } from "../screens/MuscleBalanceScreen";
 import { BodyweightHistoryScreen } from "../screens/BodyweightHistoryScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { setRefreshTokenHandler, updateClerkToken } from "../api/client";
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { isLoaded, isSignedIn, getToken } = useAuth();
+
+  useEffect(() => {
+    setRefreshTokenHandler(isSignedIn ? () => getToken() : null);
+    return () => setRefreshTokenHandler(null);
+  }, [isSignedIn, getToken]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (isSignedIn) {
+      getToken().then((token) => {
+        if (token) updateClerkToken(token);
+      });
+    } else {
+      updateClerkToken(null);
+    }
+  }, [isLoaded, isSignedIn]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    const interval = setInterval(async () => {
+      const token = await getToken();
+      updateClerkToken(token);
+    }, 10 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isSignedIn]);
+
+  if (!isLoaded) return null;
+  return <>{children}</>;
+}
+
 export function AppNavigator() {
   return (
-    <RootStack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: "slide_from_right",
-      }}
-    >
-      <RootStack.Screen name="Splash" component={SplashScreen} />
-      <RootStack.Screen name="Login" component={LoginScreen} />
-      <RootStack.Screen name="Register" component={RegisterScreen} />
-      <RootStack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-      <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
-      <RootStack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
-      <RootStack.Screen name="TemplateList" component={TemplateListScreen} />
-      <RootStack.Screen name="TemplateBuilder" component={TemplateBuilderScreen} />
-      <RootStack.Screen name="StartWorkout" component={StartWorkoutScreen} />
-      <RootStack.Screen name="ActiveWorkout" component={ActiveWorkoutScreen} />
-      <RootStack.Screen name="WorkoutHistory" component={WorkoutHistoryScreen} />
-      <RootStack.Screen name="SessionDetail" component={SessionDetailScreen} />
-      <RootStack.Screen name="MesocycleList" component={MesocycleListScreen} />
-      <RootStack.Screen name="MesocycleDetail" component={MesocycleDetailScreen} />
-      <RootStack.Screen name="PersonalRecords" component={PersonalRecordsScreen} />
-      <RootStack.Screen name="ExerciseProgress" component={ExerciseProgressScreen} />
-      <RootStack.Screen name="MuscleBalance" component={MuscleBalanceScreen} />
-      <RootStack.Screen name="BodyweightHistory" component={BodyweightHistoryScreen} />
-      <RootStack.Screen name="Settings" component={SettingsScreen} />
-    </RootStack.Navigator>
+    <AuthGate>
+      <RootStack.Navigator
+        screenOptions={{
+          headerShown: false,
+          animation: "slide_from_right",
+        }}
+      >
+        <RootStack.Screen name="Splash" component={SplashScreen} />
+        <RootStack.Screen name="Login" component={LoginScreen} />
+        <RootStack.Screen name="Register" component={RegisterScreen} />
+        <RootStack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+        <RootStack.Screen name="MainTabs" component={MainTabNavigator} />
+        <RootStack.Screen name="ExerciseDetail" component={ExerciseDetailScreen} />
+        <RootStack.Screen name="TemplateList" component={TemplateListScreen} />
+        <RootStack.Screen name="TemplateBuilder" component={TemplateBuilderScreen} />
+        <RootStack.Screen name="StartWorkout" component={StartWorkoutScreen} />
+        <RootStack.Screen name="ActiveWorkout" component={ActiveWorkoutScreen} />
+        <RootStack.Screen name="WorkoutHistory" component={WorkoutHistoryScreen} />
+        <RootStack.Screen name="SessionDetail" component={SessionDetailScreen} />
+        <RootStack.Screen name="MesocycleList" component={MesocycleListScreen} />
+        <RootStack.Screen name="MesocycleDetail" component={MesocycleDetailScreen} />
+        <RootStack.Screen name="PersonalRecords" component={PersonalRecordsScreen} />
+        <RootStack.Screen name="ExerciseProgress" component={ExerciseProgressScreen} />
+        <RootStack.Screen name="MuscleBalance" component={MuscleBalanceScreen} />
+        <RootStack.Screen name="BodyweightHistory" component={BodyweightHistoryScreen} />
+        <RootStack.Screen name="Settings" component={SettingsScreen} />
+      </RootStack.Navigator>
+    </AuthGate>
   );
 }

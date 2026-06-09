@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useAppConfigQuery, useExercisesQuery, usePersonalRecordsQuery } from "../api/queries";
 import { RECORD_TYPES } from "../data";
 import type { ExerciseResponse, PersonalRecordResponse } from "../api/model";
@@ -19,12 +19,12 @@ function nameForExercise(id: string, lookup: Map<string, ExerciseResponse>) {
 }
 
 export function PersonalRecordsScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");
   const appConfig = useAppConfigQuery();
-  const records = usePersonalRecordsQuery(filter === "All" ? undefined : { record_type: filter }, auth.isAuthenticated);
-  const exercises = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const records = usePersonalRecordsQuery(filter === "All" ? undefined : { record_type: filter }, isAuthenticated);
+  const exercises = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(exercises.data?.items), [exercises.data?.items]);
 
   const grouped = useMemo(() => {

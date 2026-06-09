@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useOverviewQuery } from "../api/queries";
 import { displayName, initialsFor, exerciseEmoji, workoutTitle } from "../utils/display";
 import { formatShortDate, formatTimeLabel, formatVolume } from "../utils/format";
@@ -15,10 +15,10 @@ import { StatPill, DividerVertical, MetricBlock } from "../components/ui/Stats";
 import { VerticalBars } from "../components/ui/Charts";
 
 function HomeScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
-  const overview = useOverviewQuery(auth.isAuthenticated);
+  const { isSignedIn: isAuthenticated = false } = useAuth();
+  const overview = useOverviewQuery(isAuthenticated);
   const data = overview.data;
-  const name = displayName(data?.user ?? auth.user, data?.profile);
+  const name = displayName(data?.user, data?.profile);
   const latestSession = data?.latest_completed_session;
   const latestWeight = data?.latest_body_weight_log;
   const activeMeso = data?.active_mesocycle;

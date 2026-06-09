@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { usePostHog } from "posthog-react-native";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useExerciseDetailQuery } from "../api/queries";
 import { mapExerciseDetail } from "../utils/mapping";
 import { DIFFICULTY_COLORS, EXERCISE_DETAILS, EXERCISE_FALLBACK } from "../data";
@@ -15,10 +15,10 @@ import { SectionEyebrow, Tag } from "../components/ui/Indicators";
 import { Events } from "../analytics/events";
 
 function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: { params: { id: string } } }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const posthog = usePostHog();
   const { id } = route.params;
-  const exerciseQuery = useExerciseDetailQuery(id, auth.isAuthenticated);
+  const exerciseQuery = useExerciseDetailQuery(id, isAuthenticated);
   const exercise = exerciseQuery.data ? mapExerciseDetail(exerciseQuery.data) : (EXERCISE_DETAILS[id ?? ""] ?? EXERCISE_FALLBACK);
 
   useEffect(() => {

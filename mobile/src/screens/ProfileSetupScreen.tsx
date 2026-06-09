@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Platform, Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-react-native";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useProfileQuery } from "../api/queries";
 import { upsertCurrentUserProfileUsersMeProfilePut } from "../api/endpoints/users/users";
 import { GENDERS, FITNESS_LEVELS, GOALS, UNITS } from "../data";
@@ -15,16 +16,16 @@ import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput, ChipWrap, SelectableRow } from "../components/ui/Input";
-import { getApiErrorMessage } from "../api/client";
+import { getApiErrorMessage, updateClerkToken } from "../api/client";
 import { numberOrNull } from "../utils/validation";
 import { queryKeys } from "../api/queryKeys";
 import { Events } from "../analytics/events";
 
 export function ProfileSetupScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();
-  const profileQuery = useProfileQuery(auth.isAuthenticated);
+  const profileQuery = useProfileQuery(isAuthenticated);
   const [form, setForm] = useState({
     displayName: "",
     dob: "",
@@ -36,6 +37,7 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
     goal: "Improve strength",
   });
   const [error, setError] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     const profile = profileQuery.data;
@@ -51,6 +53,25 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
       unit: profile.preferred_unit ?? "metric",
     }));
   }, [profileQuery.data]);
+
+  const onDateChange = useCallback((_: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      setForm((current) => ({ ...current, dob: `${year}-${month}-${day}` }));
+    }
+  }, []);
+
+  const parsedDob = form.dob ? new Date(form.dob + "T00:00:00") : new Date(2000, 0, 1);
+  const formattedDob = form.dob
+    ? new Date(form.dob + "T00:00:00").toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : "Tap to select";
 
   const saveProfile = useMutation({
     mutationFn: async () =>
@@ -108,7 +129,23 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
           <SectionEyebrow>Basic Info</SectionEyebrow>
           <View style={styles.formStack}>
             <LabeledInput label="Display Name" value={form.displayName} onChangeText={(value) => setForm((current) => ({ ...current, displayName: value }))} />
-            <LabeledInput label="Date of Birth" value={form.dob} onChangeText={(value) => setForm((current) => ({ ...current, dob: value }))} placeholder="YYYY-MM-DD" />
+            <View>
+              <Text style={styles.fieldLabel}>Date of Birth</Text>
+              <Pressable onPress={() => setShowDatePicker(true)} style={[styles.input, { justifyContent: "center" }]}>
+                <Text style={{ color: form.dob ? COLORS.text : "rgba(255,255,255,0.28)", fontSize: 14 }}>
+                  {formattedDob}
+                </Text>
+              </Pressable>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={parsedDob}
+                  mode="date"
+                  display={Platform.OS === "android" ? "default" : "spinner"}
+                  maximumDate={new Date()}
+                  onChange={onDateChange}
+                />
+              )}
+            </View>
             <View>
               <Text style={styles.fieldLabel}>Gender</Text>
               <ChipWrap

@@ -6,9 +6,10 @@ import { useSafeAreaInsets, SafeAreaProvider } from "react-native-safe-area-cont
 import { NavigationContainer } from "@react-navigation/native";
 import type { NavigationContainerRef } from "@react-navigation/native";
 import { PostHogProvider } from "posthog-react-native";
+import { ClerkProvider } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
 
 import { queryClient } from "./src/api/queryClient";
-import { AuthProvider } from "./src/auth/AuthProvider";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { ErrorBoundary } from "./src/components/ui/ErrorBoundary";
 import { COLORS } from "./src/theme/colors";
@@ -17,6 +18,11 @@ import { useScreenTracking } from "./src/analytics/useScreenTracking";
 import type { RootStackParamList } from "./src/types/navigation";
 
 const { apiKey, options } = getPostHogConfig();
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+
+if (!publishableKey) {
+  throw new Error("Add EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY to mobile/.env");
+}
 
 export default function App() {
   return (
@@ -31,9 +37,9 @@ export default function App() {
               captureTouches: true,
             }}
           >
-            <AuthProvider>
+            <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
               <AppContent />
-            </AuthProvider>
+            </ClerkProvider>
           </PostHogProvider>
         </QueryClientProvider>
       </GestureHandlerRootView>

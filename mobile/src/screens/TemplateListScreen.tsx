@@ -1,7 +1,7 @@
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useTemplatesQuery } from "../api/queries";
 import { queryKeys } from "../api/queryKeys";
 import { deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete } from "../api/endpoints/workout-templates/workout-templates";
@@ -16,9 +16,9 @@ import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { MetaInline } from "../components/ui/Stats";
 
 function TemplateListScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
-  const templates = useTemplatesQuery(auth.isAuthenticated);
+  const templates = useTemplatesQuery(isAuthenticated);
   const deleteTemplate = useMutation({
     mutationFn: async (templateId: number) => deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete(templateId),
     onSuccess: () => {

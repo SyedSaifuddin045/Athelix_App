@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useOverviewQuery } from "../api/queries";
 import { TRAIN_SECTIONS } from "../data";
 import { COLORS } from "../theme/colors";
@@ -12,8 +12,8 @@ import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { CompactStatCard } from "../components/ui/Stats";
 
 function TrainHubScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
-  const overview = useOverviewQuery(auth.isAuthenticated);
+  const { isSignedIn: isAuthenticated = false } = useAuth();
+  const overview = useOverviewQuery(isAuthenticated);
   return (
     <Screen>
       <View style={styles.tabIntro}>

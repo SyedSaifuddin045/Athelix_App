@@ -3,7 +3,7 @@ import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from "reac
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useMesocyclesQuery } from "../api/queries";
 import { createMesocycleMesocyclesPost } from "../api/endpoints/mesocycles/mesocycles";
 import { getApiErrorMessage } from "../api/client";
@@ -18,9 +18,9 @@ import { successData } from "../utils/mapping";
 import { MESOCYCLE_GOALS } from "../data";
 
 export function MesocycleListScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
-  const mesocycles = useMesocyclesQuery(auth.isAuthenticated);
+  const mesocycles = useMesocyclesQuery(isAuthenticated);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newMesoName, setNewMesoName] = useState("");
   const [newMesoGoal, setNewMesoGoal] = useState<string | null>(null);

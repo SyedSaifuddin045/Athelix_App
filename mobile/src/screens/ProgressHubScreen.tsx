@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useOverviewQuery } from "../api/queries";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
@@ -15,8 +15,8 @@ import { recordValue } from "../utils/mapping";
 import { formatShortDate } from "../utils/format";
 
 export function ProgressHubScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
-  const overview = useOverviewQuery(auth.isAuthenticated);
+  const { isSignedIn: isAuthenticated = false } = useAuth();
+  const overview = useOverviewQuery(isAuthenticated);
   const latestPr = overview.data?.recent_personal_records[0];
   return (
     <Screen>

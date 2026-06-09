@@ -3,7 +3,7 @@ import { Alert, Modal, Pressable, Text, TextInput, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useSessionDetailQuery, useExercisesQuery } from "../api/queries";
 import { updateWorkoutSessionWorkoutSessionsSessionIdPatch, deleteWorkoutSessionWorkoutSessionsSessionIdDelete } from "../api/endpoints/workout-sessions/workout-sessions";
 import { getApiErrorMessage } from "../api/client";
@@ -22,7 +22,7 @@ import { formatDateLabel, formatVolume, formatKg } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
 
 export function SessionDetailScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const sessionId = toNumberId(route?.params?.id);
   const [showMenu, setShowMenu] = useState(false);
@@ -31,8 +31,8 @@ export function SessionDetailScreen({ navigation, route }: { navigation: any; ro
   const [editName, setEditName] = useState("");
   const [editMood, setEditMood] = useState("");
   const [editNotes, setEditNotes] = useState("");
-  const detail = useSessionDetailQuery(sessionId, auth.isAuthenticated);
-  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const detail = useSessionDetailQuery(sessionId, isAuthenticated);
+  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
   const exerciseGroups = useMemo(() => groupSetsByExercise(detail.data?.sets ?? [], lookup), [detail.data?.sets, lookup]);
 

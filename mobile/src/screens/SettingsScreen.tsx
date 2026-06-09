@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-react-native";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useCurrentUserQuery } from "../api/queries";
 import { updateCurrentUserUsersMePatch } from "../api/endpoints/users/users";
 import { COLORS } from "../theme/colors";
@@ -20,10 +20,10 @@ import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
 
 export function SettingsScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();
-  const currentUser = useCurrentUserQuery(auth.isAuthenticated);
+  const currentUser = useCurrentUserQuery(isAuthenticated);
   const [form, setForm] = useState({
     username: "",
     email: "",
@@ -52,7 +52,6 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
         email: form.email.trim() || null,
       }),
     onSuccess: (response) => {
-      auth.setUser(successData(response));
       queryClient.invalidateQueries({ queryKey: queryKeys.currentUser });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       posthog.capture(Events.ACCOUNT_SETTINGS_UPDATED, {

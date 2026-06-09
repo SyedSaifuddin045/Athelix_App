@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useAppConfigQuery } from "../api/queries";
 import { getApiErrorMessage } from "../api/client";
 import { COLORS } from "../theme/colors";
@@ -9,25 +9,25 @@ import { Screen } from "../components/ui/Layout";
 import { ProgressBar } from "../components/ui/Indicators";
 
 function SplashScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
+  const { isLoaded, isSignedIn = false } = useAuth();
   const appConfig = useAppConfigQuery();
-  const progress = appConfig.isPending || auth.status === "loading" ? 65 : 100;
+  const progress = appConfig.isPending || !isLoaded ? 65 : 100;
   const status =
     appConfig.isPending
       ? "Fetching app config..."
-      : auth.status === "loading"
+      : !isLoaded
         ? "Restoring session..."
-        : auth.status === "authenticated"
+        : isSignedIn
           ? "Ready!"
           : "Sign in to continue";
 
   useEffect(() => {
-    if (appConfig.isPending || auth.status === "loading") return;
+    if (appConfig.isPending || !isLoaded) return;
     const timer = setTimeout(() => {
-      navigation.replace(auth.status === "authenticated" ? "MainTabs" : "Login");
+      navigation.replace(isSignedIn ? "MainTabs" : "Login");
     }, 450);
     return () => clearTimeout(timer);
-  }, [appConfig.isPending, auth.status, navigation]);
+  }, [appConfig.isPending, isLoaded, isSignedIn, navigation]);
 
   return (
     <Screen scroll={false} contentContainerStyle={styles.centeredContent}>
@@ -40,8 +40,8 @@ function SplashScreen({ navigation }: { navigation: any }) {
         <Text style={styles.splashProgressValue}>{progress}%</Text>
         <ProgressBar value={progress} color={COLORS.teal} height={8} />
         <Text style={styles.splashStatus}>{status}</Text>
-        {appConfig.isError || auth.error ? (
-          <Text style={styles.errorText}>{appConfig.isError ? getApiErrorMessage(appConfig.error) : auth.error}</Text>
+        {appConfig.isError ? (
+          <Text style={styles.errorText}>{getApiErrorMessage(appConfig.error)}</Text>
         ) : null}
       </View>
       <Text style={styles.splashFooter}>{appConfig.data ? `${appConfig.data.app_name.replace(/_API$/, "")} v${appConfig.data.version}` : "Athelix"}</Text>

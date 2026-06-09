@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useOverviewQuery } from "../api/queries";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
@@ -13,9 +13,9 @@ import { displayName, initialsFor } from "../utils/display";
 import type { RootStackParamList } from "../types/navigation";
 
 export function ProfileScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
-  const overview = useOverviewQuery(auth.isAuthenticated);
-  const user = overview.data?.user ?? auth.user;
+  const { isSignedIn: isAuthenticated = false, signOut } = useAuth();
+  const overview = useOverviewQuery(isAuthenticated);
+  const user = overview.data?.user;
   const profile = overview.data?.profile;
   const name = displayName(user, profile);
   const menuSections = [
@@ -138,7 +138,7 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
 
       <Pressable
         onPress={async () => {
-          await auth.logout();
+          await signOut();
           navigation.replace("Login");
         }}
         style={{ marginTop: 18 }}

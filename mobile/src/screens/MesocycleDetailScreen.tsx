@@ -2,7 +2,7 @@ import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useMesocycleDetailQuery, useMesocycleAnalyticsQuery } from "../api/queries";
 import { deleteMesocycleMesocyclesMesocycleIdDelete } from "../api/endpoints/mesocycles/mesocycles";
 import { queryKeys } from "../api/queryKeys";
@@ -19,11 +19,11 @@ import { formatShortDate, formatVolume } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
 
 export function MesocycleDetailScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const mesocycleId = toNumberId(route?.params?.id);
-  const detail = useMesocycleDetailQuery(mesocycleId, auth.isAuthenticated);
-  const analytics = useMesocycleAnalyticsQuery(mesocycleId, undefined, auth.isAuthenticated);
+  const detail = useMesocycleDetailQuery(mesocycleId, isAuthenticated);
+  const analytics = useMesocycleAnalyticsQuery(mesocycleId, undefined, isAuthenticated);
   const deleteMeso = useMutation({
     mutationFn: async () => {
       if (!mesocycleId) return;

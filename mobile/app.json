@@ -3,6 +3,7 @@
     "name": "Athelix",
     "slug": "athelix",
     "version": "1.0.1",
+    "scheme": "athelix",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -36,6 +37,10 @@
         "projectId": "c54ecbdd-2a96-4a57-8f51-57c7df8d94c8"
       }
     },
-    "owner": "syedsaifuddin_045"
+    "owner": "syedsaifuddin_045",
+    "plugins": [
+      "expo-web-browser",
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

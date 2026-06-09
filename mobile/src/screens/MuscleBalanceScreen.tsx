@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useMuscleBalanceQuery } from "../api/queries";
 import { MUSCLE_PERIODS } from "../data";
 import { COLORS } from "../theme/colors";
@@ -12,12 +12,12 @@ import { BackHeader, RoundButton } from "../components/ui/Button";
 import { SectionEyebrow, Tag, ProgressBar } from "../components/ui/Indicators";
 
 export function MuscleBalanceScreen({ navigation, route }: { navigation: any; route?: { params?: { mesocycleId?: number | null } } }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const [period, setPeriod] = useState("1W");
   const [expanded, setExpanded] = useState<string | null>(null);
   const weeks = period === "1W" ? 1 : period === "2W" ? 2 : period === "4W" ? 4 : 8;
   const mesocycleId = route?.params?.mesocycleId ?? undefined;
-  const report = useMuscleBalanceQuery({ weeks, mesocycle_id: mesocycleId }, auth.isAuthenticated);
+  const report = useMuscleBalanceQuery({ weeks, mesocycle_id: mesocycleId }, isAuthenticated);
   const items = report.data?.items ?? [];
   const strongItems = items.filter((item) => item.status === "Strong");
   const balancedItems = items.filter((item) => item.status === "Balanced");

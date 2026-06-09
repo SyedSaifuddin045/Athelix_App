@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useSessionsQuery } from "../api/queries";
 import type { WorkoutSessionResponse } from "../api/model";
 import { COLORS } from "../theme/colors";
@@ -16,8 +16,8 @@ import { workoutTitle } from "../utils/display";
 import { formatDateLabel, formatShortDate, formatTimeLabel } from "../utils/format";
 
 export function WorkoutHistoryScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
-  const sessions = useSessionsQuery(auth.isAuthenticated);
+  const { isSignedIn: isAuthenticated = false } = useAuth();
+  const sessions = useSessionsQuery(isAuthenticated);
   const totalVolume = (sessions.data ?? []).reduce((sum, session) => sum + (session.total_volume ?? 0), 0);
   const grouped = useMemo(() => {
     return (sessions.data ?? []).reduce<Record<string, WorkoutSessionResponse[]>>((acc, session) => {

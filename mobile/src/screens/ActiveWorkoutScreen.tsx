@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { usePostHog } from "posthog-react-native";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
 import {
   deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete,
@@ -39,7 +39,7 @@ export function ActiveWorkoutScreen({
   navigation: any;
   route?: { params?: { sessionId?: number; templateId?: string; mesocycleId?: string | null } };
 }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const sessionId = route?.params?.sessionId;
@@ -53,8 +53,8 @@ export function ActiveWorkoutScreen({
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [error, setError] = useState("");
-  const template = useTemplateDetailQuery(templateId, auth.isAuthenticated && !!templateId);
-  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const template = useTemplateDetailQuery(templateId, isAuthenticated && !!templateId);
+  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
 
   useEffect(() => {
@@ -224,7 +224,7 @@ export function ActiveWorkoutScreen({
 
   const finishWorkout = async () => {
     if (!sessionId) return;
-    if (!auth.isAuthenticated) {
+    if (!isAuthenticated) {
       setError("Session expired. Please log in again.");
       return;
     }
@@ -431,7 +431,7 @@ export function ActiveWorkoutScreen({
           variant="pick"
           visible={showExercisePicker}
           title="Add Exercise"
-          enabled={auth.isAuthenticated}
+          enabled={isAuthenticated}
           onSelect={(exercise) => addExercise(exercise)}
           onClose={() => setShowExercisePicker(false)}
         />

@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { usePostHog } from "posthog-react-native";
 
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
 import {
   createWorkoutTemplateWorkoutTemplatesPost,
@@ -36,7 +36,7 @@ const MINUTES = [0, 1, 2, 3, 4, 5];
 const SECONDS = [0, 10, 15, 20, 30, 45];
 
 export function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: { params?: { id?: string } } }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const id = route.params?.id;
@@ -47,8 +47,8 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [saveError, setSaveError] = useState("");
-  const detail = useTemplateDetailQuery(templateId, auth.isAuthenticated && isEdit);
-  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, auth.isAuthenticated);
+  const detail = useTemplateDetailQuery(templateId, isAuthenticated && isEdit);
+  const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
   const initialized = useRef(false);
 
@@ -557,7 +557,7 @@ export function TemplateBuilderScreen({ navigation, route }: { navigation: any; 
         variant="pick"
         visible={showExercisePicker}
         title="Add Exercise"
-        enabled={auth.isAuthenticated}
+        enabled={isAuthenticated}
         onSelect={(exercise) => addExercise(exercise)}
         onClose={() => setShowExercisePicker(false)}
       />

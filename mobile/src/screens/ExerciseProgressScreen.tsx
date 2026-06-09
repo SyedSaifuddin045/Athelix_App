@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useExerciseProgressQuery } from "../api/queries";
 import { EXERCISE_PROGRESS_PERIODS } from "../data";
 import { COLORS } from "../theme/colors";
@@ -16,12 +16,12 @@ import { ExercisePicker } from "../components/ExercisePicker";
 import { formatShortDate, formatVolume } from "../utils/format";
 
 export function ExerciseProgressScreen({ navigation, route }: { navigation: any; route: { params: { id?: string } } }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const routeId = route.params?.id;
   const [selectedId, setSelectedId] = useState<string | undefined>(routeId);
   const fromPicker = !routeId;
   const [period, setPeriod] = useState("3M");
-  const progress = useExerciseProgressQuery(selectedId, undefined, auth.isAuthenticated && !!selectedId);
+  const progress = useExerciseProgressQuery(selectedId, undefined, isAuthenticated && !!selectedId);
 
   const now = new Date();
   const periodDays: Record<string, number | null> = { "1M": 30, "3M": 90, "6M": 180, "1Y": 365, All: null };
@@ -72,7 +72,7 @@ export function ExerciseProgressScreen({ navigation, route }: { navigation: any;
           <ExercisePicker
             variant="browse"
             onNavigate={(exerciseId) => setSelectedId(exerciseId)}
-            enabled={auth.isAuthenticated}
+            enabled={isAuthenticated}
             trackedOnly
             subtitle="Exercises you've logged in workouts"
           />

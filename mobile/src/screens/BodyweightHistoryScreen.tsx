@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "../auth/AuthProvider";
+import { useAuth } from "@clerk/expo";
 import { useBodyWeightLogsQuery } from "../api/queries";
 import {
   createBodyWeightLogUsersMeBodyWeightLogsPost,
@@ -20,9 +20,9 @@ import { getApiErrorMessage } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 
 export function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
-  const auth = useAuth();
+  const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
-  const logs = useBodyWeightLogsQuery(auth.isAuthenticated);
+  const logs = useBodyWeightLogsQuery(isAuthenticated);
   const [showAdd, setShowAdd] = useState(false);
   const [newWeight, setNewWeight] = useState("");
   const [newNote, setNewNote] = useState("");

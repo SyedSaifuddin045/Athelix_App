@@ -17,6 +17,8 @@ export const styles = StyleSheet.create({
   sectionEyebrow: { color: "rgba(255,255,255,0.35)", fontSize: 11, fontWeight: "700", letterSpacing: 1.4, textTransform: "uppercase" },
   primaryButton: { minHeight: 56, borderRadius: 18, backgroundColor: COLORS.teal, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10 },
   primaryButtonText: { color: "#000000", fontSize: 15, fontWeight: "800" },
+  oauthButton: { minHeight: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 10 },
+  oauthButtonText: { color: COLORS.text, fontSize: 14, fontWeight: "600" },
   tag: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, alignSelf: "flex-start" },
   tagText: { fontSize: 10, fontWeight: "700" },
   progressTrack: { width: "100%", borderRadius: 999, overflow: "hidden" },
