@@ -1,9 +1,10 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Linking, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Linking, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth, useSignUp as useModernSignUp } from "@clerk/expo";
 import { useSignIn, useSignUp } from "@clerk/expo/legacy";
 import * as WebBrowser from "expo-web-browser";
+import { makeRedirectUri } from "expo-auth-session";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
@@ -59,7 +60,9 @@ function RegisterScreen({ navigation }: { navigation: any }) {
     }
 
     try {
-      const redirectUrl = "athelix://sso-callback";
+      const redirectUrl = Platform.OS === "web"
+        ? makeRedirectUri({ path: "sso-callback" })
+        : "athelix://sso-callback";
 
       await legacySignIn.create({ strategy, redirectUrl });
       const externalUrl = legacySignIn.firstFactorVerification?.externalVerificationRedirectURL?.toString();

@@ -11,7 +11,12 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "ANDROID_HOME": "/Users/saif/Library/Android/sdk",
+        "ANDROID_SDK_ROOT": "/Users/saif/Library/Android/sdk",
+        "NODE_ENV": "production"
+      }
     }
   },
   "submit": {
