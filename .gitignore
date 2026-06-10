@@ -22,3 +22,6 @@ TODOs.md
 
 # local Android build tooling/artifacts
 bundletool-all-*.jar
+
+# Firecrawl agent cache
+.firecrawl/
