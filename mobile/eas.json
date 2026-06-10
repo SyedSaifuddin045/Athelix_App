@@ -26,9 +26,11 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "ANDROID_HOME": "/Users/saif/Library/Android/sdk",
-        "ANDROID_SDK_ROOT": "/Users/saif/Library/Android/sdk",
-        "NODE_ENV": "production"
+        "EXPO_PUBLIC_POSTHOG_API_KEY": "phc_kNVghpqswZCfO1IQ3lJzeEvhnHBLxkopyG5vY7gZCQT",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://eu.i.posthog.com",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.athelix.fit",
+        "EXPO_PUBLIC_POSTHOG_ENABLED": "true",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_ZXZpZGVudC1lZWwtOTIuY2xlcmsuYWNjb3VudHMuZGV2JA"
       }
     }
   },
