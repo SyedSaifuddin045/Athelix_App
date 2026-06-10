@@ -1,22 +1,16 @@
 import { Platform } from "react-native";
 import { File, Paths } from "expo-file-system";
+import Constants from "expo-constants";
 import type { PostHogOptions, PostHogCustomStorage } from "posthog-react-native";
 
-declare const process:
-  | {
-      env?: Record<string, string | undefined>;
-    }
-  | undefined;
+const extra = (
+  typeof Constants.expoConfig?.extra === "object" && Constants.expoConfig?.extra !== null
+    ? Constants.expoConfig.extra
+    : {}
+) as Record<string, string | undefined>;
 
-const POSTHOG_API_KEY =
-  typeof process !== "undefined"
-    ? process?.env?.EXPO_PUBLIC_POSTHOG_API_KEY ?? ""
-    : "";
-
-const POSTHOG_HOST =
-  typeof process !== "undefined"
-    ? process?.env?.EXPO_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com"
-    : "https://us.i.posthog.com";
+const POSTHOG_API_KEY = extra.posthogApiKey ?? "";
+const POSTHOG_HOST = extra.posthogHost ?? "https://us.i.posthog.com";
 
 const customStorage: PostHogCustomStorage =
   Platform.OS === "web"
@@ -46,7 +40,7 @@ export function getPostHogConfig() {
     apiKey: POSTHOG_API_KEY,
     options: {
       host: POSTHOG_HOST,
-      disabled: __DEV__ && process?.env?.EXPO_PUBLIC_POSTHOG_ENABLED !== "true",
+      disabled: __DEV__ && extra.posthogEnabled !== "true",
       flushAt: 1,
       customStorage,
     } as Partial<PostHogOptions>,

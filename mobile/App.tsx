@@ -8,6 +8,7 @@ import type { NavigationContainerRef } from "@react-navigation/native";
 import * as WebBrowser from "expo-web-browser";
 import { PostHogProvider } from "posthog-react-native";
 import { ClerkProvider } from "@clerk/expo";
+import Constants from "expo-constants";
 
 WebBrowser.maybeCompleteAuthSession();
 import { tokenCache } from "@clerk/expo/token-cache";
@@ -20,11 +21,13 @@ import { getPostHogConfig } from "./src/analytics/posthog";
 import { useScreenTracking } from "./src/analytics/useScreenTracking";
 import type { RootStackParamList } from "./src/types/navigation";
 
+const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
+
 const { apiKey, options } = getPostHogConfig();
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const publishableKey = extra.clerkPublishableKey;
 
 if (!publishableKey) {
-  throw new Error("Add EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY to mobile/.env");
+  throw new Error("Missing clerkPublishableKey — ensure EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is set");
 }
 
 export default function App() {

@@ -1,7 +1,14 @@
+import Constants from "expo-constants";
+
+const extra = (
+  typeof Constants.expoConfig?.extra === "object" && Constants.expoConfig?.extra !== null
+    ? Constants.expoConfig.extra
+    : {}
+) as Record<string, string | undefined>;
+
 export const DEFAULT_API_BASE_URL = "http://localhost:8000";
 
-let runtimeApiBaseUrl =
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+let runtimeApiBaseUrl = extra.apiBaseUrl ?? DEFAULT_API_BASE_URL;
 
 export function getApiBaseUrl() {
   return runtimeApiBaseUrl.replace(/\/+$/, "");
