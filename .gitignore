@@ -1,4 +1,3 @@
-!**/glob-import/dir/node_modules
 .DS_Store
 .idea
 .pnpm-store
@@ -6,22 +5,68 @@
 *.local
 *.log
 /.vscode/
-/docs/.vitepress/cache
-/docs/.vitepress/.temp
-/packages/vite/LICENSE
-dist
-dist-ssr
-explorations
+.eslintcache
+.opencode/
+
+# dependencies
+node_modules/
 node_modules
+
+# Expo
+.expo/
+dist/
+dist
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# test output
+coverage/
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+.env
+.firecrawl
+
+# local build artifacts
+/build-*.aab
+/build-*.apk
+/*.aab
+/*.apk
+/*.apks
+/*.ipa
+/*.tar.gz
+bundletool-all-*.jar
+
+# misc
+explorations
 playground-temp
 temp
 TODOs.md
-.eslintcache
-# Agent/IDE config
-.opencode/
-
-# local Android build tooling/artifacts
-bundletool-all-*.jar
-
-# Firecrawl agent cache
-.firecrawl/
