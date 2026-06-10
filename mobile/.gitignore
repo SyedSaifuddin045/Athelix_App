@@ -44,3 +44,12 @@ yarn-error.*
 /android
 .env
 .firecrawl
+
+# local build artifacts
+/build-*.aab
+/build-*.apk
+/*.aab
+/*.apk
+/*.apks
+/*.ipa
+/*.tar.gz

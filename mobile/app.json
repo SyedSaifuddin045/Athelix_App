@@ -39,6 +39,8 @@
     },
     "owner": "syedsaifuddin_045",
     "plugins": [
+      "expo-secure-store",
+      "@clerk/expo",
       "expo-web-browser",
       "@react-native-community/datetimepicker",
       [
@@ -46,7 +48,7 @@
         {
           "android": {
             "packagingOptions": {
-              "excludes": ["META-INF/versions/9/OSGI-INF/MANIFEST.MF"]
+              "exclude": ["META-INF/versions/9/OSGI-INF/MANIFEST.MF"]
             }
           }
         }

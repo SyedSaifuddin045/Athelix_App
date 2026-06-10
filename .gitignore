@@ -19,3 +19,6 @@ TODOs.md
 .eslintcache
 # Agent/IDE config
 .opencode/
+
+# local Android build tooling/artifacts
+bundletool-all-*.jar

@@ -1,28 +1,12 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Linking, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAuth, useSignIn as useModernSignIn } from "@clerk/expo";
-import { useSignIn, useSignUp } from "@clerk/expo/legacy";
-import * as WebBrowser from "expo-web-browser";
-import { makeRedirectUri } from "expo-auth-session";
+import { useAuth, useSignIn, useSSO } from "@clerk/expo";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
-import { COLORS } from "../theme/colors";
+import { CLERK_SSO_REDIRECT_URL } from "../auth/clerk";
 import { styles } from "../theme/styles";
 import { Screen } from "../components/ui/Layout";
 import { PrimaryButton } from "../components/ui/Button";
-
-function waitForLinkingUrl(prefix: string, timeoutMs = 30000): Promise<string | null> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(null), timeoutMs);
-    const sub = Linking.addEventListener("url", (event) => {
-      if (event.url && event.url.startsWith(prefix)) {
-        clearTimeout(timer);
-        sub.remove();
-        resolve(event.url);
-      }
-    });
-  });
-}
 
 const OAUTH_PROVIDERS = [
   { strategy: "oauth_google" as const, label: "Google", icon: "google" as const, color: "#FFFFFF" },
@@ -31,10 +15,9 @@ const OAUTH_PROVIDERS = [
 ] as const;
 
 function LoginScreen({ navigation }: { navigation: any }) {
-  const { signIn: modernSignIn, fetchStatus } = useModernSignIn();
-  const { signIn: legacySignIn, setActive } = useSignIn();
-  const { signUp } = useSignUp();
+  const { signIn, fetchStatus } = useSignIn();
   const { isSignedIn = false, getToken } = useAuth();
+  const { startSSOFlow } = useSSO();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -46,79 +29,40 @@ function LoginScreen({ navigation }: { navigation: any }) {
     setError("");
     setOauthProvider(strategy);
 
-    if (!legacySignIn || !signUp || !setActive) {
-      setError("Authentication not ready. Please try again.");
-      setOauthProvider(null);
-      return;
-    }
-
     try {
-      const redirectUrl = Platform.OS === "web"
-        ? makeRedirectUri({ path: "sso-callback" })
-        : "athelix://sso-callback";
+      const { createdSessionId, setActive, signUp, signIn } = await startSSOFlow({
+        strategy,
+        redirectUrl: CLERK_SSO_REDIRECT_URL,
+      });
 
-      await legacySignIn.create({ strategy, redirectUrl });
-      const externalUrl = legacySignIn.firstFactorVerification?.externalVerificationRedirectURL?.toString();
-      if (!externalUrl) {
-        throw new Error("Failed to start OAuth flow");
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+
+        let token = await getToken();
+        for (let i = 0; i < 30 && !token; i++) {
+          await new Promise((r) => setTimeout(r, 200));
+          token = await getToken();
+        }
+        updateClerkToken(token);
+        setOauthProvider(null);
+        navigation.replace("MainTabs");
+        return;
       }
 
-      const linkingUrl = waitForLinkingUrl(redirectUrl);
-      const authResult = await WebBrowser.openAuthSessionAsync(externalUrl, redirectUrl);
-
-      let capturedUrl: string | null = null;
-      if (authResult.type === "success" && authResult.url) {
-        capturedUrl = authResult.url;
-      } else {
-        capturedUrl = await Promise.race([
-          linkingUrl,
-          new Promise<null>((r) => setTimeout(r, 3000)),
-        ]);
+      if (signUp?.status === "missing_requirements") {
+        throw new Error("Please sign up via the Register screen to complete your profile.");
       }
 
-      if (!capturedUrl) {
-        throw new Error("No redirect URL received from OAuth provider");
+      if (signIn?.status === "needs_second_factor") {
+        throw new Error("Additional verification required.");
       }
 
-      const params = new URL(capturedUrl).searchParams;
-      const rotatingTokenNonce = params.get("rotating_token_nonce") ?? "";
-      if (!rotatingTokenNonce) {
-        throw new Error(
-          `No rotating token in OAuth redirect. URL: ${capturedUrl}`
-        );
-      }
-
-      await legacySignIn.reload({ rotatingTokenNonce });
-
-      if (legacySignIn.firstFactorVerification?.status === "transferable") {
-        await signUp.create({ transfer: true });
-      }
-
-      const sessionId = legacySignIn.createdSessionId || signUp.createdSessionId;
-
-      if (!sessionId) {
-        const status = legacySignIn.status || "unknown";
-        const ffStatus = legacySignIn.firstFactorVerification?.status || "none";
-        throw new Error(
-          `OAuth flow did not produce a session. Sign-in status: ${status}, verification: ${ffStatus}`
-        );
-      }
-
-      await setActive({ session: sessionId });
-
-      let token = await getToken();
-      for (let i = 0; i < 30 && !token; i++) {
-        await new Promise((r) => setTimeout(r, 200));
-        token = await getToken();
-      }
-      updateClerkToken(token);
-      setOauthProvider(null);
-      navigation.replace("MainTabs");
+      throw new Error("SSO flow did not produce a session");
     } catch (err) {
       setOauthProvider(null);
       setError(getApiErrorMessage(err));
     }
-  }, [legacySignIn, signUp, setActive, getToken, navigation]);
+  }, [getToken, navigation, startSSOFlow]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -128,7 +72,7 @@ function LoginScreen({ navigation }: { navigation: any }) {
     setError("");
     setLoading(true);
     try {
-      const { error: signInError } = await modernSignIn.password({
+      const { error: signInError } = await signIn.password({
         emailAddress: email.trim(),
         password,
       });
@@ -139,13 +83,13 @@ function LoginScreen({ navigation }: { navigation: any }) {
         return;
       }
 
-      if (modernSignIn.status === "complete") {
-        await modernSignIn.finalize();
+      if (signIn.status === "complete") {
+        await signIn.finalize();
         const token = await getToken();
         updateClerkToken(token);
         setLoading(false);
         navigation.replace("MainTabs");
-      } else if (modernSignIn.status === "needs_second_factor") {
+      } else if (signIn.status === "needs_second_factor") {
         setLoading(false);
         setError("Additional verification required.");
       } else {

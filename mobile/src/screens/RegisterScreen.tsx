@@ -1,28 +1,13 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Linking, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useAuth, useSignUp as useModernSignUp } from "@clerk/expo";
-import { useSignIn, useSignUp } from "@clerk/expo/legacy";
-import * as WebBrowser from "expo-web-browser";
-import { makeRedirectUri } from "expo-auth-session";
+import { useAuth, useSignUp, useSSO } from "@clerk/expo";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
+import { CLERK_SSO_REDIRECT_URL } from "../auth/clerk";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
 import { Screen } from "../components/ui/Layout";
 import { PrimaryButton, RoundButton } from "../components/ui/Button";
-
-function waitForLinkingUrl(prefix: string, timeoutMs = 30000): Promise<string | null> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(null), timeoutMs);
-    const sub = Linking.addEventListener("url", (event) => {
-      if (event.url && event.url.startsWith(prefix)) {
-        clearTimeout(timer);
-        sub.remove();
-        resolve(event.url);
-      }
-    });
-  });
-}
 
 const OAUTH_PROVIDERS = [
   { strategy: "oauth_google" as const, label: "Google", icon: "google" as const, color: "#FFFFFF" },
@@ -31,10 +16,9 @@ const OAUTH_PROVIDERS = [
 ] as const;
 
 function RegisterScreen({ navigation }: { navigation: any }) {
-  const { signIn: legacySignIn, setActive } = useSignIn();
-  const { signUp: legacySignUp } = useSignUp();
+  const { signUp, fetchStatus } = useSignUp();
   const { getToken } = useAuth();
-  const { signUp: modernSignUp, fetchStatus } = useModernSignUp();
+  const { startSSOFlow } = useSSO();
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -53,79 +37,79 @@ function RegisterScreen({ navigation }: { navigation: any }) {
     setError("");
     setOauthProvider(strategy);
 
-    if (!legacySignIn || !legacySignUp || !setActive) {
-      setError("Authentication not ready. Please try again.");
-      setOauthProvider(null);
-      return;
-    }
-
     try {
-      const redirectUrl = Platform.OS === "web"
-        ? makeRedirectUri({ path: "sso-callback" })
-        : "athelix://sso-callback";
+      const { createdSessionId, setActive, signUp, authSessionResult } = await startSSOFlow({
+        strategy,
+        redirectUrl: CLERK_SSO_REDIRECT_URL,
+      });
 
-      await legacySignIn.create({ strategy, redirectUrl });
-      const externalUrl = legacySignIn.firstFactorVerification?.externalVerificationRedirectURL?.toString();
-      if (!externalUrl) {
-        throw new Error("Failed to start OAuth flow");
+      console.log("[SSO] result:", {
+        createdSessionId,
+        hasSetActive: !!setActive,
+        authSessionType: authSessionResult?.type,
+        signUpStatus: signUp?.status,
+        signUpMissingFields: signUp?.missingFields,
+        signUpCreatedSessionId: signUp?.createdSessionId,
+      });
+
+      if (createdSessionId && setActive) {
+        await setActive({ session: createdSessionId });
+
+        let token = await getToken();
+        for (let i = 0; i < 30 && !token; i++) {
+          await new Promise((r) => setTimeout(r, 200));
+          token = await getToken();
+        }
+        updateClerkToken(token);
+        setOauthProvider(null);
+        navigation.replace("ProfileSetup");
+        return;
       }
 
-      const linkingUrl = waitForLinkingUrl(redirectUrl);
-      const authResult = await WebBrowser.openAuthSessionAsync(externalUrl, redirectUrl);
+      if (signUp && setActive) {
+        if (signUp.status === "missing_requirements" || !signUp.createdSessionId) {
+          const updates: Record<string, string> = {};
+          if (signUp.missingFields?.includes("username")) {
+            const emailPrefix = signUp.emailAddress?.split("@")[0] || "";
+            const sanitized = emailPrefix.replace(/[^a-zA-Z0-9_-]/g, "").replace(/-+/g, "-").replace(/_+/g, "_");
+            updates.username = form.username || sanitized.slice(0, 30) || `user_${Date.now()}`;
+          }
+          if (signUp.missingFields?.includes("first_name")) {
+            updates.firstName = signUp.firstName || "";
+          }
+          if (signUp.missingFields?.includes("last_name")) {
+            updates.lastName = signUp.lastName || "";
+          }
+          if (Object.keys(updates).length > 0) {
+            await signUp.update(updates);
+          }
+        }
 
-      let capturedUrl: string | null = null;
-      if (authResult.type === "success" && authResult.url) {
-        capturedUrl = authResult.url;
-      } else {
-        capturedUrl = await Promise.race([
-          linkingUrl,
-          new Promise<null>((r) => setTimeout(r, 3000)),
-        ]);
+        if (signUp.createdSessionId) {
+          await setActive({ session: signUp.createdSessionId });
+
+          let token = await getToken();
+          for (let i = 0; i < 30 && !token; i++) {
+            await new Promise((r) => setTimeout(r, 200));
+            token = await getToken();
+          }
+          updateClerkToken(token);
+          setOauthProvider(null);
+          navigation.replace("ProfileSetup");
+          return;
+        }
+
+        const required = signUp.missingFields?.join(", ");
+        throw new Error(required ? `Sign-up requires: ${required}` : "Sign-up could not be completed");
       }
 
-      if (!capturedUrl) {
-        throw new Error("No redirect URL received from OAuth provider");
-      }
-
-      const params = new URL(capturedUrl).searchParams;
-      const rotatingTokenNonce = params.get("rotating_token_nonce") ?? "";
-      if (!rotatingTokenNonce) {
-        throw new Error(
-          `No rotating token in OAuth redirect. URL: ${capturedUrl}`
-        );
-      }
-
-      await legacySignIn.reload({ rotatingTokenNonce });
-
-      if (legacySignIn.firstFactorVerification?.status === "transferable") {
-        await legacySignUp.create({ transfer: true });
-      }
-
-      const sessionId = legacySignIn.createdSessionId || legacySignUp.createdSessionId;
-
-      if (!sessionId) {
-        const status = legacySignIn.status || "unknown";
-        const ffStatus = legacySignIn.firstFactorVerification?.status || "none";
-        throw new Error(
-          `OAuth flow did not produce a session. Sign-in status: ${status}, verification: ${ffStatus}`
-        );
-      }
-
-      await setActive({ session: sessionId });
-
-      let token = await getToken();
-      for (let i = 0; i < 30 && !token; i++) {
-        await new Promise((r) => setTimeout(r, 200));
-        token = await getToken();
-      }
-      updateClerkToken(token);
-      setOauthProvider(null);
-      navigation.replace("ProfileSetup");
+      throw new Error("SSO flow did not produce a session");
     } catch (err) {
+      console.error("[SSO] error:", err);
       setOauthProvider(null);
       setError(getApiErrorMessage(err));
     }
-  }, [legacySignIn, legacySignUp, setActive, getToken, navigation]);
+  }, [getToken, navigation, startSSOFlow, form.username]);
 
   const handleRegister = async () => {
     if (!form.email || !form.password) {
@@ -135,7 +119,7 @@ function RegisterScreen({ navigation }: { navigation: any }) {
     setError("");
     setLoading(true);
     try {
-      const { error: createError } = await modernSignUp.create({
+      const { error: createError } = await signUp.create({
         emailAddress: form.email.trim(),
         password: form.password,
       });
@@ -154,10 +138,10 @@ function RegisterScreen({ navigation }: { navigation: any }) {
       }
 
       if (form.username.trim()) {
-        await modernSignUp.update({ username: form.username.trim() });
+        await signUp.update({ username: form.username.trim() });
       }
 
-      const { error: sendError } = await modernSignUp.verifications.sendEmailCode();
+      const { error: sendError } = await signUp.verifications.sendEmailCode();
       if (sendError) {
         setLoading(false);
         setError(sendError.message || "Failed to send verification code");
@@ -175,15 +159,15 @@ function RegisterScreen({ navigation }: { navigation: any }) {
   const handleVerify = async () => {
     setLoading(true);
     try {
-      const { error: verifyError } = await modernSignUp.verifications.verifyEmailCode({ code });
+      const { error: verifyError } = await signUp.verifications.verifyEmailCode({ code });
       if (verifyError) {
         setLoading(false);
         setError(verifyError.message || "Invalid verification code");
         return;
       }
 
-      if (modernSignUp.status === "complete") {
-        await modernSignUp.finalize();
+      if (signUp.status === "complete") {
+        await signUp.finalize();
         let token = await getToken();
         for (let i = 0; i < 30 && !token; i++) {
           await new Promise((r) => setTimeout(r, 200));

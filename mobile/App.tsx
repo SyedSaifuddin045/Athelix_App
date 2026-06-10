@@ -5,8 +5,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useSafeAreaInsets, SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import type { NavigationContainerRef } from "@react-navigation/native";
+import * as WebBrowser from "expo-web-browser";
 import { PostHogProvider } from "posthog-react-native";
 import { ClerkProvider } from "@clerk/expo";
+
+WebBrowser.maybeCompleteAuthSession();
 import { tokenCache } from "@clerk/expo/token-cache";
 
 import { queryClient } from "./src/api/queryClient";
