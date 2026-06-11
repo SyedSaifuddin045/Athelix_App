@@ -3,6 +3,8 @@ import { Pressable, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
+import type { MuscleGroupExerciseItemResponse } from "../api/model";
+import type { MuscleGroupBalanceItemResponse } from "../api/model";
 import { useAuth } from "@clerk/expo";
 import { useMuscleBalanceQuery } from "../api/queries";
 import { MUSCLE_PERIODS } from "../data";
@@ -12,8 +14,8 @@ import { styles } from "../theme/styles";
 import { Card, EmptyCard, ErrorCard, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
-import { SectionEyebrow, Tag, ProgressBar } from "../components/ui/Indicators";
-import { Icon } from "../components/ui/Icon";
+import { Tag } from "../components/ui/Indicators";
+import { muscleAccentColor } from "../utils/display";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "MuscleBalance">;
@@ -26,11 +28,109 @@ const STATUS_COLORS: Record<string, string> = {
   "Needs Attention": COLORS.red,
 };
 
-const STATUS_ICONS: Record<string, React.ReactNode> = {
-  Strong: <Icon name="check-circle" size={14} color={COLORS.green} />,
-  Balanced: <Icon name="equal" size={14} color={COLORS.blue} />,
-  "Needs Attention": <Icon name="alert-triangle" size={14} color={COLORS.red} />,
-};
+function VolumeBar({
+  current,
+  average,
+  color,
+}: {
+  current: number;
+  average: number;
+  color: string;
+}) {
+  const maxVal = Math.max(current, average, 1);
+  const fillPercent = (current / maxVal) * 100;
+  const refPercent = (average / maxVal) * 100;
+
+  return (
+    <View style={{ marginTop: SPACING.lg }}>
+      <View
+        style={{
+          height: 8,
+          borderRadius: 999,
+          backgroundColor: "rgba(255,255,255,0.08)",
+          position: "relative",
+          overflow: "visible",
+        }}
+      >
+        <View
+          style={{
+            height: "100%",
+            borderRadius: 999,
+            width: `${fillPercent}%`,
+            backgroundColor: color,
+          }}
+        />
+        {average > 0 ? (
+          <View
+            style={{
+              position: "absolute",
+              top: -2,
+              left: `${refPercent}%`,
+              width: 2,
+              height: 12,
+              borderRadius: 1,
+              backgroundColor: "rgba(255,255,255,0.25)",
+              marginLeft: -1,
+            }}
+          />
+        ) : null}
+      </View>
+      <Text style={[styles.detailLabel, { marginTop: SPACING.xs }]}>
+        {current} set{current !== 1 ? "s" : ""} this period · {average} avg
+      </Text>
+    </View>
+  );
+}
+
+function ExerciseRow({
+  exercise,
+  color,
+}: {
+  exercise: MuscleGroupExerciseItemResponse;
+  color: string;
+}) {
+  const maxVal = Math.max(exercise.completed_sets, exercise.average_weekly_sets, 1);
+  const fillPercent = (exercise.completed_sets / maxVal) * 100;
+
+  return (
+    <View style={[styles.rowGap, { paddingLeft: SPACING.xl }]}>
+      <View
+        style={{
+          width: 4,
+          height: 4,
+          borderRadius: 2,
+          backgroundColor: color,
+        }}
+      />
+      <Text style={[styles.listMeta, { flex: 1 }]} numberOfLines={1}>
+        {exercise.exercise_name}
+      </Text>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm }}>
+        <View
+          style={{
+            width: 32,
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: "rgba(255,255,255,0.08)",
+            overflow: "hidden",
+          }}
+        >
+          <View
+            style={{
+              height: "100%",
+              borderRadius: 2,
+              width: `${fillPercent}%`,
+              backgroundColor: color,
+            }}
+          />
+        </View>
+        <Text style={styles.smallStrongText}>
+          {exercise.completed_sets} · {exercise.average_weekly_sets}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export function MuscleBalanceScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
@@ -40,13 +140,23 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
   const mesocycleId = route?.params?.mesocycleId ?? undefined;
   const report = useMuscleBalanceQuery({ weeks, mesocycle_id: mesocycleId }, isAuthenticated);
   const items = report.data?.items ?? [];
-  const strongItems = items.filter((item) => item.status === "Strong");
 
   return (
     <Screen>
       <BackHeader title="Muscle Balance" subtitle="Training volume distribution" onBack={() => navigation.goBack()} />
 
-      <View style={[styles.segmentedWrap, { flexDirection: "row", backgroundColor: COLORS.cardSoft, borderRadius: RADIUS.input, padding: SPACING.xs, marginTop: SPACING.xl3 }]}>
+      <View
+        style={[
+          styles.segmentedWrap,
+          {
+            flexDirection: "row",
+            backgroundColor: COLORS.cardSoft,
+            borderRadius: RADIUS.input,
+            padding: SPACING.xs,
+            marginTop: SPACING.xl3,
+          },
+        ]}
+      >
         {MUSCLE_PERIODS.map((p) => (
           <Pressable
             key={p}
@@ -60,12 +170,17 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
                 alignItems: "center",
                 justifyContent: "center",
                 borderWidth: 1,
-                borderColor: period === p ? "rgba(139,92,246,0.35)" : "transparent",
-                backgroundColor: period === p ? "rgba(139,92,246,0.25)" : "transparent",
+                borderColor: period === p ? COLORS.borderLight : "transparent",
+                backgroundColor: period === p ? COLORS.card : "transparent",
               },
             ]}
           >
-            <Text style={[styles.segmentedText, period === p ? { color: COLORS.purple } : { color: COLORS.muted }]}>
+            <Text
+              style={[
+                styles.segmentedText,
+                period === p ? { color: COLORS.text } : { color: COLORS.muted },
+              ]}
+            >
               {p}
             </Text>
           </Pressable>
@@ -76,33 +191,45 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
       {report.isError ? <ErrorCard error={report.error} onRetry={() => report.refetch()} /> : null}
 
       <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl }}>
-        {items.map((item) => {
+        {items.map((item: MuscleGroupBalanceItemResponse) => {
           const isExpanded = expanded === item.muscle_group;
+          const accent = muscleAccentColor(item.muscle_group) ?? "rgba(255,255,255,0.2)";
           return (
-            <Card key={item.muscle_group} elevated>
+            <Card key={item.muscle_group} elevated accentColor={accent}>
               <Pressable onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
                 <View style={styles.rowBetween}>
                   <View style={[styles.rowGap, { flex: 1 }]}>
-                    {STATUS_ICONS[item.status]}
-                    <Text style={[styles.cardTitle, { flex: 1 }]}>{item.muscle_group}</Text>
+                    <View
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        backgroundColor: accent,
+                      }}
+                    />
+                    <Text style={[styles.cardTitle, { flex: 1 }]} numberOfLines={1}>
+                      {item.muscle_group}
+                    </Text>
                   </View>
-                  <View style={{ alignItems: "flex-end", gap: SPACING.xxs }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.md }}>
+                    <Text style={[styles.cardTitle, { color: COLORS.text }]}>
+                      {item.score}%
+                    </Text>
                     <Tag label={item.status} color={STATUS_COLORS[item.status] ?? COLORS.muted} />
-                    <Text style={styles.listMeta}>{item.percentage}%</Text>
                   </View>
                 </View>
-                <View style={{ marginTop: SPACING.xl }}>
-                  <ProgressBar value={item.percentage} color={STATUS_COLORS[item.status] ?? COLORS.purple} />
-                </View>
+
+                <VolumeBar
+                  current={item.weekly_sets}
+                  average={item.average_weekly_sets}
+                  color={accent}
+                />
               </Pressable>
-              {isExpanded && item.exercises?.length ? (
-                <View style={{ marginTop: SPACING.xl2, gap: SPACING.md }}>
-                  {item.exercises.map((ex: any) => (
-                    <View key={ex.name} style={[styles.rowGap, { paddingLeft: SPACING.xl }]}>
-                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.faint }} />
-                      <Text style={[styles.listMeta, { flex: 1 }]}>{ex.name}</Text>
-                      <Text style={styles.smallStrongText}>{ex.percentage}%</Text>
-                    </View>
+
+              {isExpanded && item.exercises.length > 0 ? (
+                <View style={{ marginTop: SPACING.xl2, gap: SPACING.md, paddingTop: SPACING.md, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" }}>
+                  {item.exercises.map((ex: MuscleGroupExerciseItemResponse) => (
+                    <ExerciseRow key={ex.exercise_name} exercise={ex} color={accent} />
                   ))}
                 </View>
               ) : null}
