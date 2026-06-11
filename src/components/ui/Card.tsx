@@ -6,21 +6,21 @@ import { RADIUS, SPACING, SHADOWS } from "../../theme/spacing";
 import { styles } from "../../theme/styles";
 import { Icon } from "./Icon";
 
-const ACCENT_BORDER: Record<string, string> = {
+const ACCENT_BORDER = {
   green: COLORS.greenDark,
   purple: COLORS.purpleDark,
   blue: COLORS.blueDark,
   red: COLORS.redDark,
   coral: "rgba(255,90,54,0.15)",
   gold: "rgba(251,191,36,0.12)",
-};
+} satisfies Record<string, string>;
 
-const ACCENT_BG: Record<string, string> = {
+const ACCENT_BG = {
   green: COLORS.greenDark,
   purple: COLORS.purpleDark,
   blue: COLORS.blueDark,
   red: COLORS.redDark,
-};
+} satisfies Record<string, string>;
 
 export function Card({
   children,
