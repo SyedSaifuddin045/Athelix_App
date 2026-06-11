@@ -38,7 +38,7 @@ function RegisterScreen({ navigation }: { navigation: any }) {
     setOauthProvider(strategy);
 
     try {
-      const { createdSessionId, setActive, signUp, authSessionResult } = await startSSOFlow({
+      const { createdSessionId, setActive, signIn, signUp, authSessionResult } = await startSSOFlow({
         strategy,
         redirectUrl: CLERK_SSO_REDIRECT_URL,
       });
@@ -46,6 +46,8 @@ function RegisterScreen({ navigation }: { navigation: any }) {
       console.log("[SSO] result:", {
         createdSessionId,
         hasSetActive: !!setActive,
+        hasSignIn: !!signIn,
+        hasSignUp: !!signUp,
         authSessionType: authSessionResult?.type,
         signUpStatus: signUp?.status,
         signUpMissingFields: signUp?.missingFields,
@@ -62,7 +64,12 @@ function RegisterScreen({ navigation }: { navigation: any }) {
         }
         updateClerkToken(token);
         setOauthProvider(null);
-        navigation.replace("ProfileSetup");
+
+        if (signIn) {
+          navigation.replace("MainTabs");
+        } else {
+          navigation.replace("ProfileSetup");
+        }
         return;
       }
 
