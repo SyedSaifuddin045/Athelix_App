@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { Feather } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import { useAuth } from "@clerk/expo";
 import { useProfileQuery } from "../api/queries";
-import { upsertCurrentUserProfileUsersMeProfilePut } from "../api/endpoints/users/users";
+import { useSaveProfile } from "../api/mutations";
 import { GENDERS, FITNESS_LEVELS, GOALS, UNITS } from "../data";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
@@ -18,12 +19,14 @@ import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput, ChipWrap, SelectableRow } from "../components/ui/Input";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
 import { numberOrNull } from "../utils/validation";
-import { queryKeys } from "../api/queryKeys";
 import { Events } from "../analytics/events";
 
-export function ProfileSetupScreen({ navigation }: { navigation: any }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "ProfileSetup">;
+};
+
+export function ProfileSetupScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
-  const queryClient = useQueryClient();
   const posthog = usePostHog();
   const profileQuery = useProfileQuery(isAuthenticated);
   const [form, setForm] = useState({
@@ -73,20 +76,8 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
       })
     : "Tap to select";
 
-  const saveProfile = useMutation({
-    mutationFn: async () =>
-      upsertCurrentUserProfileUsersMeProfilePut({
-        display_name: form.displayName || null,
-        date_of_birth: form.dob || null,
-        gender: form.gender || null,
-        height_cm: numberOrNull(form.height),
-        weight_kg: numberOrNull(form.weight),
-        fitness_level: form.fitnessLevel || null,
-        preferred_unit: form.unit,
-      }),
+  const saveProfile = useSaveProfile({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.profile });
-      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       posthog.capture(Events.PROFILE_SETUP_COMPLETED, {
         fitness_level: form.fitnessLevel || null,
         goal: form.goal || null,
@@ -110,7 +101,20 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
         subtitle="Tell us about yourself"
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.saveChip} onPress={() => saveProfile.mutate()} disabled={saveProfile.isPending}>
+          <Pressable
+            style={styles.saveChip}
+            onPress={() =>
+              saveProfile.mutate({
+                display_name: form.displayName || null,
+                date_of_birth: form.dob || null,
+                gender: form.gender || null,
+                height_cm: numberOrNull(form.height),
+                weight_kg: numberOrNull(form.weight),
+                fitness_level: form.fitnessLevel || null,
+                preferred_unit: form.unit,
+              })
+            }
+            disabled={saveProfile.isPending}>
             <Feather name="check" size={13} color="#000000" />
             <Text style={styles.saveChipText}>{saveProfile.isPending ? "Saving" : "Save"}</Text>
           </Pressable>
@@ -217,7 +221,17 @@ export function ProfileSetupScreen({ navigation }: { navigation: any }) {
 
         <PrimaryButton
           label={saveProfile.isPending ? "Saving Profile..." : "Save Profile"}
-          onPress={() => saveProfile.mutate()}
+          onPress={() =>
+            saveProfile.mutate({
+              display_name: form.displayName || null,
+              date_of_birth: form.dob || null,
+              gender: form.gender || null,
+              height_cm: numberOrNull(form.height),
+              weight_kg: numberOrNull(form.weight),
+              fitness_level: form.fitnessLevel || null,
+              preferred_unit: form.unit,
+            })
+          }
           disabled={saveProfile.isPending}
           style={{ marginTop: 6 }}
         />

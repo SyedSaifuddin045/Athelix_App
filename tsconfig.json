@@ -3,5 +3,5 @@
   "compilerOptions": {
     "strict": true
   },
-  "exclude": ["e2e", "src/__tests__"]
+  "exclude": ["e2e"]
 }

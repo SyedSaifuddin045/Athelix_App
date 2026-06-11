@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/expo";
+import { useTemplatesQuery, useMesocyclesQuery } from "../api/queries";
+import { useStartSession } from "../api/mutations";
 
 import { usePostHog } from "posthog-react-native";
 
-import { useAuth } from "@clerk/expo";
-import { useTemplatesQuery, useMesocyclesQuery } from "../api/queries";
-import { createWorkoutSessionWorkoutSessionsPost } from "../api/endpoints/workout-sessions/workout-sessions";
 import { getApiErrorMessage } from "../api/client";
-import { queryKeys } from "../api/queryKeys";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
 import { Card, LoadingCard } from "../components/ui/Card";
@@ -19,51 +20,42 @@ import { SectionEyebrow } from "../components/ui/Indicators";
 import { MetaInline } from "../components/ui/Stats";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { toNumberId } from "../utils/helpers";
-import { successData } from "../utils/mapping";
 import { formatShortDate } from "../utils/format";
 import { Events } from "../analytics/events";
 
-export function StartWorkoutScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "StartWorkout">;
+  route: RouteProp<RootStackParamList, "StartWorkout">;
+};
+
+export function StartWorkoutScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
-  const queryClient = useQueryClient();
   const posthog = usePostHog();
   const id = route?.params?.id;
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(id ?? null);
   const [selectedMeso, setSelectedMeso] = useState<string | null>(null);
   const templates = useTemplatesQuery(isAuthenticated);
   const mesocycles = useMesocyclesQuery(isAuthenticated);
-  const startSession = useMutation({
-    mutationFn: async ({ templateId }: { templateId?: string | null }) => {
-      const template = templates.data?.find((item) => String(item.id) === templateId);
-      const response = await createWorkoutSessionWorkoutSessionsPost({
-        template_id: toNumberId(templateId),
-        mesocycle_id: toNumberId(selectedMeso),
-        name: template?.name ?? "Workout",
-        started_at: new Date().toISOString(),
-        is_completed: false,
-      });
-      return successData(response);
-    },
-    onSuccess: (session, variables) => {
-      const template = templates.data?.find((item) => String(item.id) === variables.templateId);
-      const hasTemplate = !!variables.templateId;
+  const startSession = useStartSession({
+    onSuccess: (session) => {
+      const template = selectedTemplate ? templates.data?.find((item) => String(item.id) === selectedTemplate) : undefined;
+      const hasTemplate = !!selectedTemplate;
       posthog.capture(Events.WORKOUT_STARTED, {
         source: hasTemplate ? "template" : "empty",
         has_mesocycle: !!selectedMeso,
         ...(hasTemplate && template
-          ? { template_id: variables.templateId, template_name: template.name }
+          ? { template_id: selectedTemplate, template_name: template.name }
           : {}),
       });
-      if (hasTemplate && template && variables.templateId) {
+      if (hasTemplate && template && selectedTemplate) {
         posthog.capture(Events.TEMPLATE_USED, {
-          template_id: variables.templateId,
+          template_id: selectedTemplate,
           template_name: template.name,
         });
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
       navigation.replace("ActiveWorkout", {
         sessionId: session.id,
-        templateId: variables.templateId ?? undefined,
+        templateId: selectedTemplate ?? undefined,
         mesocycleId: selectedMeso,
       });
     },
@@ -73,7 +65,18 @@ export function StartWorkoutScreen({ navigation, route }: { navigation: any; rou
     <Screen>
       <BackHeader title="Start Workout" subtitle="Choose how to begin" onBack={() => navigation.goBack()} />
 
-      <Pressable onPress={() => startSession.mutate({ templateId: null })} style={{ marginTop: 18 }} disabled={startSession.isPending}>
+      <Pressable
+        onPress={() =>
+          startSession.mutate({
+            template_id: null,
+            mesocycle_id: toNumberId(selectedMeso),
+            name: "Workout",
+            started_at: new Date().toISOString(),
+            is_completed: false,
+          })
+        }
+        style={{ marginTop: 18 }}
+        disabled={startSession.isPending}>
         <Card style={{ borderColor: "rgba(255,90,54,0.3)", backgroundColor: "rgba(255,90,54,0.12)" }}>
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
@@ -147,7 +150,16 @@ export function StartWorkoutScreen({ navigation, route }: { navigation: any; rou
             ? `Start with ${templates.data?.find((item) => String(item.id) === selectedTemplate)?.name ?? "template"}`
             : "Start Workout"
         }
-        onPress={() => startSession.mutate({ templateId: selectedTemplate })}
+        onPress={() => {
+          const template = templates.data?.find((item) => String(item.id) === selectedTemplate);
+          startSession.mutate({
+            template_id: toNumberId(selectedTemplate),
+            mesocycle_id: toNumberId(selectedMeso),
+            name: template?.name ?? "Workout",
+            started_at: new Date().toISOString(),
+            is_completed: false,
+          });
+        }}
         disabled={startSession.isPending}
         icon={startSession.isPending ? <ActivityIndicator color="#000000" /> : <Feather name="play" size={18} color="#000000" />}
         style={{ marginTop: 22 }}

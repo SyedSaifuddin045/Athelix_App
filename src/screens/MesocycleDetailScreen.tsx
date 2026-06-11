@@ -1,11 +1,12 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 
 import { useAuth } from "@clerk/expo";
 import { useMesocycleDetailQuery, useMesocycleAnalyticsQuery } from "../api/queries";
-import { deleteMesocycleMesocyclesMesocycleIdDelete } from "../api/endpoints/mesocycles/mesocycles";
-import { queryKeys } from "../api/queryKeys";
+import { useDeleteMesocycle } from "../api/mutations";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
@@ -18,22 +19,18 @@ import { workoutTitle } from "../utils/display";
 import { formatShortDate, formatVolume } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
 
-export function MesocycleDetailScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "MesocycleDetail">;
+  route: RouteProp<RootStackParamList, "MesocycleDetail">;
+};
+
+export function MesocycleDetailScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
-  const queryClient = useQueryClient();
   const mesocycleId = toNumberId(route?.params?.id);
   const detail = useMesocycleDetailQuery(mesocycleId, isAuthenticated);
   const analytics = useMesocycleAnalyticsQuery(mesocycleId, undefined, isAuthenticated);
-  const deleteMeso = useMutation({
-    mutationFn: async () => {
-      if (!mesocycleId) return;
-      await deleteMesocycleMesocyclesMesocycleIdDelete(mesocycleId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.mesocycles });
-      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
-      navigation.replace("MesocycleList");
-    },
+  const deleteMeso = useDeleteMesocycle({
+    onSuccess: () => navigation.replace("MesocycleList"),
   });
 
   if (detail.isPending) {
@@ -67,7 +64,7 @@ export function MesocycleDetailScreen({ navigation, route }: { navigation: any; 
         title="Mesocycle"
         onBack={() => navigation.goBack()}
         right={
-          <RoundButton onPress={() => deleteMeso.mutate()}>
+          <RoundButton onPress={() => mesocycleId && deleteMeso.mutate(mesocycleId)}>
             <Feather name="trash-2" size={15} color={COLORS.red} />
           </RoundButton>
         }
@@ -112,7 +109,7 @@ export function MesocycleDetailScreen({ navigation, route }: { navigation: any; 
           <AnalyticsCard label="Total Sets" value={String(summary?.total_sets ?? 0)} sub="current block" color={COLORS.green} />
           <AnalyticsCard label="Avg Session RPE" value={summary?.average_session_rpe?.toFixed(1) ?? "-"} sub="current block" color={COLORS.green} />
         </View>
-        <Pressable onPress={() => navigation.navigate("MuscleBalance", { mesocycleId })} style={styles.analyticsLink}>
+        <Pressable onPress={() => navigation.navigate({ name: "MuscleBalance", params: { mesocycleId: mesocycleId ?? undefined } })} style={styles.analyticsLink}>
           <View style={styles.rowGap}>
             <Feather name="bar-chart-2" size={14} color={COLORS.purple} />
             <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>Muscle Balance Analysis</Text>

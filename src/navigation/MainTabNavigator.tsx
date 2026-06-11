@@ -5,9 +5,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { TabParamList } from "../types/navigation";
 import { COLORS } from "../theme/colors";
 
-import HomeScreen from "../screens/HomeScreen";
-import ExploreScreen from "../screens/ExploreScreen";
-import TrainHubScreen from "../screens/TrainHubScreen";
+import { HomeScreen } from "../screens/HomeScreen";
+import { ExploreScreen } from "../screens/ExploreScreen";
+import { TrainHubScreen } from "../screens/TrainHubScreen";
 import { ProgressHubScreen } from "../screens/ProgressHubScreen";
 import { ProfileScreen } from "../screens/ProfileScreen";
 

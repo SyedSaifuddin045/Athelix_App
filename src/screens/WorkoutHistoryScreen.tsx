@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 
 import { useAuth } from "@clerk/expo";
 import { useSessionsQuery } from "../api/queries";
@@ -15,7 +17,9 @@ import { CompactStatCard, MetaInline } from "../components/ui/Stats";
 import { workoutTitle } from "../utils/display";
 import { formatDateLabel, formatShortDate, formatTimeLabel } from "../utils/format";
 
-export function WorkoutHistoryScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "WorkoutHistory"> };
+
+export function WorkoutHistoryScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const sessions = useSessionsQuery(isAuthenticated);
   const totalVolume = (sessions.data ?? []).reduce((sum, session) => sum + (session.total_volume ?? 0), 0);

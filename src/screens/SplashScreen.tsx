@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 import { useAuth } from "@clerk/expo";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { useAppConfigQuery } from "../api/queries";
 import { getApiErrorMessage } from "../api/client";
 import { COLORS } from "../theme/colors";
@@ -8,7 +10,9 @@ import { styles } from "../theme/styles";
 import { Screen } from "../components/ui/Layout";
 import { ProgressBar } from "../components/ui/Indicators";
 
-function SplashScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Splash"> };
+
+export function SplashScreen({ navigation }: Props) {
   const { isLoaded, isSignedIn = false } = useAuth();
   const appConfig = useAppConfigQuery();
   const progress = appConfig.isPending || !isLoaded ? 65 : 100;
@@ -48,5 +52,3 @@ function SplashScreen({ navigation }: { navigation: any }) {
     </Screen>
   );
 }
-
-export default SplashScreen;

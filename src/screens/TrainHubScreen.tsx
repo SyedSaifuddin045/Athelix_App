@@ -1,6 +1,8 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { useOverviewQuery } from "../api/queries";
 import { TRAIN_SECTIONS } from "../data";
 import { COLORS } from "../theme/colors";
@@ -11,7 +13,9 @@ import { Card } from "../components/ui/Card";
 import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { CompactStatCard } from "../components/ui/Stats";
 
-function TrainHubScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
+
+export function TrainHubScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const overview = useOverviewQuery(isAuthenticated);
   return (
@@ -21,7 +25,7 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
         <Text style={styles.tabTitle}>Workouts</Text>
       </View>
 
-      <Pressable onPress={() => navigation.navigate("StartWorkout")} style={{ marginTop: 18 }}>
+      <Pressable onPress={() => navigation.navigate({ name: "StartWorkout", params: {} })} style={{ marginTop: 18 }}>
         <View style={[styles.trainHero, shadow(COLORS.teal)]}>
           <View style={styles.trainHeroIcon}>
             <Feather name="play" size={24} color="#ffffff" />
@@ -51,9 +55,9 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
             <Pressable
               key={section.title}
               onPress={() => {
-                if (section.title === "Templates") navigation.navigate("TemplateList");
-                else if (section.title === "Workout History") navigation.navigate("WorkoutHistory");
-                else if (section.title === "Mesocycles") navigation.navigate("MesocycleList");
+                if (section.title === "Templates") navigation.navigate({ name: "TemplateList", params: undefined });
+                else if (section.title === "Workout History") navigation.navigate({ name: "WorkoutHistory", params: undefined });
+                else if (section.title === "Mesocycles") navigation.navigate({ name: "MesocycleList", params: undefined });
               }}
             >
               <Card style={{ borderColor: "advanced" in section && section.advanced ? "rgba(139,92,246,0.2)" : COLORS.border }}>
@@ -84,5 +88,3 @@ function TrainHubScreen({ navigation }: { navigation: any }) {
     </Screen>
   );
 }
-
-export default TrainHubScreen;

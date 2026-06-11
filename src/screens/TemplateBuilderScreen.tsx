@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, LayoutAnimation, Modal, Pressable, Text, TextInput, View } from "react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { PanGestureHandler, State } from "react-native-gesture-handler";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,7 +38,12 @@ import { Events } from "../analytics/events";
 const MINUTES = [0, 1, 2, 3, 4, 5];
 const SECONDS = [0, 10, 15, 20, 30, 45];
 
-export function TemplateBuilderScreen({ navigation, route }: { navigation: any; route: { params?: { id?: string } } }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "TemplateBuilder">;
+  route: RouteProp<RootStackParamList, "TemplateBuilder">;
+};
+
+export function TemplateBuilderScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();

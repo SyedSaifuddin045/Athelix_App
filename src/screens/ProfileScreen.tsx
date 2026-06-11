@@ -1,6 +1,8 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { useOverviewQuery } from "../api/queries";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
@@ -10,9 +12,10 @@ import { RoundButton } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { formatKg, formatShortDate } from "../utils/format";
 import { displayName, initialsFor } from "../utils/display";
-import type { RootStackParamList } from "../types/navigation";
 
-export function ProfileScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
+
+export function ProfileScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false, signOut } = useAuth();
   const overview = useOverviewQuery(isAuthenticated);
   const user = overview.data?.user;
@@ -117,9 +120,9 @@ export function ProfileScreen({ navigation }: { navigation: any }) {
                     style={styles.settingsRow}
                     onPress={() => {
                       if ("id" in item && item.id) {
-                        navigation.navigate(item.route, { id: item.id });
+                        (navigation.navigate as any)(item.route, { id: item.id });
                       } else {
-                        navigation.navigate(item.route);
+                        (navigation.navigate as any)(item.route);
                       }
                     }}
                   >

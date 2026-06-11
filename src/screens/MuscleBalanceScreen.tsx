@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
 import { useMuscleBalanceQuery } from "../api/queries";
 import { MUSCLE_PERIODS } from "../data";
@@ -11,7 +14,12 @@ import { Screen } from "../components/ui/Layout";
 import { BackHeader, RoundButton } from "../components/ui/Button";
 import { SectionEyebrow, Tag, ProgressBar } from "../components/ui/Indicators";
 
-export function MuscleBalanceScreen({ navigation, route }: { navigation: any; route?: { params?: { mesocycleId?: number | null } } }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "MuscleBalance">;
+  route: RouteProp<RootStackParamList, "MuscleBalance">;
+};
+
+export function MuscleBalanceScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const [period, setPeriod] = useState("1W");
   const [expanded, setExpanded] = useState<string | null>(null);

@@ -13,27 +13,10 @@ import {
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 
+import { COLORS } from "../theme/colors";
 import { useExerciseFiltersQuery, useExercisesQuery } from "../api/queries";
 import type { ExerciseResponse } from "../api/model";
 import { getApiErrorMessage } from "../api/client";
-
-const COLORS = {
-  root: "#111111",
-  screen: "#111111",
-  text: "#ffffff",
-  muted: "rgba(255,255,255,0.42)",
-  faint: "rgba(255,255,255,0.28)",
-  border: "rgba(255,255,255,0.08)",
-  card: "rgba(255,255,255,0.04)",
-  cardSoft: "rgba(255,255,255,0.06)",
-  teal: "#FF5A36",
-  green: "#22c55e",
-  gold: "#fbbf24",
-  orange: "#f59e0b",
-  red: "#f87171",
-  purple: "#8b5cf6",
-  blue: "#3b82f6",
-};
 
 function exerciseEmoji(exercise?: Pick<ExerciseResponse, "body_part" | "target"> | null) {
   const key = `${exercise?.target ?? ""} ${exercise?.body_part ?? ""}`.toLowerCase();

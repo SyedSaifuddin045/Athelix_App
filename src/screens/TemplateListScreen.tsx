@@ -1,10 +1,10 @@
 import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
 import { useTemplatesQuery } from "../api/queries";
-import { queryKeys } from "../api/queryKeys";
-import { deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete } from "../api/endpoints/workout-templates/workout-templates";
+import { useDeleteTemplate } from "../api/mutations";
 import type { WorkoutTemplateResponse } from "../api/model";
 import { formatShortDate } from "../utils/format";
 import { COLORS } from "../theme/colors";
@@ -15,17 +15,14 @@ import { BackHeader, RoundButton } from "../components/ui/Button";
 import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { MetaInline } from "../components/ui/Stats";
 
-function TemplateListScreen({ navigation }: { navigation: any }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "TemplateList">;
+};
+
+export function TemplateListScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
-  const queryClient = useQueryClient();
   const templates = useTemplatesQuery(isAuthenticated);
-  const deleteTemplate = useMutation({
-    mutationFn: async (templateId: number) => deleteWorkoutTemplateWorkoutTemplatesTemplateIdDelete(templateId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.templates });
-      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
-    },
-  });
+  const deleteTemplate = useDeleteTemplate();
 
   const handleDelete = (template: WorkoutTemplateResponse) => {
     Alert.alert("Delete template?", template.name, [
@@ -41,7 +38,7 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
         subtitle={`${templates.data?.length ?? 0} saved`}
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.smallAccentButton} onPress={() => navigation.navigate("TemplateBuilder")}>
+          <Pressable style={styles.smallAccentButton} onPress={() => navigation.navigate({ name: "TemplateBuilder", params: {} })}>
             <Feather name="plus" size={15} color={COLORS.teal} />
             <Text style={styles.smallAccentText}>New</Text>
           </Pressable>
@@ -91,7 +88,7 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
           <EmptyCard title="No templates yet" text="Create your first reusable workout plan." />
         ) : null}
 
-        <Pressable onPress={() => navigation.navigate("TemplateBuilder")}>
+        <Pressable onPress={() => navigation.navigate({ name: "TemplateBuilder", params: {} })}>
           <View style={styles.dashedAddCard}>
             <View style={styles.addCircle}>
               <Feather name="plus" size={18} color="rgba(255,255,255,0.45)" />
@@ -104,4 +101,4 @@ function TemplateListScreen({ navigation }: { navigation: any }) {
   );
 }
 
-export default TemplateListScreen;
+

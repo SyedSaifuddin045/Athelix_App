@@ -2,6 +2,10 @@ import { useEffect } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
+import type { CompositeNavigationProp } from "@react-navigation/native";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList, TabParamList } from "../types/navigation";
 import { useOverviewQuery } from "../api/queries";
 import { displayName, initialsFor, exerciseEmoji, workoutTitle } from "../utils/display";
 import { formatShortDate, formatTimeLabel, formatVolume } from "../utils/format";
@@ -14,7 +18,14 @@ import { PrimaryButton, RoundButton } from "../components/ui/Button";
 import { StatPill, DividerVertical, MetricBlock } from "../components/ui/Stats";
 import { VerticalBars } from "../components/ui/Charts";
 
-function HomeScreen({ navigation }: { navigation: any }) {
+type Props = {
+  navigation: CompositeNavigationProp<
+    BottomTabNavigationProp<TabParamList, "Home">,
+    NativeStackNavigationProp<RootStackParamList>
+  >;
+};
+
+export function HomeScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const overview = useOverviewQuery(isAuthenticated);
   const data = overview.data;
@@ -211,12 +222,10 @@ function HomeScreen({ navigation }: { navigation: any }) {
 
       <PrimaryButton
         label="Start Workout"
-        onPress={() => navigation.navigate("StartWorkout")}
+        onPress={() => navigation.navigate({ name: "StartWorkout", params: {} })}
         icon={<Feather name="plus" size={20} color="#000000" />}
         style={{ marginTop: 20 }}
       />
     </Screen>
   );
 }
-
-export default HomeScreen;

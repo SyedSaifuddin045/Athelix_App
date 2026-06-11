@@ -1,5 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 
 import { useAuth } from "@clerk/expo";
 import { useOverviewQuery } from "../api/queries";
@@ -14,7 +16,9 @@ import { PROGRESS_SECTIONS } from "../data";
 import { recordValue } from "../utils/mapping";
 import { formatShortDate } from "../utils/format";
 
-export function ProgressHubScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
+
+export function ProgressHubScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const overview = useOverviewQuery(isAuthenticated);
   const latestPr = overview.data?.recent_personal_records[0];
@@ -44,9 +48,9 @@ export function ProgressHubScreen({ navigation }: { navigation: any }) {
             <Pressable
               key={section.title}
               onPress={() => {
-                if (section.path === "personalRecords") navigation.navigate("PersonalRecords");
-                else if (section.path === "exerciseProgress") navigation.navigate("ExerciseProgress");
-                else if (section.path === "muscleBalance") navigation.navigate("MuscleBalance");
+                if (section.path === "personalRecords") navigation.navigate({ name: "PersonalRecords", params: undefined });
+                else if (section.path === "exerciseProgress") navigation.navigate({ name: "ExerciseProgress", params: {} });
+                else if (section.path === "muscleBalance") navigation.navigate({ name: "MuscleBalance", params: undefined });
               }}
             >
               <Card style={{ borderColor: `${section.color}22`, borderRadius: 28 }}>

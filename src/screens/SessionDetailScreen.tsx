@@ -2,6 +2,9 @@ import { useMemo, useState } from "react";
 import { Alert, Modal, Pressable, Text, TextInput, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 
 import { useAuth } from "@clerk/expo";
 import { useSessionDetailQuery, useExercisesQuery } from "../api/queries";
@@ -21,7 +24,12 @@ import { workoutTitle } from "../utils/display";
 import { formatDateLabel, formatVolume, formatKg } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
 
-export function SessionDetailScreen({ navigation, route }: { navigation: any; route?: { params?: { id?: string } } }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "SessionDetail">;
+  route: RouteProp<RootStackParamList, "SessionDetail">;
+};
+
+export function SessionDetailScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const sessionId = toNumberId(route?.params?.id);

@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Alert, Pressable, Switch, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 
 import { useAuth } from "@clerk/expo";
 import { useCurrentUserQuery } from "../api/queries";
-import { updateCurrentUserUsersMePatch } from "../api/endpoints/users/users";
+import { useSaveAccount } from "../api/mutations";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
 import { Card, LoadingCard } from "../components/ui/Card";
@@ -15,13 +16,13 @@ import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput } from "../components/ui/Input";
 import { getApiErrorMessage } from "../api/client";
-import { queryKeys } from "../api/queryKeys";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
 
-export function SettingsScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Settings"> };
+
+export function SettingsScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
-  const queryClient = useQueryClient();
   const posthog = usePostHog();
   const currentUser = useCurrentUserQuery(isAuthenticated);
   const [form, setForm] = useState({
@@ -45,15 +46,8 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
     setForm((current) => ({ ...current, username: currentUser.data.username, email: currentUser.data.email }));
   }, [currentUser.data]);
 
-  const saveAccount = useMutation({
-    mutationFn: async () =>
-      updateCurrentUserUsersMePatch({
-        username: form.username.trim() || null,
-        email: form.email.trim() || null,
-      }),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.currentUser });
-      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+  const saveAccount = useSaveAccount({
+    onSuccess: () => {
       posthog.capture(Events.ACCOUNT_SETTINGS_UPDATED, {
         changed_username: currentUser.data?.username !== form.username.trim(),
         changed_email: currentUser.data?.email !== form.email.trim(),
@@ -66,7 +60,10 @@ export function SettingsScreen({ navigation }: { navigation: any }) {
 
   const handleSave = () => {
     setError("");
-    saveAccount.mutate();
+    saveAccount.mutate({
+      username: form.username.trim() || null,
+      email: form.email.trim() || null,
+    });
   };
 
   return (

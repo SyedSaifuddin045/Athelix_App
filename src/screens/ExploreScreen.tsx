@@ -1,10 +1,14 @@
 import { View } from "react-native";
 import { useAuth } from "@clerk/expo";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { ExercisePicker } from "../components/ExercisePicker";
 import { styles } from "../theme/styles";
 import { Screen } from "../components/ui/Layout";
 
-function ExploreScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
+
+export function ExploreScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   return (
     <Screen scroll={false} contentContainerStyle={styles.scrollContent}>
@@ -17,5 +21,3 @@ function ExploreScreen({ navigation }: { navigation: any }) {
     </Screen>
   );
 }
-
-export default ExploreScreen;

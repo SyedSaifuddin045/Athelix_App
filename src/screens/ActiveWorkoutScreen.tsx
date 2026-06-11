@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 import { Feather } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { usePostHog } from "posthog-react-native";
 
@@ -32,13 +35,12 @@ import { numberOrNull, rpeError } from "../utils/validation";
 import { toNumberId } from "../utils/helpers";
 import { Events } from "../analytics/events";
 
-export function ActiveWorkoutScreen({
-  navigation,
-  route,
-}: {
-  navigation: any;
-  route?: { params?: { sessionId?: number; templateId?: string; mesocycleId?: string | null } };
-}) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "ActiveWorkout">;
+  route: RouteProp<RootStackParamList, "ActiveWorkout">;
+};
+
+export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();

@@ -1,3 +1,14 @@
+/**
+ * Monolithic stylesheet — legacy.
+ *
+ * New styles should go in sub-modules:
+ *   layoutStyles.ts   — screen, flex, row, layout patterns
+ *   formStyles.ts     — inputs, buttons, form controls
+ *   componentStyles.ts — cards, tags, progress bars, modals
+ *
+ * Only add to this file when migrating existing styles out.
+ */
+
 import { StyleSheet } from "react-native";
 
 import { COLORS } from "./colors";

@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { ActivityIndicator, Modal, Pressable, Text, TextInput, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 
 import { useAuth } from "@clerk/expo";
 import { useMesocyclesQuery } from "../api/queries";
-import { createMesocycleMesocyclesPost } from "../api/endpoints/mesocycles/mesocycles";
+import { useCreateMesocycle } from "../api/mutations";
 import { getApiErrorMessage } from "../api/client";
-import { queryKeys } from "../api/queryKeys";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
 import { Card, LoadingCard, ErrorCard, EmptyCard } from "../components/ui/Card";
@@ -17,30 +17,22 @@ import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { successData } from "../utils/mapping";
 import { MESOCYCLE_GOALS } from "../data";
 
-export function MesocycleListScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MesocycleList"> };
+
+export function MesocycleListScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
-  const queryClient = useQueryClient();
   const mesocycles = useMesocyclesQuery(isAuthenticated);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newMesoName, setNewMesoName] = useState("");
   const [newMesoGoal, setNewMesoGoal] = useState<string | null>(null);
   const [newMesoWeeks, setNewMesoWeeks] = useState("6");
-  const createMeso = useMutation({
-    mutationFn: async () =>
-      createMesocycleMesocyclesPost({
-        name: newMesoName || "New Mesocycle",
-        goal: newMesoGoal,
-        started_on: new Date().toISOString().slice(0, 10),
-        weeks: newMesoWeeks ? Number(newMesoWeeks) : null,
-      }),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.mesocycles });
-      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
+  const createMeso = useCreateMesocycle({
+    onSuccess: (data) => {
       setShowCreateModal(false);
       setNewMesoName("");
       setNewMesoGoal(null);
       setNewMesoWeeks("6");
-      navigation.navigate("MesocycleDetail", { id: String(successData(response).id) });
+      navigation.navigate("MesocycleDetail", { id: String(data.id) });
     },
   });
 
@@ -172,7 +164,14 @@ export function MesocycleListScreen({ navigation }: { navigation: any }) {
 
             <PrimaryButton
               label={createMeso.isPending ? "Creating..." : "Create"}
-              onPress={() => createMeso.mutate()}
+              onPress={() =>
+                createMeso.mutate({
+                  name: newMesoName || "New Mesocycle",
+                  goal: newMesoGoal,
+                  started_on: new Date().toISOString().slice(0, 10),
+                  weeks: newMesoWeeks ? Number(newMesoWeeks) : null,
+                })
+              }
               disabled={createMeso.isPending}
               icon={<Feather name="check" size={16} color="#000000" />}
               style={{ marginTop: 22 }}

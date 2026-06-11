@@ -1,13 +1,11 @@
 import { useMemo, useState } from "react";
 import { Modal, Pressable, Text, TextInput, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
 import { useBodyWeightLogsQuery } from "../api/queries";
-import {
-  createBodyWeightLogUsersMeBodyWeightLogsPost,
-  deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete,
-} from "../api/endpoints/users/users";
+import { useCreateBodyWeightLog, useDeleteBodyWeightLog } from "../api/mutations";
 import { COLORS } from "../theme/colors";
 import { styles } from "../theme/styles";
 import { Card, EmptyCard, ErrorCard, LoadingCard } from "../components/ui/Card";
@@ -17,11 +15,11 @@ import { SectionEyebrow, Tag } from "../components/ui/Indicators";
 import { TrendChart } from "../components/ui/Charts";
 import { formatDateLabel, formatKg, formatShortDate } from "../utils/format";
 import { getApiErrorMessage } from "../api/client";
-import { queryKeys } from "../api/queryKeys";
 
-export function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "BodyweightHistory"> };
+
+export function BodyweightHistoryScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
-  const queryClient = useQueryClient();
   const logs = useBodyWeightLogsQuery(isAuthenticated);
   const [showAdd, setShowAdd] = useState(false);
   const [newWeight, setNewWeight] = useState("");
@@ -39,33 +37,23 @@ export function BodyweightHistoryScreen({ navigation }: { navigation: any }) {
   const previous = entries[entries.length - 1]?.weight_kg ?? latest;
   const change = latest - previous;
 
-  const createLog = useMutation({
-    mutationFn: async () =>
-      createBodyWeightLogUsersMeBodyWeightLogsPost({
-        weight_kg: Number(newWeight),
-        logged_at: new Date().toISOString().split("T")[0],
-        notes: newNote || null,
-      }),
+  const createLog = useCreateBodyWeightLog({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.bodyWeightLogs });
-      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       setNewWeight("");
       setNewNote("");
       setShowAdd(false);
     },
   });
 
-  const deleteLog = useMutation({
-    mutationFn: async (logId: number) => deleteBodyWeightLogUsersMeBodyWeightLogsLogIdDelete(logId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.bodyWeightLogs });
-      queryClient.invalidateQueries({ queryKey: queryKeys.overview });
-    },
-  });
+  const deleteLog = useDeleteBodyWeightLog();
 
   const addEntry = () => {
     if (!newWeight) return;
-    createLog.mutate();
+    createLog.mutate({
+      weight_kg: Number(newWeight),
+      logged_at: new Date().toISOString().split("T")[0],
+      notes: newNote || null,
+    });
   };
 
   return (

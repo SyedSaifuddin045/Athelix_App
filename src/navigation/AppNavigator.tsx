@@ -1,16 +1,19 @@
 import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { useAuth } from "@clerk/expo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+import { COLORS } from "../theme/colors";
+
 import type { RootStackParamList } from "../types/navigation";
 
-import SplashScreen from "../screens/SplashScreen";
-import LoginScreen from "../screens/LoginScreen";
-import RegisterScreen from "../screens/RegisterScreen";
+import { SplashScreen } from "../screens/SplashScreen";
+import { LoginScreen } from "../screens/LoginScreen";
+import { RegisterScreen } from "../screens/RegisterScreen";
 import { ProfileSetupScreen } from "../screens/ProfileSetupScreen";
 import { MainTabNavigator } from "./MainTabNavigator";
-import ExerciseDetailScreen from "../screens/ExerciseDetailScreen";
-import TemplateListScreen from "../screens/TemplateListScreen";
+import { ExerciseDetailScreen } from "../screens/ExerciseDetailScreen";
+import { TemplateListScreen } from "../screens/TemplateListScreen";
 import { TemplateBuilderScreen } from "../screens/TemplateBuilderScreen";
 import { StartWorkoutScreen } from "../screens/StartWorkoutScreen";
 import { ActiveWorkoutScreen } from "../screens/ActiveWorkoutScreen";
@@ -56,7 +59,13 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval);
   }, [isSignedIn]);
 
-  if (!isLoaded) return null;
+  if (!isLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.root, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="small" color={COLORS.accent} />
+      </View>
+    );
+  }
   return <>{children}</>;
 }
 

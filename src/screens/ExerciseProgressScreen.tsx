@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
 import { useExerciseProgressQuery } from "../api/queries";
 import { EXERCISE_PROGRESS_PERIODS } from "../data";
@@ -15,7 +18,12 @@ import { SectionEyebrow } from "../components/ui/Indicators";
 import { ExercisePicker } from "../components/ExercisePicker";
 import { formatShortDate, formatVolume } from "../utils/format";
 
-export function ExerciseProgressScreen({ navigation, route }: { navigation: any; route: { params: { id?: string } } }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "ExerciseProgress">;
+  route: RouteProp<RootStackParamList, "ExerciseProgress">;
+};
+
+export function ExerciseProgressScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const routeId = route.params?.id;
   const [selectedId, setSelectedId] = useState<string | undefined>(routeId);

@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { useAppConfigQuery, useExercisesQuery, usePersonalRecordsQuery } from "../api/queries";
 import { RECORD_TYPES } from "../data";
 import type { ExerciseResponse, PersonalRecordResponse } from "../api/model";
@@ -18,7 +20,9 @@ function nameForExercise(id: string, lookup: Map<string, ExerciseResponse>) {
   return lookup.get(id)?.name ?? null;
 }
 
-export function PersonalRecordsScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "PersonalRecords"> };
+
+export function PersonalRecordsScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const [filter, setFilter] = useState("All");
   const [search, setSearch] = useState("");

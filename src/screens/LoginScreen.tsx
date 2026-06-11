@@ -2,6 +2,8 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth, useSignIn, useSSO } from "@clerk/expo";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
 import { CLERK_SSO_REDIRECT_URL } from "../auth/clerk";
 import { styles } from "../theme/styles";
@@ -14,7 +16,9 @@ const OAUTH_PROVIDERS = [
   { strategy: "oauth_apple" as const, label: "Apple", icon: "apple" as const, color: "#FFFFFF" },
 ] as const;
 
-function LoginScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Login"> };
+
+export function LoginScreen({ navigation }: Props) {
   const { signIn, fetchStatus } = useSignIn();
   const { isSignedIn = false, getToken } = useAuth();
   const { startSSOFlow } = useSSO();
@@ -192,5 +196,3 @@ function LoginScreen({ navigation }: { navigation: any }) {
     </Screen>
   );
 }
-
-export default LoginScreen;

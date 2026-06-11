@@ -155,7 +155,7 @@ describe("useAppConfigQuery", () => {
     const { result, rerender } = renderHook(() => useAppConfigQuery(), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(getAppConfigMetaAppConfigGet).toHaveBeenCalledTimes(1);
-    rerender();
+    rerender(undefined);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(getAppConfigMetaAppConfigGet).toHaveBeenCalledTimes(1);
   });
@@ -254,7 +254,7 @@ describe("useExercisesQuery", () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
     const wrapper = createWrapper({ queryClient: qc });
     const { result, rerender } = renderHook(
-      ({ params }) => useExercisesQuery(params, true),
+      (props: { params: { target?: string } }) => useExercisesQuery(props.params, true),
       { wrapper, initialProps: { params: { target: "Chest" } } },
     );
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -321,14 +321,14 @@ describe("useExerciseProgressQuery", () => {
       workout_streaks: { current_daily_streak: 5, longest_daily_streak: 10, current_weekly_streak: 2, longest_weekly_streak: 4 },
     };
     (getExerciseProgressProgressExerciseIdGet as jest.Mock).mockResolvedValue({ data: mockProgress, status: 200, headers: mockHeaders });
-    const { result } = renderHook(() => useExerciseProgressQuery("ex1", { days: 90 }, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useExerciseProgressQuery("ex1", { formula: "epley" }, true), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.exercise_name).toBe("Bench Press");
-    expect(getExerciseProgressProgressExerciseIdGet).toHaveBeenCalledWith("ex1", { days: 90 });
+    expect(getExerciseProgressProgressExerciseIdGet).toHaveBeenCalledWith("ex1", { formula: "epley" });
   });
 
   it("does not fetch without exercise id", () => {
-    const { result } = renderHook(() => useExerciseProgressQuery(undefined, { days: 90 }, true), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useExerciseProgressQuery(undefined, { formula: "epley" }, true), { wrapper: createWrapper() });
     expect(result.current.isPending).toBe(true);
     expect(getExerciseProgressProgressExerciseIdGet).not.toHaveBeenCalled();
   });

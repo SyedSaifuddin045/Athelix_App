@@ -2,6 +2,8 @@ import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth, useSignUp, useSSO } from "@clerk/expo";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParamList } from "../types/navigation";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
 import { CLERK_SSO_REDIRECT_URL } from "../auth/clerk";
 import { COLORS } from "../theme/colors";
@@ -15,7 +17,9 @@ const OAUTH_PROVIDERS = [
   { strategy: "oauth_apple" as const, label: "Apple", icon: "apple" as const, color: "#FFFFFF" },
 ] as const;
 
-function RegisterScreen({ navigation }: { navigation: any }) {
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Register"> };
+
+export function RegisterScreen({ navigation }: Props) {
   const { signUp, fetchStatus } = useSignUp();
   const { getToken } = useAuth();
   const { startSSOFlow } = useSSO();
@@ -350,5 +354,3 @@ function RegisterScreen({ navigation }: { navigation: any }) {
     </Screen>
   );
 }
-
-export default RegisterScreen;

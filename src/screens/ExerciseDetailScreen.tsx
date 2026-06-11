@@ -1,5 +1,8 @@
 import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
+import type { RootStackParamList } from "../types/navigation";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { usePostHog } from "posthog-react-native";
 import { useAuth } from "@clerk/expo";
@@ -14,7 +17,12 @@ import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow, Tag } from "../components/ui/Indicators";
 import { Events } from "../analytics/events";
 
-function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: { params: { id: string } } }) {
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "ExerciseDetail">;
+  route: RouteProp<RootStackParamList, "ExerciseDetail">;
+};
+
+export function ExerciseDetailScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const posthog = usePostHog();
   const { id } = route.params;
@@ -55,7 +63,7 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
         title="Exercise Detail"
         onBack={() => navigation.goBack()}
         right={
-          <Pressable style={styles.smallAccentButton} onPress={() => navigation.navigate("TemplateBuilder")}>
+          <Pressable style={styles.smallAccentButton} onPress={() => navigation.navigate({ name: "TemplateBuilder", params: {} })}>
             <Feather name="plus" size={13} color={COLORS.teal} />
             <Text style={styles.smallAccentText}>Add</Text>
           </Pressable>
@@ -141,4 +149,4 @@ function ExerciseDetailScreen({ navigation, route }: { navigation: any; route: {
   );
 }
 
-export default ExerciseDetailScreen;
+
