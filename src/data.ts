@@ -6,12 +6,10 @@ export interface ExerciseItem {
   primaryMuscle: string;
   equipment: string;
   difficulty: Difficulty;
-  emoji: string;
 }
 
 export interface ExerciseDetail {
   name: string;
-  emoji: string;
   primaryMuscle: string;
   secondaryMuscles: string[];
   equipment: string;
@@ -30,7 +28,6 @@ export interface TemplateSet {
 export interface TemplateExercise {
   id: string;
   name: string;
-  emoji: string;
   sets: TemplateSet[];
   notes: string;
 }
@@ -47,7 +44,6 @@ export interface WorkoutSet {
 export interface WorkoutExercise {
   id: string;
   name: string;
-  emoji: string;
   sets: WorkoutSet[];
   notes: string;
 }
@@ -74,22 +70,22 @@ export const RECENT_PRS = [
 ];
 
 export const ALL_EXERCISES: ExerciseItem[] = [
-  { id: "1", name: "Bench Press", primaryMuscle: "Chest", equipment: "Barbell", difficulty: "Intermediate", emoji: "🏋️" },
-  { id: "2", name: "Back Squat", primaryMuscle: "Quadriceps", equipment: "Barbell", difficulty: "Intermediate", emoji: "🦵" },
-  { id: "3", name: "Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Advanced", emoji: "💪" },
-  { id: "4", name: "Overhead Press", primaryMuscle: "Shoulders", equipment: "Barbell", difficulty: "Intermediate", emoji: "🙌" },
-  { id: "5", name: "Pull-up", primaryMuscle: "Back", equipment: "Bodyweight", difficulty: "Intermediate", emoji: "⬆️" },
-  { id: "6", name: "Barbell Row", primaryMuscle: "Back", equipment: "Barbell", difficulty: "Intermediate", emoji: "🏋️" },
-  { id: "7", name: "Romanian Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Intermediate", emoji: "🔃" },
-  { id: "8", name: "Dumbbell Curl", primaryMuscle: "Biceps", equipment: "Dumbbell", difficulty: "Beginner", emoji: "💪" },
-  { id: "9", name: "Tricep Dips", primaryMuscle: "Triceps", equipment: "Bodyweight", difficulty: "Beginner", emoji: "👇" },
-  { id: "10", name: "Leg Press", primaryMuscle: "Quadriceps", equipment: "Machine", difficulty: "Beginner", emoji: "🦵" },
-  { id: "11", name: "Lateral Raise", primaryMuscle: "Shoulders", equipment: "Dumbbell", difficulty: "Beginner", emoji: "🙆" },
-  { id: "12", name: "Cable Row", primaryMuscle: "Back", equipment: "Cable", difficulty: "Beginner", emoji: "🔗" },
-  { id: "13", name: "Incline DB Press", primaryMuscle: "Chest", equipment: "Dumbbell", difficulty: "Intermediate", emoji: "📐" },
-  { id: "14", name: "Face Pull", primaryMuscle: "Rear Delts", equipment: "Cable", difficulty: "Beginner", emoji: "😤" },
-  { id: "15", name: "Bulgarian Split Squat", primaryMuscle: "Quadriceps", equipment: "Dumbbell", difficulty: "Advanced", emoji: "🦵" },
-  { id: "16", name: "Hip Thrust", primaryMuscle: "Glutes", equipment: "Barbell", difficulty: "Intermediate", emoji: "🍑" },
+  { id: "1", name: "Bench Press", primaryMuscle: "Chest", equipment: "Barbell", difficulty: "Intermediate" },
+  { id: "2", name: "Back Squat", primaryMuscle: "Quadriceps", equipment: "Barbell", difficulty: "Intermediate" },
+  { id: "3", name: "Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Advanced" },
+  { id: "4", name: "Overhead Press", primaryMuscle: "Shoulders", equipment: "Barbell", difficulty: "Intermediate" },
+  { id: "5", name: "Pull-up", primaryMuscle: "Back", equipment: "Bodyweight", difficulty: "Intermediate" },
+  { id: "6", name: "Barbell Row", primaryMuscle: "Back", equipment: "Barbell", difficulty: "Intermediate" },
+  { id: "7", name: "Romanian Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Intermediate" },
+  { id: "8", name: "Dumbbell Curl", primaryMuscle: "Biceps", equipment: "Dumbbell", difficulty: "Beginner" },
+  { id: "9", name: "Tricep Dips", primaryMuscle: "Triceps", equipment: "Bodyweight", difficulty: "Beginner" },
+  { id: "10", name: "Leg Press", primaryMuscle: "Quadriceps", equipment: "Machine", difficulty: "Beginner" },
+  { id: "11", name: "Lateral Raise", primaryMuscle: "Shoulders", equipment: "Dumbbell", difficulty: "Beginner" },
+  { id: "12", name: "Cable Row", primaryMuscle: "Back", equipment: "Cable", difficulty: "Beginner" },
+  { id: "13", name: "Incline DB Press", primaryMuscle: "Chest", equipment: "Dumbbell", difficulty: "Intermediate" },
+  { id: "14", name: "Face Pull", primaryMuscle: "Rear Delts", equipment: "Cable", difficulty: "Beginner" },
+  { id: "15", name: "Bulgarian Split Squat", primaryMuscle: "Quadriceps", equipment: "Dumbbell", difficulty: "Advanced" },
+  { id: "16", name: "Hip Thrust", primaryMuscle: "Glutes", equipment: "Barbell", difficulty: "Intermediate" },
 ];
 
 export const EXERCISE_MUSCLES = [
@@ -116,7 +112,6 @@ export const EXERCISE_EQUIPMENT = [
 export const EXERCISE_DETAILS: Record<string, ExerciseDetail> = {
   "1": {
     name: "Bench Press",
-    emoji: "🏋️",
     primaryMuscle: "Chest",
     secondaryMuscles: ["Triceps", "Front Delts"],
     equipment: "Barbell",
@@ -137,7 +132,6 @@ export const EXERCISE_DETAILS: Record<string, ExerciseDetail> = {
   },
   "2": {
     name: "Back Squat",
-    emoji: "🦵",
     primaryMuscle: "Quadriceps",
     secondaryMuscles: ["Glutes", "Hamstrings", "Core"],
     equipment: "Barbell",
@@ -158,7 +152,6 @@ export const EXERCISE_DETAILS: Record<string, ExerciseDetail> = {
   },
   "3": {
     name: "Deadlift",
-    emoji: "💪",
     primaryMuscle: "Hamstrings",
     secondaryMuscles: ["Glutes", "Back", "Core", "Traps"],
     equipment: "Barbell",
@@ -181,7 +174,6 @@ export const EXERCISE_DETAILS: Record<string, ExerciseDetail> = {
 
 export const EXERCISE_FALLBACK: ExerciseDetail = {
   name: "Exercise",
-  emoji: "💪",
   primaryMuscle: "Various",
   secondaryMuscles: ["Core"],
   equipment: "Barbell",
@@ -288,7 +280,6 @@ export const DEFAULT_TEMPLATE_EXERCISES: TemplateExercise[] = [
   {
     id: "1",
     name: "Bench Press",
-    emoji: "🏋️",
     notes: "",
     sets: [
       { reps: "5", rpe: "7", rest: "3:00" },
@@ -299,7 +290,6 @@ export const DEFAULT_TEMPLATE_EXERCISES: TemplateExercise[] = [
   {
     id: "2",
     name: "OHP",
-    emoji: "🙌",
     notes: "",
     sets: [
       { reps: "8", rpe: "7", rest: "2:00" },
@@ -312,7 +302,6 @@ export const INITIAL_WORKOUT_EXERCISES: WorkoutExercise[] = [
   {
     id: "1",
     name: "Bench Press",
-    emoji: "🏋️",
     notes: "",
     sets: [
       { id: "w1", weight: "80", reps: "5", rpe: "", done: false, warmup: true },
@@ -324,7 +313,6 @@ export const INITIAL_WORKOUT_EXERCISES: WorkoutExercise[] = [
   {
     id: "2",
     name: "OHP",
-    emoji: "🙌",
     notes: "",
     sets: [
       { id: "s4", weight: "60", reps: "8", rpe: "", done: false, warmup: false },
@@ -362,7 +350,6 @@ export const SESSION_DETAIL = {
   exercises: [
     {
       name: "Bench Press",
-      emoji: "🏋️",
       pr: true,
       sets: [
         { type: "W", weight: "80", reps: "5", rpe: "-" },
@@ -373,7 +360,6 @@ export const SESSION_DETAIL = {
     },
     {
       name: "OHP",
-      emoji: "🙌",
       pr: false,
       sets: [
         { type: "1", weight: "60", reps: "8", rpe: "7" },
@@ -383,7 +369,6 @@ export const SESSION_DETAIL = {
     },
     {
       name: "Incline DB Press",
-      emoji: "📐",
       pr: false,
       sets: [
         { type: "1", weight: "32", reps: "10", rpe: "7" },
@@ -393,7 +378,6 @@ export const SESSION_DETAIL = {
     },
     {
       name: "Lateral Raise",
-      emoji: "🙆",
       pr: false,
       sets: [
         { type: "1", weight: "14", reps: "15", rpe: "7" },
@@ -403,7 +387,6 @@ export const SESSION_DETAIL = {
     },
     {
       name: "Tricep Dips",
-      emoji: "👇",
       pr: false,
       sets: [
         { type: "1", weight: "BW", reps: "12", rpe: "7" },
@@ -510,7 +493,6 @@ export const PERSONAL_RECORDS = [
     id: "1",
     exercise: "Bench Press",
     exerciseId: "1",
-    emoji: "🏋️",
     records: [
       { type: "1RM", value: "115 kg", date: "Mar 15, 2026", isNew: true },
       { type: "3RM", value: "110 kg", date: "Mar 15, 2026", isNew: false },
@@ -521,7 +503,6 @@ export const PERSONAL_RECORDS = [
     id: "2",
     exercise: "Back Squat",
     exerciseId: "2",
-    emoji: "🦵",
     records: [
       { type: "1RM", value: "160 kg", date: "Feb 20, 2026", isNew: false },
       { type: "3RM", value: "145 kg", date: "Mar 10, 2026", isNew: true },
@@ -532,7 +513,6 @@ export const PERSONAL_RECORDS = [
     id: "3",
     exercise: "Deadlift",
     exerciseId: "3",
-    emoji: "💪",
     records: [
       { type: "1RM", value: "200 kg", date: "Jan 30, 2026", isNew: false },
       { type: "3RM", value: "185 kg", date: "Feb 14, 2026", isNew: false },
@@ -543,7 +523,6 @@ export const PERSONAL_RECORDS = [
     id: "4",
     exercise: "Overhead Press",
     exerciseId: "4",
-    emoji: "🙌",
     records: [
       { type: "1RM", value: "85 kg", date: "Mar 5, 2026", isNew: true },
       { type: "5RM", value: "75 kg", date: "Feb 22, 2026", isNew: false },
@@ -553,7 +532,6 @@ export const PERSONAL_RECORDS = [
     id: "5",
     exercise: "Pull-up",
     exerciseId: "5",
-    emoji: "⬆️",
     records: [
       { type: "1RM", value: "BW+50 kg", date: "Feb 10, 2026", isNew: false },
       { type: "5RM", value: "BW+35 kg", date: "Mar 8, 2026", isNew: true },
@@ -589,10 +567,10 @@ export const EXERCISE_PROGRESS_VOLUME = [
 
 export const EXERCISE_PROGRESS_PERIODS = ["1M", "3M", "6M", "1Y", "All"];
 
-export const EXERCISE_NAMES: Record<string, { name: string; emoji: string }> = {
-  "1": { name: "Bench Press", emoji: "🏋️" },
-  "2": { name: "Back Squat", emoji: "🦵" },
-  "3": { name: "Deadlift", emoji: "💪" },
+export const EXERCISE_NAMES: Record<string, { name: string }> = {
+  "1": { name: "Bench Press" },
+  "2": { name: "Back Squat" },
+  "3": { name: "Deadlift" },
 };
 
 export const EXERCISE_OVERLOADS = [

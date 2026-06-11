@@ -20,7 +20,7 @@ import { DetailStat } from "../components/ui/Stats";
 import { ConfirmDialog } from "../components/ui/Modal";
 import { Icon, type IconName } from "../components/ui/Icon";
 import { exerciseLookup, groupSetsByExercise } from "../utils/mapping";
-import { workoutTitle } from "../utils/display";
+import { workoutTitle, muscleAccentColor } from "../utils/display";
 import { formatDateLabel, formatVolume, formatKg } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
 
@@ -159,8 +159,8 @@ export function SessionDetailScreen({ navigation, route }: Props) {
         {exerciseGroups.map((exercise) => (
           <Card key={exercise.name} elevated style={{ paddingHorizontal: SPACING.xl3, paddingVertical: 0 }}>
             <View style={[styles.exerciseHeader, { flexDirection: "row", alignItems: "center", gap: SPACING.xl, paddingVertical: SPACING.xl2, borderBottomWidth: 1, borderBottomColor: COLORS.border }]}>
-              <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
-              <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
+              <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? COLORS.teal }} />
+              <Text style={[styles.listRowTitle, { flex: 1, fontSize: 14 }]}>{exercise.name}</Text>
               {exercise.sets.some((set) => set.is_pr) ? <Tag label="PR" color={COLORS.gold} /> : null}
             </View>
             <View style={{ paddingVertical: SPACING.xl2 }}>

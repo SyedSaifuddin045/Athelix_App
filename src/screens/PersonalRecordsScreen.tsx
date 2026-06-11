@@ -15,7 +15,7 @@ import { BackHeader } from "../components/ui/Button";
 import { Icon } from "../components/ui/Icon";
 import { formatShortDate } from "../utils/format";
 import { exerciseLookup, recordValue } from "../utils/mapping";
-import { exerciseEmoji } from "../utils/display";
+import { muscleAccentColor } from "../utils/display";
 
 function nameForExercise(id: string, lookup: Map<string, ExerciseResponse>) {
   return lookup.get(id)?.name ?? null;
@@ -102,7 +102,7 @@ export function PersonalRecordsScreen({ navigation }: Props) {
                 style={[styles.exerciseHeader, { flexDirection: "row", alignItems: "center", gap: SPACING.xl, paddingVertical: SPACING.xl2, paddingHorizontal: SPACING.xl3, borderBottomWidth: 1, borderBottomColor: COLORS.border }]}
                 onPress={() => navigation.navigate("ExerciseProgress", { id: entry.exerciseId })}
               >
-                <Text style={{ fontSize: 20 }}>{exerciseEmoji(exercise)}</Text>
+                <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(exercise?.target ?? exercise?.body_part) ?? COLORS.teal }} />
                 <Text style={[styles.listRowTitle, { flex: 1 }]}>{nameForExercise(entry.exerciseId, lookup) ?? entry.exerciseId}</Text>
                 <View style={styles.rowGapTiny}>
                   <Icon name="trending-up" size={13} color={COLORS.faint} />

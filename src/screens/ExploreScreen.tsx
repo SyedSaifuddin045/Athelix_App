@@ -1,9 +1,7 @@
-import { View } from "react-native";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { ExercisePicker } from "../components/ExercisePicker";
-import { styles } from "../theme/styles";
 import { Screen } from "../components/ui/Layout";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
@@ -11,7 +9,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTa
 export function ExploreScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   return (
-    <Screen scroll={false} contentContainerStyle={styles.scrollContent}>
+    <Screen scroll={false}>
       <ExercisePicker
         variant="browse"
         title="Exercise Library"

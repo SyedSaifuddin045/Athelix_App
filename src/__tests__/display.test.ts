@@ -1,4 +1,4 @@
-import { displayName, initialsFor, exerciseEmoji, workoutTitle, nameForExercise } from "../utils/display";
+import { displayName, initialsFor, workoutTitle, nameForExercise } from "../utils/display";
 
 describe("displayName", () => {
   it("returns profile display name over username", () => {
@@ -27,20 +27,6 @@ describe("initialsFor", () => {
 
   it("returns default for empty name", () => {
     expect(initialsFor("")).toBe("AT");
-  });
-});
-
-describe("exerciseEmoji", () => {
-  it("returns leg emoji for leg exercises", () => {
-    expect(exerciseEmoji({ target: "Quads", body_part: "Legs" } as any)).toBe("🦵");
-  });
-
-  it("returns chest emoji for chest exercises", () => {
-    expect(exerciseEmoji({ target: "Chest", body_part: "Upper Body" } as any)).toBe("🏋️");
-  });
-
-  it("returns default emoji", () => {
-    expect(exerciseEmoji({ target: "Biceps", body_part: "Arms" } as any)).toBe("💪");
   });
 });
 

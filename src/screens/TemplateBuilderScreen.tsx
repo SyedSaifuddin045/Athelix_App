@@ -29,7 +29,7 @@ import { MiniInput, PickerColumn } from "../components/ui/Input";
 import { PrimaryButton, RoundButton } from "../components/ui/Button";
 import { ExercisePicker } from "../components/ExercisePicker";
 import { exerciseLookup, templateDraftFromDetail, successData } from "../utils/mapping";
-import { nameForExercise, exerciseEmoji } from "../utils/display";
+import { nameForExercise, muscleAccentColor } from "../utils/display";
 import type { TemplateDraftExercise } from "../utils/mapping";
 import { rpeError, numberOrNull, parseRestSeconds } from "../utils/validation";
 import { toNumberId, shadow } from "../utils/helpers";
@@ -69,7 +69,6 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
           return {
             ...ex,
             name: resolved ?? ex.name,
-            emoji: exerciseEmoji(lookup.get(ex.exerciseId)),
           };
         }),
       );
@@ -163,7 +162,6 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
       id: nextId,
       exerciseId: exercise.id,
       name: exercise.name,
-      emoji: exerciseEmoji(exercise),
       notes: "",
       setCount: 1,
       sets: [{ reps: "8", rpe: "7", rest: "2:00" }],
@@ -384,9 +382,6 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                 gap: 12,
                 opacity: 0.55,
               }}>
-                <Text style={{ fontSize: 18, opacity: 0.5 }}>
-                  {exercises.find((ex) => ex.id === draggingId)?.emoji ?? "⚡"}
-                </Text>
                 <Text style={{ color: COLORS.teal, fontSize: 13, fontWeight: "600", fontStyle: "italic" }}>
                   {exercises.find((ex) => ex.id === draggingId)?.name ?? ""}
                 </Text>
@@ -426,8 +421,8 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                     <View>
                       <View style={styles.rowBetween}>
                         <View style={[styles.rowGap, { flex: 1 }]}>
+                          <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? COLORS.teal }} />
                           <Icon name="grip-vertical" size={18} color={dragActiveId === exercise.id ? COLORS.teal : "rgba(255,255,255,0.3)"} />
-                          <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
                           <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
                         </View>
                       </View>
@@ -553,10 +548,9 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
         </Pressable>
 
         {exercises.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateEmoji}>📋</Text>
-            <Text style={styles.emptyStateTitle}>No exercises yet</Text>
-            <Text style={styles.emptyStateText}>Tap "Add Exercise" to build your template</Text>
+          <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
+            <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: "700" }}>No exercises yet</Text>
+            <Text style={{ color: COLORS.muted, fontSize: 13, textAlign: "center" }}>Tap "Add Exercise" to build your template</Text>
           </View>
         ) : null}
       </View>

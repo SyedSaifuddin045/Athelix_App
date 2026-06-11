@@ -32,6 +32,7 @@ import {
   listWorkoutTemplatesWorkoutTemplatesGet,
 } from "./endpoints/workout-templates/workout-templates";
 import type {
+  ExerciseResponse,
   GetExerciseProgressProgressExerciseIdGetParams,
   GetMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGetParams,
   GetMuscleBalanceReportAnalyticsMuscleBalanceGetParams,
@@ -127,6 +128,36 @@ export function useExercisesQuery(params: ListExercisesExercisesGetParams, enabl
     queryFn: async () => dataOf(await listExercisesExercisesGet(params)),
     enabled,
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useAllExercisesQuery(enabled: boolean, equipment?: string, trackedOnly?: boolean) {
+  return useQuery({
+    queryKey: ["exercises", "all", equipment ?? "all", trackedOnly ?? false] as const,
+    queryFn: async () => {
+      const limit = 200;
+      let offset = 0;
+      const all: ExerciseResponse[] = [];
+      const params: ListExercisesExercisesGetParams = {
+        limit,
+        offset: 0,
+        ...(equipment ? { equipment } : {}),
+        ...(trackedOnly ? { tracked: true } : {}),
+      };
+
+      while (true) {
+        params.offset = offset;
+        const response = await listExercisesExercisesGet(params);
+        const data = dataOf(response);
+        all.push(...data.items);
+        if (offset + limit >= data.total) break;
+        offset += limit;
+      }
+
+      return all;
+    },
+    enabled,
+    staleTime: 5 * 60_000,
   });
 }
 

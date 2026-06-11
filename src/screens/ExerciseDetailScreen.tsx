@@ -7,7 +7,7 @@ import { usePostHog } from "posthog-react-native";
 import { useAuth } from "@clerk/expo";
 import { useExerciseDetailQuery } from "../api/queries";
 import { mapExerciseDetail } from "../utils/mapping";
-import { DIFFICULTY_COLORS, EXERCISE_DETAILS, EXERCISE_FALLBACK } from "../data";
+import { muscleAccentColor } from "../utils/display";
 import { COLORS } from "../theme/colors";
 import { SPACING, RADIUS } from "../theme/spacing";
 import { styles } from "../theme/styles";
@@ -28,7 +28,7 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
   const posthog = usePostHog();
   const { id } = route.params;
   const exerciseQuery = useExerciseDetailQuery(id, isAuthenticated);
-  const exercise = exerciseQuery.data ? mapExerciseDetail(exerciseQuery.data) : (EXERCISE_DETAILS[id ?? ""] ?? EXERCISE_FALLBACK);
+  const exercise = exerciseQuery.data ? mapExerciseDetail(exerciseQuery.data) : null;
 
   useEffect(() => {
     if (exercise) {
@@ -70,18 +70,8 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
         }
       />
 
-      <Card elevated style={{ marginTop: SPACING.xl3 }}>
-        <View style={[styles.heroCard, { flexDirection: "row", alignItems: "center", gap: SPACING.xl3 }]}>
-          <View style={[styles.heroEmojiWrap, { width: 72, height: 72, borderRadius: RADIUS.card, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-            <Text style={{ fontSize: 34 }}>{exercise.emoji}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle}>{exercise.name}</Text>
-            {exercise.difficulty ? (
-              <Tag label={exercise.difficulty} color={DIFFICULTY_COLORS[exercise.difficulty] ?? COLORS.muted} />
-            ) : null}
-          </View>
-        </View>
+      <Card elevated accentColor={muscleAccentColor(exercise.primaryMuscle)} style={{ marginTop: SPACING.xl3 }}>
+        <Text style={{ fontSize: 21, fontWeight: "900", color: COLORS.text }}>{exercise.name}</Text>
       </Card>
 
       <View style={{ gap: SPACING.xl, marginTop: SPACING.xl3 }}>

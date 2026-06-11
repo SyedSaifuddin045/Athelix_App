@@ -1,4 +1,6 @@
 import { Text, View } from "react-native";
+import { useState } from "react";
+import Svg, { Circle, Line, Polyline, Text as SvgText } from "react-native-svg";
 
 import { COLORS } from "../../theme/colors";
 import { SPACING, RADIUS } from "../../theme/spacing";
@@ -54,80 +56,80 @@ export function TrendChart({
   color?: string;
 }) {
   if (!segments.length) return null;
+  const [chartWidth, setChartWidth] = useState(0);
 
   const allValues = segments.flat().map((s) => s.value);
   const min = Math.min(...allValues);
   const max = Math.max(...allValues);
   const range = max - min || 1;
 
-  return (
-    <View style={{ gap: SPACING.xs }}>
-      <View style={[styles.chartArea, { height }]}>
-        {[0.25, 0.5, 0.75].map((f, i) => (
-          <View
-            key={i}
-            style={[
-              styles.chartGridLine,
-              { top: height * (1 - f) },
-            ]}
-          />
-        ))}
-        {segments.map((segment, si) =>
-          segment.map((point, pi) => {
-            if (pi === 0) return null;
-            const prev = segment[pi - 1];
-            const y1 = height - ((prev.value - min) / range) * height * 0.8 - height * 0.1;
-            const y2 = height - ((point.value - min) / range) * height * 0.8 - height * 0.1;
-            const x1 = ((pi - 1) / (segment.length - 1)) * 100;
-            const x2 = (pi / (segment.length - 1)) * 100;
-            const width = Math.abs(x2 - x1);
+  const yPos = (value: number) => height - ((value - min) / range) * height * 0.8 - height * 0.1;
 
-            return (
-              <View
-                key={`${si}-${pi}`}
-                style={[
-                  styles.chartSegment,
-                  {
-                    left: `${x1}%`,
-                    top: Math.min(y1, y2),
-                    width: `${width}%`,
-                    height: Math.abs(y2 - y1) || 2,
-                    backgroundColor: color,
-                    transform: [{ rotate: `${Math.atan2(y2 - y1, width * 3)}rad` }],
-                  },
-                ]}
+  const points = segments[0] ?? [];
+  const total = points.length;
+  const pad = 16;
+  const svgHeight = height + 24;
+
+  const xPos = (index: number) => {
+    if (total <= 1) return chartWidth / 2;
+    const t = index / (total - 1);
+    return pad + t * (chartWidth - 2 * pad);
+  };
+
+  const polylinePoints = chartWidth > 0
+    ? points.map((p, i) => `${xPos(i)},${yPos(p.value)}`).join(" ")
+    : "";
+
+  return (
+    <View>
+      <View style={[styles.chartArea, { height: svgHeight }]} onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}>
+        {chartWidth > 0 && (
+          <Svg width="100%" height={svgHeight} viewBox={`0 0 ${chartWidth} ${svgHeight}`}>
+            {[0.25, 0.5, 0.75].map((f, i) => (
+              <Line
+                key={i}
+                x1={pad}
+                y1={height * (1 - f)}
+                x2={chartWidth - pad}
+                y2={height * (1 - f)}
+                stroke="rgba(255,255,255,0.05)"
+                strokeWidth={1}
               />
-            );
-          })
-        )}
-        {segments.flat().map((point, i) => {
-          const y = height - ((point.value - min) / range) * height * 0.8 - height * 0.1;
-          const x = (i % (segments[0]?.length ?? 1)) / ((segments[0]?.length ?? 1) - 1) * 100;
-          return (
-            <View
-              key={`dot-${i}`}
-              style={[
-                styles.chartDot,
-                {
-                  left: `${x}%`,
-                  top: y - 4,
-                  backgroundColor: color,
-                  borderColor: COLORS.screen,
-                },
-              ]}
+            ))}
+            <Polyline
+              points={polylinePoints}
+              fill="none"
+              stroke={color}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              strokeLinecap="round"
             />
-          );
-        })}
+            {points.map((point, i) => (
+              <Circle
+                key={i}
+                cx={xPos(i)}
+                cy={yPos(point.value)}
+                r={4}
+                fill={color}
+                stroke={COLORS.screen}
+                strokeWidth={2}
+              />
+            ))}
+            {points.map((point, i) => (
+              <SvgText
+                key={i}
+                x={xPos(i)}
+                y={height + 12}
+                fill="rgba(255,255,255,0.3)"
+                fontSize={9}
+                textAnchor="middle"
+              >
+                {point.label ?? ""}
+              </SvgText>
+            ))}
+          </Svg>
+        )}
       </View>
-      {segments[0] && (
-        <View style={styles.chartLabels}>
-          {segments[0].map((point, i) => (
-            <Text key={i} style={styles.chartLabelText}>
-              {point.label ?? ""}
-            </Text>
-          ))}
-        </View>
-      )}
     </View>
   );
 }

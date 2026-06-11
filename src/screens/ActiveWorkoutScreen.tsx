@@ -35,7 +35,7 @@ import {
   WorkoutDraftExercise,
   WorkoutDraftSet,
 } from "../utils/mapping";
-import { nameForExercise, exerciseEmoji } from "../utils/display";
+import { nameForExercise, muscleAccentColor } from "../utils/display";
 import { formatTime } from "../utils/format";
 import { numberOrNull, rpeError } from "../utils/validation";
 import { toNumberId } from "../utils/helpers";
@@ -84,7 +84,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       setExercises((prev) =>
         prev.map((ex) => {
           const resolved = nameForExercise(ex.exerciseId, lookup);
-          return { ...ex, name: resolved ?? ex.name, emoji: exerciseEmoji(lookup.get(ex.exerciseId)) };
+          return { ...ex, name: resolved ?? ex.name };
         }),
       );
       return;
@@ -190,7 +190,6 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       id: nextId,
       exerciseId: exercise.id,
       name: exercise.name,
-      emoji: exerciseEmoji(exercise),
       notes: "",
       sets: [{ id: `${nextId}-1`, weight: "60", reps: "8", rpe: "", done: false, warmup: false }],
     };
@@ -337,7 +336,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                   style={styles.rowBetween}
                 >
                   <View style={[styles.rowGap, { flex: 1 }]}>
-                    <Text style={{ fontSize: 22 }}>{exercise.emoji}</Text>
+                    <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? COLORS.teal }} />
                     <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
                   </View>
                   <View style={styles.rowGap}>
