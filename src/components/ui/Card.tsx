@@ -11,11 +11,13 @@ export function Card({
   style,
   elevated,
   accent,
+  accentColor,
 }: {
   children: React.ReactNode;
   style?: object | object[];
   elevated?: boolean;
   accent?: "green" | "purple" | "blue" | "red" | "coral" | "gold" | "none";
+  accentColor?: string;
 }) {
   const borderColor = accent
     ? accent === "green"
@@ -45,12 +47,17 @@ export function Card({
             : COLORS.card
     : COLORS.card;
 
+  const leftAccentStyle = accentColor
+    ? { borderLeftWidth: 3, borderLeftColor: accentColor }
+    : null;
+
   return (
     <View
       style={[
         styles.card,
         elevated ? SHADOWS.md : null,
         { borderColor, backgroundColor: bgColor },
+        leftAccentStyle,
         style,
       ]}
     >
