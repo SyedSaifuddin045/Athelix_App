@@ -1,8 +1,6 @@
 import type {
   UserResponse,
   UserProfileResponse,
-  ExerciseResponse,
-  ExerciseDetailResponse,
   WorkoutSessionResponse,
   WorkoutSessionDetailResponse,
 } from "../api/model";
@@ -22,16 +20,6 @@ export function initialsFor(name: string) {
 
 export function nameForExercise(id: string, lookup: Map<string, any>) {
   return lookup.get(id)?.name ?? null;
-}
-
-export function exerciseEmoji(
-  exercise?: Pick<ExerciseResponse, "body_part" | "target"> | ExerciseDetailResponse | null,
-) {
-  const key = `${exercise?.target ?? ""} ${exercise?.body_part ?? ""}`.toLowerCase();
-  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute")) return "🦵";
-  if (key.includes("chest") || key.includes("shoulder")) return "🏋️";
-  if (key.includes("back") || key.includes("lat")) return "💪";
-  return "💪";
 }
 
 export function workoutTitle(

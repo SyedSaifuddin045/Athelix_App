@@ -6,7 +6,7 @@ import type {
   WorkoutTemplateDetailResponse,
 } from "../api/model";
 import type { ExerciseItem, ExerciseDetail, TemplateExercise, WorkoutExercise, WorkoutSet } from "../data";
-import { exerciseEmoji, nameForExercise } from "./display";
+import { nameForExercise } from "./display";
 import { formatKg } from "./format";
 
 export function mapExerciseItem(exercise: ExerciseResponse): ExerciseItem {
@@ -16,14 +16,12 @@ export function mapExerciseItem(exercise: ExerciseResponse): ExerciseItem {
     primaryMuscle: exercise.target ?? exercise.body_part ?? "Unknown",
     equipment: exercise.equipment ?? "Unknown",
     difficulty: "Intermediate",
-    emoji: exerciseEmoji(exercise),
   };
 }
 
 export function mapExerciseDetail(exercise: ExerciseDetailResponse): ExerciseDetail {
   return {
     name: exercise.name,
-    emoji: exerciseEmoji(exercise),
     primaryMuscle: exercise.target ?? exercise.body_part ?? "Unknown",
     secondaryMuscles: exercise.secondary_muscles.map((item) => item.muscle),
     equipment: exercise.equipment ?? "Unknown",
@@ -85,7 +83,6 @@ export function templateDraftFromDetail(
       templateExerciseId: item.id,
       exerciseId: item.exercise_id,
       name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup) ?? item.exercise_id,
-      emoji: exerciseEmoji(lookup.get(item.exercise_id)),
       notes: item.notes ?? "",
       setCount: Math.max(1, item.target_sets ?? 1),
       sets: [
@@ -111,7 +108,6 @@ export function workoutDraftFromTemplate(
         id: String(item.id),
         exerciseId: item.exercise_id,
       name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup) ?? item.exercise_id,
-        emoji: exerciseEmoji(lookup.get(item.exercise_id)),
         notes: item.notes ?? "",
         sets: Array.from({ length: totalSets }, (_, index) => ({
           id: `${item.id}-${index + 1}`,
@@ -129,14 +125,13 @@ export function groupSetsByExercise(
   sets: ExerciseSetResponse[],
   lookup: Map<string, ExerciseResponse>,
 ) {
-  const groups: Record<string, { exerciseId: string; name: string; emoji: string; sets: ExerciseSetResponse[] }> = {};
+  const groups: Record<string, { exerciseId: string; name: string; sets: ExerciseSetResponse[] }> = {};
   sets.forEach((set) => {
     const key = set.exercise_id;
     if (!groups[key]) {
       groups[key] = {
         exerciseId: key,
         name: nameForExercise(key, lookup) ?? key,
-        emoji: exerciseEmoji(lookup.get(key)),
         sets: [],
       };
     }
