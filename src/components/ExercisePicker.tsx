@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,23 +13,34 @@ import {
 } from "react-native";
 import { COLORS } from "../theme/colors";
 import { Icon } from "../components/ui/Icon";
+import { Card } from "../components/ui/Card";
 import { useExerciseFiltersQuery, useExercisesQuery } from "../api/queries";
 import type { ExerciseResponse } from "../api/model";
 import { getApiErrorMessage } from "../api/client";
 
-function exerciseEmoji(exercise?: Pick<ExerciseResponse, "body_part" | "target"> | null) {
-  const key = `${exercise?.target ?? ""} ${exercise?.body_part ?? ""}`.toLowerCase();
-  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute")) return "🦵";
-  if (key.includes("chest") || key.includes("shoulder")) return "🏋️";
-  if (key.includes("back") || key.includes("lat")) return "💪";
-  return "💪";
+function muscleAccentColor(muscle: string | null | undefined): string | undefined {
+  const key = (muscle ?? "").toLowerCase();
+  if (key.includes("chest")) return "#FF5A36";
+  if (key.includes("back")) return "#22C55E";
+  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute"))
+    return "#8B5CF6";
+  if (key.includes("shoulder")) return "#3B82F6";
+  if (key.includes("arm") || key.includes("bicep") || key.includes("tricep")) return "#F59E0B";
+  return undefined;
 }
 
-const DIFFICULTY_COLORS: Record<string, string> = {
-  Beginner: COLORS.green,
-  Intermediate: COLORS.orange,
-  Advanced: COLORS.red,
-};
+const MUSCLE_GROUPS = ["Chest", "Back", "Legs", "Arms", "Shoulders", "Core"];
+
+function groupForExercise(exercise: ExerciseResponse): string {
+  const target = (exercise.target ?? "").toLowerCase();
+  if (target.includes("chest")) return "Chest";
+  if (target.includes("back")) return "Back";
+  if (target.includes("leg") || target.includes("quad") || target.includes("hamstring") || target.includes("glute"))
+    return "Legs";
+  if (target.includes("shoulder")) return "Shoulders";
+  if (target.includes("arm") || target.includes("bicep") || target.includes("tricep")) return "Arms";
+  return "Core";
+}
 
 type ExercisePickerVariant = "browse" | "pick";
 
@@ -60,41 +71,188 @@ export function ExercisePicker({
 }: ExercisePickerProps) {
   const screenHeight = useWindowDimensions().height;
   const [query, setQuery] = useState("");
-  const [muscle, setMuscle] = useState("All");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [equipment, setEquipment] = useState("All");
-  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const filters = useExerciseFiltersQuery(enabled && showFilters);
-  const exerciseParams = useMemo(
+
+  const handleQueryChange = (text: string) => {
+    setQuery(text);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedQuery(text);
+    }, 300);
+  };
+
+  const gridParams = useMemo(
     () => ({
-      q: query.trim() || undefined,
-      target: muscle !== "All" ? muscle : undefined,
+      q: undefined as string | undefined,
+      target: undefined as string | undefined,
+      equipment: equipment !== "All" ? equipment : undefined,
+      limit: 200,
+      offset: 0,
+      ...(trackedOnly ? { tracked: true } : {}),
+    }),
+    [equipment, trackedOnly],
+  );
+
+  const listParams = useMemo(
+    () => ({
+      q: debouncedQuery.trim() || undefined,
+      target: selectedGroup ? selectedGroup.toLowerCase() : undefined,
       equipment: equipment !== "All" ? equipment : undefined,
       limit: 100,
       offset: 0,
       ...(trackedOnly ? { tracked: true } : {}),
     }),
-    [equipment, muscle, query, trackedOnly],
+    [debouncedQuery, equipment, selectedGroup, trackedOnly],
   );
-  const exercisesQuery = useExercisesQuery(exerciseParams, enabled);
 
-  const muscleOptions = useMemo(
-    () => ["All", ...(filters.data?.targets ?? ["Chest", "Back", "Shoulders", "Legs", "Arms", "Core"].filter((item) => item !== "All"))],
-    [filters.data?.targets],
-  );
+  const gridQuery = useExercisesQuery(gridParams, enabled && !selectedGroup && !debouncedQuery.trim());
+  const listQuery = useExercisesQuery(listParams, enabled && (!!selectedGroup || !!debouncedQuery.trim()));
+
+  const activeQuery = selectedGroup || debouncedQuery.trim() ? listQuery : gridQuery;
+  const isPending = activeQuery.isPending;
+  const isError = activeQuery.isError;
+  const error = activeQuery.error;
+
+  const isSearching = !!debouncedQuery.trim();
+
+  const groupCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const group of MUSCLE_GROUPS) counts[group] = 0;
+    if (gridQuery.data?.items) {
+      for (const exercise of gridQuery.data.items) {
+        const g = groupForExercise(exercise);
+        if (counts[g] !== undefined) counts[g]++;
+      }
+    }
+    return counts;
+  }, [gridQuery.data?.items]);
+
+  const filteredExercises = useMemo(() => {
+    const items = activeQuery.data?.items ?? [];
+    if (isSearching) return items;
+    if (selectedGroup) {
+      return items.filter((e) => groupForExercise(e) === selectedGroup);
+    }
+    return items;
+  }, [activeQuery.data?.items, isSearching, selectedGroup]);
+
   const equipmentOptions = useMemo(
-    () => ["All", ...(filters.data?.equipment ?? ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"].filter((item) => item !== "All"))],
+    () =>
+      ["All", ...(filters.data?.equipment ?? ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"]).filter((item) => item !== "All")],
     [filters.data?.equipment],
   );
-  const activeFilters = useMemo(
-    () => [muscle !== "All" ? muscle : null, equipment !== "All" ? equipment : null].filter(Boolean) as string[],
-    [equipment, muscle],
+
+  const handleGroupSelect = (group: string) => {
+    setSelectedGroup(group);
+  };
+
+  const handleBack = () => {
+    setSelectedGroup(null);
+  };
+
+  const renderExerciseItem = (exercise: ExerciseResponse) => (
+    <Pressable
+      key={exercise.id}
+      onPress={() => {
+        if (variant === "browse") {
+          onNavigate?.(exercise.id);
+        } else {
+          onSelect?.(exercise);
+        }
+      }}
+    >
+      <Card elevated accentColor={muscleAccentColor(exercise.target)} style={styles.exerciseCard}>
+        <View style={styles.exerciseBody}>
+          <Text style={styles.exerciseName} numberOfLines={1}>
+            {exercise.name}
+          </Text>
+          <Text style={styles.exerciseDetail} numberOfLines={1}>
+            {exercise.target ?? exercise.body_part ?? "Unknown"} · {exercise.equipment ?? "Unknown"}
+          </Text>
+        </View>
+        <Icon
+          name={variant === "browse" ? "chevron-right" : "plus"}
+          size={14}
+          color="rgba(255,255,255,0.22)"
+        />
+      </Card>
+    </Pressable>
   );
 
-  const clearFilters = () => {
-    setMuscle("All");
-    setEquipment("All");
+  const renderGridItem = ({ item }: { item: string }) => {
+    const count = groupCounts[item] ?? 0;
+    const accent = muscleAccentColor(item) ?? "rgba(255,255,255,0.2)";
+    return (
+      <Pressable
+        onPress={() => handleGroupSelect(item)}
+        style={{ flex: 1, maxWidth: "50%" }}
+      >
+        <Card elevated accentColor={accent} style={styles.gridCard}>
+          <Text style={styles.gridCardName} numberOfLines={1}>
+            {item}
+          </Text>
+          <Text style={styles.gridCardCount}>{count}</Text>
+        </Card>
+      </Pressable>
+    );
   };
+
+  const renderListHeader = () => {
+    if (isSearching) return null;
+    if (selectedGroup) {
+      const accent = muscleAccentColor(selectedGroup) ?? "rgba(255,255,255,0.2)";
+      return (
+        <View style={styles.listHeader}>
+          <Pressable onPress={handleBack} hitSlop={8} style={styles.backButton}>
+            <Icon name="arrow-left" size={18} color="rgba(255,255,255,0.5)" />
+          </Pressable>
+          <View style={[styles.listHeaderAccent, { backgroundColor: accent }]} />
+          <Text style={styles.listHeaderTitle}>{selectedGroup}</Text>
+          <Text style={styles.listHeaderCount}>{groupCounts[selectedGroup] ?? 0}</Text>
+        </View>
+      );
+    }
+    return null;
+  };
+
+  const renderEmpty = () => {
+    if (isPending) {
+      return (
+        <View style={styles.centerState}>
+          <ActivityIndicator size="small" color={COLORS.teal} />
+          <Text style={styles.stateText}>Loading exercises...</Text>
+        </View>
+      );
+    }
+    if (isError) {
+      return (
+        <View style={styles.centerState}>
+          <Text style={styles.errorText}>{getApiErrorMessage(error)}</Text>
+          <Pressable onPress={() => activeQuery.refetch()}>
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    return (
+      <View style={styles.centerState}>
+        <Text style={styles.stateText}>No exercises match your search</Text>
+      </View>
+    );
+  };
+
+  const gridExercises = useMemo(() => {
+    if (isSearching) return filteredExercises;
+    if (selectedGroup) return filteredExercises;
+    return [];
+  }, [isSearching, filteredExercises, selectedGroup]);
+
+  const showGrid = !isSearching && !selectedGroup;
 
   const content = (
     <View style={variant === "browse" ? styles.browseContainer : styles.pickContainer}>
@@ -110,179 +268,75 @@ export function ExercisePicker({
           <Icon name="search" size={15} color="rgba(255,255,255,0.4)" />
           <TextInput
             value={query}
-            onChangeText={setQuery}
+            onChangeText={handleQueryChange}
             placeholder="Search exercises..."
             placeholderTextColor="rgba(255,255,255,0.32)"
             style={styles.searchInput}
           />
           {query ? (
-            <Pressable onPress={() => setQuery("")} hitSlop={8}>
+            <Pressable
+              onPress={() => {
+                setQuery("");
+                setDebouncedQuery("");
+                if (debounceRef.current) clearTimeout(debounceRef.current);
+              }}
+              hitSlop={8}
+            >
               <Icon name="x" size={14} color="rgba(255,255,255,0.42)" />
             </Pressable>
           ) : null}
         </View>
-        {showFilters ? (
-          <Pressable
-            onPress={() => setShowFilterPanel((value) => !value)}
-            style={[styles.filterButton, showFilterPanel ? styles.filterButtonActive : null]}
-          >
-            <Icon name="sliders-horizontal" size={15} color={showFilterPanel ? COLORS.teal : "rgba(255,255,255,0.6)"} />
-          </Pressable>
-        ) : null}
       </View>
 
-      {showFilters && showFilterPanel ? (
-        <View style={styles.filterPanel}>
-          <View style={styles.filterSection}>
-            <Text style={styles.filterLabel}>Muscle</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipRow}>
-              {muscleOptions.map((item) => (
-                <Pressable
-                  key={item}
-                  onPress={() => setMuscle(item)}
-                  style={[styles.filterChip, muscle === item ? styles.filterChipActive : null]}
-                >
-                  <Text style={[styles.filterChipText, muscle === item ? styles.filterChipTextActive : null]}>{item}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-          <View style={styles.filterSection}>
-            <View style={styles.filterLabelRow}>
-              <Text style={styles.filterLabel}>Equipment</Text>
-              {activeFilters.length > 0 ? (
-                <Pressable onPress={clearFilters}>
-                  <Text style={styles.clearText}>Clear</Text>
-                </Pressable>
-              ) : null}
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterChipRow}>
-              {equipmentOptions.map((item) => (
-                <Pressable
-                  key={item}
-                  onPress={() => setEquipment(item)}
-                  style={[styles.filterChip, equipment === item ? styles.filterChipActive : null]}
-                >
-                  <Text style={[styles.filterChipText, equipment === item ? styles.filterChipTextActive : null]}>{item}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-          {activeFilters.length > 0 ? (
-            <View style={styles.activeFilterRow}>
-              {activeFilters.map((filter) => (
-                <Pressable
-                  key={filter}
-                  onPress={() => {
-                    if (filter === muscle) setMuscle("All");
-                    if (filter === equipment) setEquipment("All");
-                  }}
-                  style={styles.activeFilterTag}
-                >
-                  <Text style={styles.activeFilterText}>{filter}</Text>
-                  <Icon name="x" size={10} color={COLORS.teal} />
-                </Pressable>
-              ))}
-            </View>
-          ) : null}
-        </View>
+      {showFilters ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.equipChipRow}
+        >
+          {equipmentOptions.map((item) => (
+            <Pressable
+              key={item}
+              onPress={() => setEquipment(item)}
+              style={[styles.equipChip, equipment === item ? styles.equipChipActive : null]}
+            >
+              <Text style={[styles.equipChipText, equipment === item ? styles.equipChipTextActive : null]}>
+                {item}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
       ) : null}
 
-      <View style={styles.resultsRow}>
-        <Text style={styles.resultsText}>{exercisesQuery.data?.total ?? 0} exercises</Text>
-        {exercisesQuery.isFetching ? <ActivityIndicator size="small" color={COLORS.teal} /> : null}
-      </View>
-
-      {exercisesQuery.isError ? (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{getApiErrorMessage(exercisesQuery.error)}</Text>
-          <Pressable onPress={() => exercisesQuery.refetch()}>
-            <Text style={styles.retryText}>Retry</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {variant === "browse" ? (
+      {showGrid ? (
         <FlatList
-          data={exercisesQuery.data?.items ?? []}
-          keyExtractor={(item) => item.id}
+          data={MUSCLE_GROUPS}
+          keyExtractor={(item) => item}
+          numColumns={2}
+          columnWrapperStyle={styles.gridRow}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            exercisesQuery.isPending ? (
-              <View style={styles.centerState}>
-                <ActivityIndicator size="small" color={COLORS.teal} />
-                <Text style={styles.stateText}>Loading exercises...</Text>
+          ListFooterComponent={
+            isError ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{getApiErrorMessage(error)}</Text>
+                <Pressable onPress={() => activeQuery.refetch()}>
+                  <Text style={styles.retryText}>Retry</Text>
+                </Pressable>
               </View>
-            ) : (
-              <View style={styles.centerState}>
-                <Text style={styles.stateEmoji}>🔍</Text>
-                <Text style={styles.stateTitle}>No exercises found</Text>
-                <Text style={styles.stateText}>Try different search terms or filters</Text>
-              </View>
-            )
+            ) : null
           }
-          renderItem={({ item: exercise }) => (
-            <Pressable onPress={() => onNavigate?.(exercise.id)}>
-              <View style={styles.exerciseCard}>
-                <View style={styles.emojiWrap}>
-                  <Text style={styles.emoji}>{exerciseEmoji(exercise)}</Text>
-                </View>
-                <View style={styles.exerciseBody}>
-                  <Text style={styles.exerciseName}>{exercise.name}</Text>
-                  <Text style={styles.exerciseDetail}>
-                    {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
-                  </Text>
-                </View>
-                <View style={styles.exerciseMeta}>
-                  <View style={[styles.difficultyTag, { backgroundColor: `${DIFFICULTY_COLORS["Intermediate"]}20`, borderColor: `${DIFFICULTY_COLORS["Intermediate"]}40` }]}>
-                    <Text style={[styles.difficultyText, { color: DIFFICULTY_COLORS["Intermediate"] }]}>
-                      {exercise.equipment ? "Equip" : "Body"}
-                    </Text>
-                  </View>
-                  <Icon name="chevron-right" size={14} color="rgba(255,255,255,0.22)" />
-                </View>
-              </View>
-            </Pressable>
-          )}
+          renderItem={renderGridItem}
         />
       ) : (
         <FlatList
-          data={exercisesQuery.data?.items ?? []}
+          data={gridExercises}
           keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
-          style={{ flex: 1 }}
-          ListEmptyComponent={
-            exercisesQuery.isPending ? (
-              <View style={styles.centerState}>
-                <ActivityIndicator size="small" color={COLORS.teal} />
-                <Text style={styles.stateText}>Loading exercises...</Text>
-              </View>
-            ) : (
-              <View style={styles.centerState}>
-                <Text style={styles.stateEmoji}>🔍</Text>
-                <Text style={styles.stateTitle}>No exercises found</Text>
-                <Text style={styles.stateText}>Try a different search term</Text>
-              </View>
-            )
-          }
-          renderItem={({ item: exercise }) => (
-            <Pressable key={exercise.id} onPress={() => onSelect?.(exercise)}>
-              <View style={styles.exerciseCard}>
-                <View style={styles.emojiWrap}>
-                  <Text style={styles.emoji}>{exerciseEmoji(exercise)}</Text>
-                </View>
-                <View style={styles.exerciseBody}>
-                  <Text style={styles.exerciseName}>{exercise.name}</Text>
-                  <Text style={styles.exerciseDetail}>
-                    {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
-                  </Text>
-                </View>
-                <Icon name="plus" size={16} color={COLORS.teal} />
-              </View>
-            </Pressable>
-          )}
+          ListHeaderComponent={renderListHeader}
+          ListEmptyComponent={renderEmpty}
+          renderItem={({ item }) => renderExerciseItem(item)}
         />
       )}
     </View>
@@ -293,14 +347,14 @@ export function ExercisePicker({
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
         <View style={styles.modalScrim}>
           <Pressable style={styles.modalBackdrop} onPress={onClose} />
-          <View style={[styles.bottomSheet, { height: screenHeight * 0.75 }]}>
+          <View style={[styles.bottomSheet, { height: screenHeight * 0.78 }]}>
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{title}</Text>
               <Pressable onPress={onClose} hitSlop={8}>
                 <Icon name="x" size={18} color="rgba(255,255,255,0.5)" />
               </Pressable>
             </View>
-            {content}
+            <View style={{ flex: 1, marginTop: 14 }}>{content}</View>
           </View>
         </View>
       </Modal>
@@ -335,6 +389,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginTop: 18,
+    marginBottom: 12,
   },
   searchWrap: {
     flex: 1,
@@ -354,9 +409,64 @@ const styles = StyleSheet.create({
     fontSize: 13,
     paddingVertical: 0,
   },
-  filterButton: {
-    width: 48,
-    height: 50,
+  equipChipRow: {
+    gap: 8,
+    paddingBottom: 14,
+  },
+  equipChip: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    minHeight: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  equipChipActive: {
+    backgroundColor: "rgba(255,90,54,0.15)",
+    borderColor: "rgba(255,90,54,0.35)",
+  },
+  equipChipText: {
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  equipChipTextActive: {
+    color: COLORS.teal,
+  },
+  gridRow: {
+    gap: 10,
+    marginBottom: 10,
+  },
+  gridCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  gridCardName: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "700",
+    flex: 1,
+  },
+  gridCardCount: {
+    color: COLORS.muted,
+    fontSize: 12,
+    marginLeft: 8,
+  },
+  listHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingBottom: 14,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
@@ -364,89 +474,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.09)",
   },
-  filterButtonActive: {
-    backgroundColor: "rgba(255,90,54,0.2)",
-    borderColor: "rgba(255,90,54,0.35)",
+  listHeaderAccent: {
+    width: 3,
+    height: 20,
+    borderRadius: 2,
   },
-  filterPanel: {
-    marginTop: 14,
-    gap: 12,
+  listHeaderTitle: {
+    color: COLORS.text,
+    fontSize: 18,
+    fontWeight: "700",
   },
-  filterSection: {
-    gap: 8,
+  listHeaderCount: {
+    color: COLORS.muted,
+    fontSize: 12,
   },
-  filterLabelRow: {
+  exerciseCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-  },
-  filterLabel: {
-    color: "rgba(255,255,255,0.35)",
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-  },
-  clearText: {
-    color: COLORS.teal,
-    fontSize: 11,
-    fontWeight: "600",
-  },
-  filterChipRow: {
-    gap: 8,
-    paddingVertical: 2,
-  },
-  filterChip: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    paddingVertical: 14,
     paddingHorizontal: 14,
-    paddingVertical: 7,
   },
-  filterChipActive: {
-    backgroundColor: "rgba(255,90,54,0.15)",
-    borderColor: "rgba(255,90,54,0.35)",
+  exerciseBody: {
+    flex: 1,
   },
-  filterChipText: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 11,
+  exerciseName: {
+    color: COLORS.text,
+    fontSize: 14,
     fontWeight: "700",
   },
-  filterChipTextActive: {
-    color: COLORS.teal,
+  exerciseDetail: {
+    color: COLORS.muted,
+    fontSize: 11,
+    marginTop: 2,
   },
-  activeFilterRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  listContent: {
+    paddingBottom: 34,
+  },
+  centerState: {
+    alignItems: "center",
+    paddingVertical: 40,
     gap: 8,
   },
-  activeFilterTag: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(255,90,54,0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(255,90,54,0.3)",
-  },
-  activeFilterText: {
-    color: COLORS.teal,
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  resultsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 14,
-    marginBottom: 10,
-  },
-  resultsText: {
-    color: "rgba(255,255,255,0.35)",
-    fontSize: 11,
+  stateText: {
+    color: COLORS.muted,
+    fontSize: 14,
+    textAlign: "center",
   },
   errorBox: {
     borderRadius: 14,
@@ -470,79 +542,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     marginLeft: 12,
-  },
-  listContent: {
-    gap: 10,
-    paddingBottom: 34,
-  },
-  centerState: {
-    alignItems: "center",
-    paddingVertical: 40,
-    gap: 8,
-  },
-  stateEmoji: {
-    fontSize: 32,
-  },
-  stateTitle: {
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  stateText: {
-    color: COLORS.muted,
-    fontSize: 13,
-    textAlign: "center",
-  },
-  exerciseCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 24,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  emojiWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  emoji: {
-    fontSize: 20,
-  },
-  exerciseBody: {
-    flex: 1,
-  },
-  exerciseName: {
-    color: COLORS.text,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  exerciseDetail: {
-    color: "rgba(255,255,255,0.4)",
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 2,
-  },
-  exerciseMeta: {
-    alignItems: "flex-end",
-    gap: 6,
-  },
-  difficultyTag: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: "flex-start",
-    borderWidth: 1,
-  },
-  difficultyText: {
-    fontSize: 10,
-    fontWeight: "700",
   },
   modalScrim: {
     flex: 1,
