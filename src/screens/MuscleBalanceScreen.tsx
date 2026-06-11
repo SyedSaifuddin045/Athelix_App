@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -8,15 +7,29 @@ import { useAuth } from "@clerk/expo";
 import { useMuscleBalanceQuery } from "../api/queries";
 import { MUSCLE_PERIODS } from "../data";
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS } from "../theme/spacing";
 import { styles } from "../theme/styles";
 import { Card, EmptyCard, ErrorCard, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
-import { BackHeader, RoundButton } from "../components/ui/Button";
+import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow, Tag, ProgressBar } from "../components/ui/Indicators";
+import { Icon } from "../components/ui/Icon";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "MuscleBalance">;
   route: RouteProp<RootStackParamList, "MuscleBalance">;
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  Strong: COLORS.green,
+  Balanced: COLORS.blue,
+  "Needs Attention": COLORS.red,
+};
+
+const STATUS_ICONS: Record<string, React.ReactNode> = {
+  Strong: <Icon name="check-circle" size={14} color={COLORS.green} />,
+  Balanced: <Icon name="equal" size={14} color={COLORS.blue} />,
+  "Needs Attention": <Icon name="alert-triangle" size={14} color={COLORS.red} />,
 };
 
 export function MuscleBalanceScreen({ navigation, route }: Props) {
@@ -28,104 +41,78 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
   const report = useMuscleBalanceQuery({ weeks, mesocycle_id: mesocycleId }, isAuthenticated);
   const items = report.data?.items ?? [];
   const strongItems = items.filter((item) => item.status === "Strong");
-  const balancedItems = items.filter((item) => item.status === "Balanced");
-  const needsAttentionItems = items.filter((item) => item.status !== "Strong" && item.status !== "Balanced");
-
-  function statusColor(status: string) {
-    if (status === "Strong") return COLORS.green;
-    if (status === "Balanced") return COLORS.gold;
-    if (status === "Undertrained") return COLORS.orange;
-    return COLORS.red;
-  }
-
-  function sectionHeaderColor(group: string) {
-    if (group === "strong") return COLORS.green;
-    if (group === "balanced") return COLORS.gold;
-    return COLORS.orange;
-  }
-
-  function renderItems(groupItems: (typeof items), groupKey: string) {
-    if (groupItems.length === 0) return null;
-    const headerColor = sectionHeaderColor(groupKey);
-    return (
-      <View style={{ marginTop: 18 }}>
-        <SectionEyebrow color={headerColor}>{groupKey === "strong" ? "Strong Areas" : groupKey === "balanced" ? "Balanced" : "Needs Attention"}</SectionEyebrow>
-        <View style={{ gap: 10, marginTop: 10 }}>
-          {groupItems.map((item) => {
-            const isExpanded = expanded === item.muscle_group;
-            const color = statusColor(item.status);
-            return (
-              <Pressable key={item.muscle_group} onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
-                <Card>
-                  <View style={styles.rowBetween}>
-                    <Text style={styles.listRowTitle}>{item.muscle_group}</Text>
-                    <View style={styles.rowGap}>
-                      <Text style={[styles.detailLabel, { minWidth: 32, textAlign: "right" }]}>{item.score}</Text>
-                      <Tag label={item.status} color={color} />
-                    </View>
-                  </View>
-                  <View style={{ marginTop: 10 }}>
-                    <ProgressBar value={item.score} color={color} />
-                  </View>
-                  <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, marginTop: 8, lineHeight: 16 }}>
-                    {item.recommendation}
-                  </Text>
-                  {item.exercises.length > 0 && (
-                    <View style={{ marginTop: 10, borderTopWidth: isExpanded ? 1 : 0, borderTopColor: "rgba(255,255,255,0.06)", paddingTop: isExpanded ? 8 : 0 }}>
-                      {isExpanded && item.exercises.map((ex, i) => (
-                        <View key={i} style={[styles.rowBetween, { marginTop: i > 0 ? 4 : 0 }]}>
-                          <Text style={[styles.detailLabel, { flex: 1 }]}>{ex.exercise_name}</Text>
-                          <Text style={styles.detailLabel}>
-                            {ex.completed_sets.toFixed(1)} sets ({ex.average_weekly_sets.toFixed(1)}/wk)
-                          </Text>
-                        </View>
-                      ))}
-                      <Text style={[styles.detailLabel, { marginTop: 4, textAlign: "right" }]}>
-                        {item.weekly_sets.toFixed(1)} sets · {item.average_weekly_sets.toFixed(1)}/wk
-                      </Text>
-                    </View>
-                  )}
-                </Card>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-    );
-  }
 
   return (
     <Screen>
-      <BackHeader
-        title="Muscle Balance"
-        onBack={() => navigation.goBack()}
-        right={
-          <RoundButton>
-            <Feather name="info" size={15} color="rgba(255,255,255,0.6)" />
-          </RoundButton>
-        }
-      />
+      <BackHeader title="Muscle Balance" subtitle="Training volume distribution" onBack={() => navigation.goBack()} />
 
-      <View style={styles.segmentedWrap}>
-        {MUSCLE_PERIODS.map((entry) => (
+      <View style={[styles.segmentedWrap, { flexDirection: "row", backgroundColor: COLORS.cardSoft, borderRadius: RADIUS.input, padding: SPACING.xs, marginTop: SPACING.xl3 }]}>
+        {MUSCLE_PERIODS.map((p) => (
           <Pressable
-            key={entry}
-            onPress={() => setPeriod(entry)}
-            style={[styles.segmentedOption, period === entry ? styles.segmentedOptionActive : null]}
+            key={p}
+            onPress={() => setPeriod(p)}
+            style={[
+              styles.segmentedOption,
+              {
+                flex: 1,
+                minHeight: 38,
+                borderRadius: RADIUS.input - 4,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: period === p ? "rgba(139,92,246,0.35)" : "transparent",
+                backgroundColor: period === p ? "rgba(139,92,246,0.25)" : "transparent",
+              },
+            ]}
           >
-            <Text style={[styles.segmentedText, period === entry ? { color: "#a78bfa" } : null]}>{entry}</Text>
+            <Text style={[styles.segmentedText, period === p ? { color: COLORS.purple } : { color: COLORS.muted }]}>
+              {p}
+            </Text>
           </Pressable>
         ))}
       </View>
 
-      {report.isPending ? <LoadingCard label="Loading muscle balance..." /> : null}
+      {report.isPending ? <LoadingCard label="Analyzing muscle balance..." /> : null}
       {report.isError ? <ErrorCard error={report.error} onRetry={() => report.refetch()} /> : null}
 
-      {renderItems(strongItems, "strong")}
-      {renderItems(balancedItems, "balanced")}
-      {renderItems(needsAttentionItems, "needs-attention")}
-
-      {!report.isPending && items.length === 0 ? <EmptyCard title="No muscle data" text="Complete workouts to generate analytics." /> : null}
+      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl }}>
+        {items.map((item) => {
+          const isExpanded = expanded === item.muscle_group;
+          return (
+            <Card key={item.muscle_group} elevated>
+              <Pressable onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
+                <View style={styles.rowBetween}>
+                  <View style={[styles.rowGap, { flex: 1 }]}>
+                    {STATUS_ICONS[item.status]}
+                    <Text style={[styles.cardTitle, { flex: 1 }]}>{item.muscle_group}</Text>
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: SPACING.xxs }}>
+                    <Tag label={item.status} color={STATUS_COLORS[item.status] ?? COLORS.muted} />
+                    <Text style={styles.listMeta}>{item.percentage}%</Text>
+                  </View>
+                </View>
+                <View style={{ marginTop: SPACING.xl }}>
+                  <ProgressBar value={item.percentage} color={STATUS_COLORS[item.status] ?? COLORS.purple} />
+                </View>
+              </Pressable>
+              {isExpanded && item.exercises?.length ? (
+                <View style={{ marginTop: SPACING.xl2, gap: SPACING.md }}>
+                  {item.exercises.map((ex: any) => (
+                    <View key={ex.name} style={[styles.rowGap, { paddingLeft: SPACING.xl }]}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.faint }} />
+                      <Text style={[styles.listMeta, { flex: 1 }]}>{ex.name}</Text>
+                      <Text style={styles.smallStrongText}>{ex.percentage}%</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </Card>
+          );
+        })}
+        {!report.isPending && items.length === 0 ? (
+          <EmptyCard title="No data yet" text="Complete sessions to see muscle balance." />
+        ) : null}
+      </View>
     </Screen>
   );
 }

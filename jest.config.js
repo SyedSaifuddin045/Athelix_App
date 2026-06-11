@@ -2,7 +2,7 @@
 const config = {
   preset: "jest-expo",
   transformIgnorePatterns: [
-    "node_modules/(?!(react-native|@react-native|@react-navigation|expo|@expo|expo-constants|expo-modules-core|expo-secure-store|react-native-gesture-handler|react-native-safe-area-context|@tanstack/react-query|@expo/vector-icons|react-native-reanimated)/)",
+    "node_modules/(?!(react-native|@react-native|@react-navigation|expo|@expo|expo-constants|expo-modules-core|expo-secure-store|react-native-gesture-handler|react-native-safe-area-context|@tanstack/react-query|@expo/vector-icons|react-native-reanimated|react-native-worklets)/)",
   ],
   moduleNameMapper: {
     "^@expo/vector-icons$": "<rootDir>/src/test/mocks/vector-icons.js",

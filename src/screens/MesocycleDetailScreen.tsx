@@ -1,13 +1,12 @@
 import { Pressable, Text, View } from "react-native";
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
-
 import { useAuth } from "@clerk/expo";
 import { useMesocycleDetailQuery, useMesocycleAnalyticsQuery } from "../api/queries";
 import { useDeleteMesocycle } from "../api/mutations";
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS } from "../theme/spacing";
 import { styles } from "../theme/styles";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
@@ -15,6 +14,7 @@ import { BackHeader, RoundButton } from "../components/ui/Button";
 import { ProgressBar } from "../components/ui/Indicators";
 import { MetaInline, AnalyticsCard } from "../components/ui/Stats";
 import { SectionEyebrow } from "../components/ui/Indicators";
+import { Icon } from "../components/ui/Icon";
 import { workoutTitle } from "../utils/display";
 import { formatShortDate, formatVolume } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
@@ -29,9 +29,7 @@ export function MesocycleDetailScreen({ navigation, route }: Props) {
   const mesocycleId = toNumberId(route?.params?.id);
   const detail = useMesocycleDetailQuery(mesocycleId, isAuthenticated);
   const analytics = useMesocycleAnalyticsQuery(mesocycleId, undefined, isAuthenticated);
-  const deleteMeso = useDeleteMesocycle({
-    onSuccess: () => navigation.replace("MesocycleList"),
-  });
+  const deleteMeso = useDeleteMesocycle({ onSuccess: () => navigation.replace("MesocycleList") });
 
   if (detail.isPending) {
     return (
@@ -64,76 +62,71 @@ export function MesocycleDetailScreen({ navigation, route }: Props) {
         title="Mesocycle"
         onBack={() => navigation.goBack()}
         right={
-          <RoundButton onPress={() => mesocycleId && deleteMeso.mutate(mesocycleId)}>
-            <Feather name="trash-2" size={15} color={COLORS.red} />
+          <RoundButton onPress={() => mesocycleId && deleteMeso.mutate(mesocycleId)} accent>
+            <Icon name="trash-2" size={15} color={COLORS.red} />
           </RoundButton>
         }
       />
 
-      <Card style={{ marginTop: 18, backgroundColor: "rgba(139,92,246,0.1)", borderColor: "rgba(139,92,246,0.25)" }}>
+      <Card elevated accent="purple" style={{ marginTop: SPACING.xl3 }}>
         <View style={styles.rowGap}>
-          <View style={[styles.statusDot, { backgroundColor: COLORS.teal }]} />
+          <View style={[styles.statusDot, { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.teal }]} />
           <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>{meso.ended_on ? "COMPLETE" : "ACTIVE"}</Text>
         </View>
-        <Text style={[styles.heroTitle, { marginTop: 10 }]}>{meso.name}</Text>
-        <Text style={styles.detailLabel}>{meso.goal ?? "Training block"}</Text>
-        <View style={[styles.rowBetween, { marginTop: 18 }]}>
+        <Text style={[styles.heroTitle, { marginTop: SPACING.lg }]}>{meso.name}</Text>
+        <Text style={[styles.detailLabel, { marginTop: SPACING.xxs }]}>{meso.goal ?? "Training block"}</Text>
+        <View style={[styles.rowBetween, { marginTop: SPACING.xl3 }]}>
           <Text style={styles.detailLabel}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
           <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>{Math.round(progress)}%</Text>
         </View>
-        <View style={{ marginTop: 8 }}>
+        <View style={{ marginTop: SPACING.md }}>
           <ProgressBar value={progress} color={COLORS.purple} />
         </View>
-        <View style={[styles.rowGapLarge, { marginTop: 16, flexWrap: "wrap" }]}>
-          <MetaInline icon={<Feather name="calendar" size={12} color="rgba(255,255,255,0.35)" />} text={`${formatShortDate(meso.started_on)} -> ${formatShortDate(meso.ended_on)}`} />
-          <MetaInline
-            icon={<MaterialCommunityIcons name="dumbbell" size={12} color="rgba(255,255,255,0.35)" />}
-            text={`${meso.sessions.length} sessions logged`}
-          />
+        <View style={[styles.rowGapLarge, { marginTop: SPACING.xl3, flexWrap: "wrap", gap: SPACING.xl }]}>
+          <MetaInline icon="calendar" label={`${formatShortDate(meso.started_on)} -> ${formatShortDate(meso.ended_on)}`} />
+          <MetaInline icon="list-checks" label={`${meso.sessions.length} sessions logged`} />
         </View>
       </Card>
 
-      <Card style={{ marginTop: 14, backgroundColor: "rgba(139,92,246,0.07)", borderColor: "rgba(139,92,246,0.2)" }}>
+      <Card elevated accent="purple" style={{ marginTop: SPACING.xl2 }}>
         <View style={styles.rowGap}>
-          <Feather name="lock" size={13} color={COLORS.purple} />
+          <Icon name="lock" size={13} color={COLORS.purple} />
           <Text style={[styles.listRowTitle, { color: COLORS.purple }]}>Block Analytics</Text>
         </View>
-        <View style={[styles.twoUpGrid, { marginTop: 14 }]}>
+        <View style={[{ flexDirection: "row", flexWrap: "wrap", gap: SPACING.lg, marginTop: SPACING.xl2 }]}>
           <AnalyticsCard label="vs. Previous Block" value={delta ? formatVolume(delta.total_volume_load_delta) : "-"} sub="volume delta" color={COLORS.green} />
-          <AnalyticsCard
-            label="Deload Suggestion"
-            value={analytics.data?.deload_suggestion.is_recommended ? "Yes" : "No"}
-            sub="based on high RPE weeks"
-            color={COLORS.text}
-          />
+          <AnalyticsCard label="Deload Suggestion" value={analytics.data?.deload_suggestion.is_recommended ? "Yes" : "No"} sub="based on high RPE weeks" color={COLORS.text} />
           <AnalyticsCard label="Total Sets" value={String(summary?.total_sets ?? 0)} sub="current block" color={COLORS.green} />
           <AnalyticsCard label="Avg Session RPE" value={summary?.average_session_rpe?.toFixed(1) ?? "-"} sub="current block" color={COLORS.green} />
         </View>
-        <Pressable onPress={() => navigation.navigate({ name: "MuscleBalance", params: { mesocycleId: mesocycleId ?? undefined } })} style={styles.analyticsLink}>
+        <Pressable
+          onPress={() => navigation.navigate({ name: "MuscleBalance", params: { mesocycleId: mesocycleId ?? undefined } })}
+          style={[styles.analyticsLink, { marginTop: SPACING.xl2, borderRadius: RADIUS.input, backgroundColor: "rgba(139,92,246,0.12)", paddingHorizontal: SPACING.xl2, paddingVertical: SPACING.xl2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+        >
           <View style={styles.rowGap}>
-            <Feather name="bar-chart-2" size={14} color={COLORS.purple} />
+            <Icon name="bar-chart-2" size={14} color={COLORS.purple} />
             <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>Muscle Balance Analysis</Text>
           </View>
-          <Ionicons name="chevron-forward" size={13} color={COLORS.purple} />
+          <Icon name="chevron-right" size={13} color={COLORS.purple} />
         </Pressable>
       </Card>
 
-      <View style={{ marginTop: 18 }}>
+      <View style={{ marginTop: SPACING.xl3 }}>
         <SectionEyebrow>Linked Sessions</SectionEyebrow>
-        <View style={{ gap: 10, marginTop: 12 }}>
+        <View style={{ gap: SPACING.lg, marginTop: SPACING.xl }}>
           {meso.sessions.map((session) => (
             <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
-              <Card style={styles.listRowCard}>
-                <View style={styles.softIconWrap}>
-                  <MaterialCommunityIcons name="dumbbell" size={16} color={COLORS.purple} />
+              <Card elevated style={[styles.listRowCard, { flexDirection: "row", alignItems: "center", gap: SPACING.lg }]}>
+                <View style={[styles.softIconWrap, { width: 40, height: 40, borderRadius: RADIUS.iconWrap, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
+                  <Icon name="list-checks" size={16} color={COLORS.purple} />
                 </View>
-                <View style={styles.listRowBody}>
+                <View style={[styles.listRowBody, { flex: 1 }]}>
                   <Text style={styles.listRowTitle}>{workoutTitle(session)}</Text>
                   <Text style={styles.detailLabel}>
                     {formatShortDate(session.started_at)} - {session.total_sets ?? 0} sets - {formatVolume(session.total_volume)}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={13} color="rgba(255,255,255,0.22)" />
+                <Icon name="chevron-right" size={13} color={COLORS.faint} />
               </Card>
             </Pressable>
           ))}

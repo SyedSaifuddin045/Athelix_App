@@ -1,20 +1,21 @@
 import { useCallback, useState } from "react";
 import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth, useSignUp, useSSO } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
 import { CLERK_SSO_REDIRECT_URL } from "../auth/clerk";
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS } from "../theme/spacing";
 import { styles } from "../theme/styles";
 import { Screen } from "../components/ui/Layout";
 import { PrimaryButton, RoundButton } from "../components/ui/Button";
+import { Icon } from "../components/ui/Icon";
 
 const OAUTH_PROVIDERS = [
-  { strategy: "oauth_google" as const, label: "Google", icon: "google" as const, color: "#FFFFFF" },
-  { strategy: "oauth_facebook" as const, label: "Facebook", icon: "facebook" as const, color: "#1877F2" },
-  { strategy: "oauth_apple" as const, label: "Apple", icon: "apple" as const, color: "#FFFFFF" },
+  { strategy: "oauth_google" as const, label: "Google", icon: "chrome" as const },
+  { strategy: "oauth_facebook" as const, label: "Facebook", icon: "facebook" as const },
+  { strategy: "oauth_apple" as const, label: "Apple", icon: "apple" as const },
 ] as const;
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Register"> };
@@ -40,27 +41,13 @@ export function RegisterScreen({ navigation }: Props) {
   const handleOAuth = useCallback(async (strategy: "oauth_google" | "oauth_facebook" | "oauth_apple") => {
     setError("");
     setOauthProvider(strategy);
-
     try {
-      const { createdSessionId, setActive, signIn, signUp, authSessionResult } = await startSSOFlow({
+      const { createdSessionId, setActive, signIn, signUp } = await startSSOFlow({
         strategy,
         redirectUrl: CLERK_SSO_REDIRECT_URL,
       });
-
-      console.log("[SSO] result:", {
-        createdSessionId,
-        hasSetActive: !!setActive,
-        hasSignIn: !!signIn,
-        hasSignUp: !!signUp,
-        authSessionType: authSessionResult?.type,
-        signUpStatus: signUp?.status,
-        signUpMissingFields: signUp?.missingFields,
-        signUpCreatedSessionId: signUp?.createdSessionId,
-      });
-
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
-
         let token = await getToken();
         for (let i = 0; i < 30 && !token; i++) {
           await new Promise((r) => setTimeout(r, 200));
@@ -68,15 +55,9 @@ export function RegisterScreen({ navigation }: Props) {
         }
         updateClerkToken(token);
         setOauthProvider(null);
-
-        if (signIn) {
-          navigation.replace("MainTabs");
-        } else {
-          navigation.replace("ProfileSetup");
-        }
+        navigation.replace(signIn ? "MainTabs" : "ProfileSetup");
         return;
       }
-
       if (signUp && setActive) {
         if (signUp.status === "missing_requirements" || !signUp.createdSessionId) {
           const updates: Record<string, string> = {};
@@ -85,20 +66,12 @@ export function RegisterScreen({ navigation }: Props) {
             const sanitized = emailPrefix.replace(/[^a-zA-Z0-9_-]/g, "").replace(/-+/g, "-").replace(/_+/g, "_");
             updates.username = form.username || sanitized.slice(0, 30) || `user_${Date.now()}`;
           }
-          if (signUp.missingFields?.includes("first_name")) {
-            updates.firstName = signUp.firstName || "";
-          }
-          if (signUp.missingFields?.includes("last_name")) {
-            updates.lastName = signUp.lastName || "";
-          }
-          if (Object.keys(updates).length > 0) {
-            await signUp.update(updates);
-          }
+          if (signUp.missingFields?.includes("first_name")) updates.firstName = signUp.firstName || "";
+          if (signUp.missingFields?.includes("last_name")) updates.lastName = signUp.lastName || "";
+          if (Object.keys(updates).length > 0) await signUp.update(updates);
         }
-
         if (signUp.createdSessionId) {
           await setActive({ session: signUp.createdSessionId });
-
           let token = await getToken();
           for (let i = 0; i < 30 && !token; i++) {
             await new Promise((r) => setTimeout(r, 200));
@@ -109,14 +82,11 @@ export function RegisterScreen({ navigation }: Props) {
           navigation.replace("ProfileSetup");
           return;
         }
-
         const required = signUp.missingFields?.join(", ");
         throw new Error(required ? `Sign-up requires: ${required}` : "Sign-up could not be completed");
       }
-
       throw new Error("SSO flow did not produce a session");
     } catch (err) {
-      console.error("[SSO] error:", err);
       setOauthProvider(null);
       setError(getApiErrorMessage(err));
     }
@@ -134,10 +104,8 @@ export function RegisterScreen({ navigation }: Props) {
         emailAddress: form.email.trim(),
         password: form.password,
       });
-
       if (createError) {
         setLoading(false);
-        console.error("Clerk sign-up error:", JSON.stringify(createError, null, 2));
         const clerkErr = createError as any;
         if (clerkErr.errors?.length) {
           const messages = clerkErr.errors.map((e: any) => e.longMessage || e.message).join("; ");
@@ -147,18 +115,13 @@ export function RegisterScreen({ navigation }: Props) {
         }
         return;
       }
-
-      if (form.username.trim()) {
-        await signUp.update({ username: form.username.trim() });
-      }
-
+      if (form.username.trim()) await signUp.update({ username: form.username.trim() });
       const { error: sendError } = await signUp.verifications.sendEmailCode();
       if (sendError) {
         setLoading(false);
         setError(sendError.message || "Failed to send verification code");
         return;
       }
-
       setPendingVerification(true);
       setLoading(false);
     } catch (err) {
@@ -176,7 +139,6 @@ export function RegisterScreen({ navigation }: Props) {
         setError(verifyError.message || "Invalid verification code");
         return;
       }
-
       if (signUp.status === "complete") {
         await signUp.finalize();
         let token = await getToken();
@@ -199,11 +161,11 @@ export function RegisterScreen({ navigation }: Props) {
 
   if (pendingVerification) {
     return (
-      <Screen contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
-        <View style={[styles.headerRow, { paddingTop: 10 }]}>
+      <Screen contentContainerStyle={{ paddingHorizontal: SPACING.xl5, paddingBottom: SPACING.xl7 }}>
+        <View style={[styles.headerRow, { paddingTop: SPACING.lg }]}>
           <View style={styles.headerLeft}>
             <RoundButton onPress={() => { setPendingVerification(false); setCode(""); }}>
-              <Feather name="arrow-left" size={16} color={COLORS.text} />
+              <Icon name="arrow-left" size={16} color={COLORS.text} />
             </RoundButton>
             <View>
               <Text style={styles.headerTitle}>Verify Email</Text>
@@ -211,18 +173,17 @@ export function RegisterScreen({ navigation }: Props) {
             </View>
           </View>
         </View>
-
-        <View style={styles.formStack}>
+        <View style={[styles.formStack, { gap: SPACING.xl2, marginTop: SPACING.xl5 }]}>
           <TextInput
             value={code}
             onChangeText={setCode}
             placeholder="Verification code"
-            placeholderTextColor="rgba(255,255,255,0.28)"
-            style={styles.input}
+            placeholderTextColor={COLORS.faint}
+            style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
             keyboardType="number-pad"
           />
           {error ? (
-            <View style={styles.errorBox}>
+            <View style={[styles.errorBox, { backgroundColor: COLORS.redDark, borderColor: "rgba(239,68,68,0.25)" }]}>
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
@@ -230,7 +191,7 @@ export function RegisterScreen({ navigation }: Props) {
             label={loading ? "Verifying..." : "Verify"}
             onPress={handleVerify}
             disabled={loading || !code}
-            icon={loading ? <ActivityIndicator color="#000000" /> : <Feather name="check" size={16} color="#000000" />}
+            icon={loading ? <ActivityIndicator color="#000000" /> : <Icon name="check" size={16} color="#000000" />}
           />
         </View>
       </Screen>
@@ -238,11 +199,11 @@ export function RegisterScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 32 }}>
-      <View style={[styles.headerRow, { paddingTop: 10 }]}>
+    <Screen contentContainerStyle={{ paddingHorizontal: SPACING.xl5, paddingBottom: SPACING.xl7 }}>
+      <View style={[styles.headerRow, { paddingTop: SPACING.lg }]}>
         <View style={styles.headerLeft}>
           <RoundButton onPress={() => navigation.replace("Login")}>
-            <Feather name="arrow-left" size={16} color={COLORS.text} />
+            <Icon name="arrow-left" size={16} color={COLORS.text} />
           </RoundButton>
           <View>
             <Text style={styles.headerTitle}>Create Account</Text>
@@ -251,52 +212,52 @@ export function RegisterScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <View style={styles.formStack}>
+      <View style={[styles.formStack, { gap: SPACING.xl2, marginTop: SPACING.xl4 }]}>
         <View>
           <Text style={styles.fieldLabel}>Username</Text>
           <TextInput
             value={form.username}
-            onChangeText={(value) => setForm((current) => ({ ...current, username: value }))}
+            onChangeText={(v) => setForm((c) => ({ ...c, username: v }))}
             placeholder="jordan_lifts"
-            placeholderTextColor="rgba(255,255,255,0.28)"
-            style={styles.input}
+            placeholderTextColor={COLORS.faint}
+            style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
           />
         </View>
         <View>
           <Text style={styles.fieldLabel}>Email</Text>
           <TextInput
             value={form.email}
-            onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
+            onChangeText={(v) => setForm((c) => ({ ...c, email: v }))}
             placeholder="jordan@example.com"
-            placeholderTextColor="rgba(255,255,255,0.28)"
-            style={styles.input}
+            placeholderTextColor={COLORS.faint}
+            style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
         <View>
           <Text style={styles.fieldLabel}>Password</Text>
-          <View style={styles.inputWrap}>
+          <View style={[styles.inputWrap, { position: "relative" }]}>
             <TextInput
               value={form.password}
-              onChangeText={(value) => setForm((current) => ({ ...current, password: value }))}
+              onChangeText={(v) => setForm((c) => ({ ...c, password: v }))}
               placeholder="Create a strong password"
-              placeholderTextColor="rgba(255,255,255,0.28)"
-              style={[styles.input, styles.inputWithRight]}
+              placeholderTextColor={COLORS.faint}
+              style={[styles.input, styles.inputWithRight, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
               secureTextEntry={!showPassword}
             />
-            <Pressable style={styles.inputRightIcon} onPress={() => setShowPassword((value) => !value)}>
-              <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="rgba(255,255,255,0.42)" />
+            <Pressable style={[styles.inputRightIcon, { position: "absolute", right: SPACING.xl2, top: SPACING.xl3 }]} onPress={() => setShowPassword((v) => !v)}>
+              <Icon name={showPassword ? "eye-off" : "eye"} size={16} color={COLORS.muted} />
             </Pressable>
           </View>
           {form.password.length > 0 ? (
-            <View style={styles.passwordChecks}>
+            <View style={[styles.passwordChecks, { flexDirection: "row", flexWrap: "wrap", gap: SPACING.lg, marginTop: SPACING.xl }]}>
               {checks.map((check) => (
-                <View key={check.label} style={styles.passwordCheck}>
-                  <View style={[styles.checkBubble, check.ok ? { backgroundColor: COLORS.teal } : null]}>
-                    {check.ok ? <Feather name="check" size={8} color="#000000" /> : null}
+                <View key={check.label} style={[styles.passwordCheck, { flexDirection: "row", alignItems: "center", gap: SPACING.sm }]}>
+                  <View style={[styles.checkBubble, { width: 14, height: 14, borderRadius: 7, backgroundColor: check.ok ? COLORS.teal : COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
+                    {check.ok ? <Icon name="check" size={8} color="#000000" /> : null}
                   </View>
-                  <Text style={[styles.passwordCheckText, check.ok ? { color: COLORS.teal } : null]}>{check.label}</Text>
+                  <Text style={[styles.passwordCheckText, check.ok ? { color: COLORS.teal } : { color: COLORS.muted }]}>{check.label}</Text>
                 </View>
               ))}
             </View>
@@ -306,48 +267,47 @@ export function RegisterScreen({ navigation }: Props) {
           By creating an account, you agree to our <Text style={styles.linkTextInline}>Terms of Service</Text> and{" "}
           <Text style={styles.linkTextInline}>Privacy Policy</Text>.
         </Text>
-          {error ? (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : null}
-          <PrimaryButton
-            label={loading ? "Creating Account..." : "Create Account"}
-            onPress={handleRegister}
-            disabled={loading || fetchStatus === "fetching"}
-            icon={loading ? <ActivityIndicator color="#000000" /> : <Feather name="arrow-right" size={16} color="#000000" />}
-          />
-          <View style={styles.authDividerRow}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.divider} />
+        {error ? (
+          <View style={[styles.errorBox, { backgroundColor: COLORS.redDark, borderColor: "rgba(239,68,68,0.25)" }]}>
+            <Text style={styles.errorText}>{error}</Text>
           </View>
-          <View style={{ gap: 10 }}>
-            {OAUTH_PROVIDERS.map((provider) => (
-              <Pressable
-                key={provider.strategy}
-                style={[styles.oauthButton, { borderColor: "rgba(255,255,255,0.12)" }]}
-                onPress={() => handleOAuth(provider.strategy)}
-                disabled={oauthProvider !== null}
-              >
-                {oauthProvider === provider.strategy ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <MaterialCommunityIcons name={provider.icon} size={18} color={provider.color} />
-                )}
-                <Text style={styles.oauthButtonText}>
-                  {oauthProvider === provider.strategy ? `Connecting to ${provider.label}...` : `Continue with ${provider.label}`}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          {/* Required for Clerk's bot sign-up protection */}
-          <View nativeID="clerk-captcha" />
+        ) : null}
+        <PrimaryButton
+          label={loading ? "Creating Account..." : "Create Account"}
+          onPress={handleRegister}
+          disabled={loading || fetchStatus === "fetching"}
+          icon={loading ? <ActivityIndicator color="#000000" /> : <Icon name="arrow-right" size={16} color="#000000" />}
+        />
+        <View style={[styles.authDividerRow, { flexDirection: "row", alignItems: "center", gap: SPACING.lg, marginVertical: SPACING.xl4 }]}>
+          <View style={[styles.divider, { flex: 1, height: 1, backgroundColor: COLORS.border }]} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={[styles.divider, { flex: 1, height: 1, backgroundColor: COLORS.border }]} />
         </View>
+        <View style={{ gap: SPACING.lg }}>
+          {OAUTH_PROVIDERS.map((provider) => (
+            <Pressable
+              key={provider.strategy}
+              style={[styles.oauthButton, { minHeight: 52, borderRadius: RADIUS.input, backgroundColor: COLORS.cardSoft, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: SPACING.lg }]}
+              onPress={() => handleOAuth(provider.strategy)}
+              disabled={oauthProvider !== null}
+            >
+              {oauthProvider === provider.strategy ? (
+                <ActivityIndicator color={COLORS.text} />
+              ) : (
+                <Icon name={provider.icon} size={18} color={COLORS.text} />
+              )}
+              <Text style={[styles.oauthButtonText, { color: COLORS.text }]}>
+                {oauthProvider === provider.strategy ? `Connecting to ${provider.label}...` : `Continue with ${provider.label}`}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+        <View nativeID="clerk-captcha" />
+      </View>
 
-      <Text style={styles.authBottomText}>
+      <Text style={[styles.authBottomText, { color: COLORS.muted, marginTop: SPACING.xl5 }]}>
         Already have an account?{" "}
-        <Text style={styles.linkTextInline} onPress={() => navigation.replace("Login")}>
+        <Text style={[styles.linkTextInline, { fontWeight: "700" }]} onPress={() => navigation.replace("Login")}>
           Sign In
         </Text>
       </Text>

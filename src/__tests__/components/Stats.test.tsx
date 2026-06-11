@@ -1,13 +1,12 @@
 import React from "react";
 import { render } from "@testing-library/react-native";
-import { Text } from "react-native";
 
 import { StatPill, MetaInline, CompactStatCard, DetailStat, AnalyticsCard, MetricBlock } from "../../components/ui/Stats";
 import { COLORS } from "../../theme/colors";
 
 describe("StatPill", () => {
   it("renders label and value", () => {
-    const { getByText } = render(<StatPill icon={<Text>i</Text>} label="Sets" value="12" />);
+    const { getByText } = render(<StatPill icon="dumbbell" label="Sets" value="12" />);
     expect(getByText("Sets")).toBeTruthy();
     expect(getByText("12")).toBeTruthy();
   });
@@ -15,7 +14,7 @@ describe("StatPill", () => {
 
 describe("MetaInline", () => {
   it("renders text", () => {
-    const { getByText } = render(<MetaInline icon={<Text>i</Text>} text="60m" />);
+    const { getByText } = render(<MetaInline icon="clock" label="60m" />);
     expect(getByText("60m")).toBeTruthy();
   });
 });
@@ -30,7 +29,7 @@ describe("CompactStatCard", () => {
 
 describe("DetailStat", () => {
   it("renders label and value", () => {
-    const { getByText } = render(<DetailStat label="Duration" value="60m" icon={<Text>i</Text>} />);
+    const { getByText } = render(<DetailStat label="Duration" value="60m" icon="clock" />);
     expect(getByText("Duration")).toBeTruthy();
     expect(getByText("60m")).toBeTruthy();
   });

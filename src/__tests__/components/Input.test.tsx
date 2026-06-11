@@ -21,7 +21,7 @@ describe("MiniInput", () => {
 
 describe("ChipWrap", () => {
   it("renders chip items", () => {
-    const { getByText } = render(<ChipWrap items={["A", "B", "C"]} selected="A" onSelect={jest.fn()} activeColor={COLORS.teal} />);
+    const { getByText } = render(<ChipWrap items={[{ value: "A", label: "A" }, { value: "B", label: "B" }, { value: "C", label: "C" }]} selected="A" onSelect={jest.fn()} activeColor={COLORS.teal} />);
     expect(getByText("A")).toBeTruthy();
     expect(getByText("B")).toBeTruthy();
   });

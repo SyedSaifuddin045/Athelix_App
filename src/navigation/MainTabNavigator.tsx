@@ -1,9 +1,11 @@
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { View } from "react-native";
 
 import type { TabParamList } from "../types/navigation";
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
+import { Icon, type IconName } from "../components/ui/Icon";
 
 import { HomeScreen } from "../screens/HomeScreen";
 import { ExploreScreen } from "../screens/ExploreScreen";
@@ -13,30 +15,69 @@ import { ProfileScreen } from "../screens/ProfileScreen";
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
+const TABS: { name: keyof TabParamList; icon: IconName; label: string }[] = [
+  { name: "Home", icon: "home", label: "Home" },
+  { name: "Explore", icon: "search", label: "Explore" },
+  { name: "Train", icon: "dumbbell", label: "Train" },
+  { name: "Progress", icon: "trending-up", label: "Progress" },
+  { name: "Profile", icon: "user", label: "Profile" },
+];
+
+function TabIcon({ icon, color, focused }: { icon: IconName; color: string; focused: boolean }) {
+  return (
+    <View style={{ alignItems: "center", justifyContent: "center" }}>
+      <Icon name={icon} size={focused ? 22 : 20} color={color} strokeWidth={focused ? 2.5 : 2} />
+    </View>
+  );
+}
+
 export function MainTabNavigator() {
   const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: "rgba(8,14,14,0.98)",
-          borderTopColor: "rgba(255,255,255,0.06)",
+          backgroundColor: COLORS.tabBar,
+          borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          paddingTop: 8,
-          paddingBottom: 10 + Math.max(insets.bottom, 6),
-          height: 70 + Math.max(insets.bottom, 6),
+          paddingTop: SPACING.md,
+          paddingBottom: SPACING.lg + Math.max(insets.bottom, SPACING.sm),
+          height: 70 + Math.max(insets.bottom, SPACING.sm),
         },
         tabBarActiveTintColor: COLORS.teal,
-        tabBarInactiveTintColor: "rgba(255,255,255,0.28)",
-        tabBarLabelStyle: { fontSize: 10, marginTop: 2 },
+        tabBarInactiveTintColor: COLORS.faint,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: "600",
+          marginTop: SPACING.xxs,
+        },
       }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: ({ color }) => <Feather name="home" size={20} color={color} /> }} />
-      <Tab.Screen name="Explore" component={ExploreScreen} options={{ tabBarIcon: ({ color }) => <Feather name="compass" size={20} color={color} /> }} />
-      <Tab.Screen name="Train" component={TrainHubScreen} options={{ tabBarIcon: ({ color }) => <MaterialCommunityIcons name="dumbbell" size={20} color={color} /> }} />
-      <Tab.Screen name="Progress" component={ProgressHubScreen} options={{ tabBarIcon: ({ color }) => <Feather name="trending-up" size={20} color={color} /> }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: ({ color }) => <Feather name="user" size={20} color={color} /> }} />
+      {TABS.map(({ name, icon, label }) => (
+        <Tab.Screen
+          key={name}
+          name={name}
+          component={
+            name === "Home"
+              ? HomeScreen
+              : name === "Explore"
+                ? ExploreScreen
+                : name === "Train"
+                  ? TrainHubScreen
+                  : name === "Progress"
+                    ? ProgressHubScreen
+                    : ProfileScreen
+          }
+          options={{
+            tabBarLabel: label,
+            tabBarIcon: ({ color, focused }) => (
+              <TabIcon icon={icon} color={color} focused={focused} />
+            ),
+          }}
+        />
+      ))}
     </Tab.Navigator>
   );
 }

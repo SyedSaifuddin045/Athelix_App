@@ -11,9 +11,8 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
-import { Feather, Ionicons } from "@expo/vector-icons";
-
 import { COLORS } from "../theme/colors";
+import { Icon } from "../components/ui/Icon";
 import { useExerciseFiltersQuery, useExercisesQuery } from "../api/queries";
 import type { ExerciseResponse } from "../api/model";
 import { getApiErrorMessage } from "../api/client";
@@ -108,7 +107,7 @@ export function ExercisePicker({
 
       <View style={styles.searchRow}>
         <View style={styles.searchWrap}>
-          <Feather name="search" size={15} color="rgba(255,255,255,0.4)" />
+          <Icon name="search" size={15} color="rgba(255,255,255,0.4)" />
           <TextInput
             value={query}
             onChangeText={setQuery}
@@ -118,7 +117,7 @@ export function ExercisePicker({
           />
           {query ? (
             <Pressable onPress={() => setQuery("")} hitSlop={8}>
-              <Feather name="x" size={14} color="rgba(255,255,255,0.42)" />
+              <Icon name="x" size={14} color="rgba(255,255,255,0.42)" />
             </Pressable>
           ) : null}
         </View>
@@ -127,7 +126,7 @@ export function ExercisePicker({
             onPress={() => setShowFilterPanel((value) => !value)}
             style={[styles.filterButton, showFilterPanel ? styles.filterButtonActive : null]}
           >
-            <Feather name="sliders" size={15} color={showFilterPanel ? COLORS.teal : "rgba(255,255,255,0.6)"} />
+            <Icon name="sliders-horizontal" size={15} color={showFilterPanel ? COLORS.teal : "rgba(255,255,255,0.6)"} />
           </Pressable>
         ) : null}
       </View>
@@ -181,7 +180,7 @@ export function ExercisePicker({
                   style={styles.activeFilterTag}
                 >
                   <Text style={styles.activeFilterText}>{filter}</Text>
-                  <Feather name="x" size={10} color={COLORS.teal} />
+                  <Icon name="x" size={10} color={COLORS.teal} />
                 </Pressable>
               ))}
             </View>
@@ -241,7 +240,7 @@ export function ExercisePicker({
                       {exercise.equipment ? "Equip" : "Body"}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.22)" />
+                  <Icon name="chevron-right" size={14} color="rgba(255,255,255,0.22)" />
                 </View>
               </View>
             </Pressable>
@@ -280,7 +279,7 @@ export function ExercisePicker({
                     {exercise.target ?? exercise.body_part ?? "Unknown"} - {exercise.equipment ?? "Unknown"}
                   </Text>
                 </View>
-                <Feather name="plus" size={16} color={COLORS.teal} />
+                <Icon name="plus" size={16} color={COLORS.teal} />
               </View>
             </Pressable>
           )}
@@ -298,7 +297,7 @@ export function ExercisePicker({
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>{title}</Text>
               <Pressable onPress={onClose} hitSlop={8}>
-                <Feather name="x" size={18} color="rgba(255,255,255,0.5)" />
+                <Icon name="x" size={18} color="rgba(255,255,255,0.5)" />
               </Pressable>
             </View>
             {content}

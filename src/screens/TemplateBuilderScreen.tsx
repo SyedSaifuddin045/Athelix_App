@@ -3,8 +3,8 @@ import { ActivityIndicator, Animated, LayoutAnimation, Modal, Pressable, Text, T
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { PanGestureHandler, State } from "react-native-gesture-handler";
+import { Icon } from "../components/ui/Icon";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { usePostHog } from "posthog-react-native";
@@ -342,7 +342,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
     <Screen contentContainerStyle={{ paddingBottom: 28 }}>
       <View style={styles.builderTopBar}>
         <RoundButton onPress={() => navigation.goBack()}>
-          <Feather name="arrow-left" size={16} color={COLORS.text} />
+          <Icon name="arrow-left" size={16} color={COLORS.text} />
         </RoundButton>
         <Text style={styles.headerTitle}>{isEdit ? "Edit Template" : "New Template"}</Text>
         <Pressable style={styles.saveChip} onPress={() => saveTemplate.mutate()} disabled={saveTemplate.isPending}>
@@ -426,7 +426,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                     <View>
                       <View style={styles.rowBetween}>
                         <View style={[styles.rowGap, { flex: 1 }]}>
-                          <MaterialCommunityIcons name="drag-vertical" size={18} color={dragActiveId === exercise.id ? COLORS.teal : "rgba(255,255,255,0.3)"} />
+                          <Icon name="grip-vertical" size={18} color={dragActiveId === exercise.id ? COLORS.teal : "rgba(255,255,255,0.3)"} />
                           <Text style={{ fontSize: 20 }}>{exercise.emoji}</Text>
                           <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
                         </View>
@@ -452,13 +452,13 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                               style={[styles.stepperBtn, { opacity: exercise.setCount <= 1 ? 0.3 : 1 }]}
                               disabled={exercise.setCount <= 1}
                             >
-                              <Feather name="minus" size={14} color={COLORS.text} />
+                              <Icon name="minus" size={14} color={COLORS.text} />
                             </Pressable>
                             <Text style={[styles.listRowTitle, { minWidth: 22, textAlign: "center" }]}>
                               {exercise.setCount}
                             </Text>
                             <Pressable onPress={() => setSetCount(exercise.id, 1)} style={styles.stepperBtn}>
-                              <Feather name="plus" size={14} color={COLORS.text} />
+                              <Icon name="plus" size={14} color={COLORS.text} />
                             </Pressable>
                           </View>
                         </View>
@@ -473,7 +473,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                               const n = Number(exercise.sets[0]?.rpe);
                               return exercise.sets[0]?.rpe !== "" && (isNaN(n) || n < 1 || n > 10);
                             })()}
-                            keyboardType="numeric"
+                            keyboardType="decimal-pad"
                           />
                           {(() => {
                             const n = Number(exercise.sets[0]?.rpe);
@@ -494,7 +494,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                             }}
                             style={styles.restChip}
                           >
-                            <Feather name="clock" size={12} color="rgba(255,255,255,0.5)" />
+                            <Icon name="clock" size={12} color="rgba(255,255,255,0.5)" />
                             <Text style={styles.restChipText}>{exercise.sets[0]?.rest ?? "2:00"}</Text>
                           </Pressable>
                         </View>
@@ -523,18 +523,18 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
             }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
                 <Pressable onPress={() => moveExercise(index, index - 1)} hitSlop={8}>
-                  <Feather name="chevron-up" size={15} color="rgba(255,255,255,0.3)" />
+                  <Icon name="chevron-up" size={15} color="rgba(255,255,255,0.3)" />
                 </Pressable>
                 <Pressable onPress={() => moveExercise(index, index + 1)} hitSlop={8}>
-                  <Feather name="chevron-down" size={15} color="rgba(255,255,255,0.3)" />
+                  <Icon name="chevron-down" size={15} color="rgba(255,255,255,0.3)" />
                 </Pressable>
               </View>
               <View style={{ width: 1, height: 16, marginHorizontal: 8, backgroundColor: "rgba(255,255,255,0.1)" }} />
               <Pressable onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))} hitSlop={8}>
-                <Feather name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={17} color="rgba(255,255,255,0.6)" />
+                <Icon name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={17} color="rgba(255,255,255,0.6)" />
               </Pressable>
               <Pressable onPress={() => removeExercise(exercise.id)} hitSlop={8} style={{ marginLeft: 10 }}>
-                <Feather name="trash-2" size={15} color="rgba(239,68,68,0.6)" />
+                <Icon name="trash-2" size={15} color="rgba(239,68,68,0.6)" />
               </Pressable>
             </Animated.View>
           </View>
@@ -543,7 +543,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
         <Pressable onPress={() => setShowExercisePicker(true)}>
           <View style={styles.dashedAddCard}>
             <View style={[styles.addCircle, { backgroundColor: "rgba(255,90,54,0.12)" }]}>
-              <Feather name="plus" size={18} color={COLORS.teal} />
+              <Icon name="plus" size={18} color={COLORS.teal} />
             </View>
             <View>
               <Text style={styles.cardTitle}>Add Exercise</Text>
@@ -590,9 +590,9 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
             <View style={{ marginTop: 20, alignItems: "center" }}>
               <Text style={[styles.fieldLabel, { marginBottom: 10 }]}>Custom</Text>
               <View style={{ flexDirection: "row", gap: 12, justifyContent: "center", alignItems: "flex-end" }}>
-                <PickerColumn values={MINUTES} selected={customMinutes} onSelect={setCustomMinutes} label="Min" itemWidth={56} />
+                <PickerColumn values={MINUTES} selected={customMinutes} onSelect={setCustomMinutes} label="Min" />
                 <Text style={{ fontSize: 24, fontWeight: "900", color: COLORS.text, paddingBottom: 18 }}>:</Text>
-                <PickerColumn values={SECONDS} selected={customSeconds} onSelect={setCustomSeconds} label="Sec" itemWidth={56} />
+                <PickerColumn values={SECONDS} selected={customSeconds} onSelect={setCustomSeconds} label="Sec" />
               </View>
               <PrimaryButton
                 label={`Set ${String(customMinutes).padStart(2, "0")}:${String(customSeconds).padStart(2, "0")}`}

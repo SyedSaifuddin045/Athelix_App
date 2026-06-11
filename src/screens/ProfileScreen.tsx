@@ -1,19 +1,38 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useOverviewQuery } from "../api/queries";
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
 import { styles } from "../theme/styles";
 import { Card } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
-import { RoundButton } from "../components/ui/Button";
+import { RoundButton, IconButton } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
+import { Icon, type IconName } from "../components/ui/Icon";
 import { formatKg, formatShortDate } from "../utils/format";
 import { displayName, initialsFor } from "../utils/display";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
+
+const MENU_ITEMS: { label: string; items: { label: string; icon: IconName; route: keyof RootStackParamList; color: string; badge?: string }[] }[] = [
+  {
+    label: "My Data",
+    items: [
+      { label: "Edit Profile", icon: "user", route: "ProfileSetup", color: COLORS.teal },
+      { label: "Bodyweight History", icon: "weight", route: "BodyweightHistory", color: COLORS.green },
+      { label: "Personal Records", icon: "award", route: "PersonalRecords", color: COLORS.gold },
+      { label: "Exercise Progress", icon: "trending-up", route: "ExerciseProgress", color: COLORS.teal },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { label: "Account Settings", icon: "settings", route: "Settings", color: COLORS.purple },
+    ],
+  },
+];
 
 export function ProfileScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false, signOut } = useAuth();
@@ -21,117 +40,188 @@ export function ProfileScreen({ navigation }: Props) {
   const user = overview.data?.user;
   const profile = overview.data?.profile;
   const name = displayName(user, profile);
-  const menuSections = [
-    {
-      label: "My Data",
-      items: [
-        { label: "Edit Profile", icon: <Feather name="user" size={15} color={COLORS.teal} />, route: "ProfileSetup" as keyof RootStackParamList, color: COLORS.teal },
-        {
-          label: "Bodyweight History",
-          icon: <MaterialCommunityIcons name="scale-bathroom" size={15} color={COLORS.green} />,
-          route: "BodyweightHistory" as keyof RootStackParamList,
-          color: COLORS.green,
-          badge: overview.data?.latest_body_weight_log ? formatKg(overview.data.latest_body_weight_log.weight_kg) : undefined,
-        },
-        { label: "Personal Records", icon: <Feather name="award" size={15} color={COLORS.gold} />, route: "PersonalRecords" as keyof RootStackParamList, color: COLORS.gold },
-        { label: "Exercise Progress", icon: <Feather name="trending-up" size={15} color={COLORS.teal} />, route: "ExerciseProgress" as keyof RootStackParamList, color: COLORS.teal },
-      ],
-    },
-    {
-      label: "Account",
-      items: [{ label: "Account Settings", icon: <Feather name="settings" size={15} color={COLORS.purple} />, route: "Settings" as keyof RootStackParamList, color: COLORS.purple }],
-    },
-  ];
+  const latestWeight = overview.data?.latest_body_weight_log;
 
   return (
     <Screen>
-      <View style={styles.mainHeader}>
+      <View style={[styles.mainHeader, { paddingBottom: SPACING.md }]}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <RoundButton onPress={() => navigation.navigate("Settings")}>
-          <Feather name="settings" size={16} color="rgba(255,255,255,0.65)" />
-        </RoundButton>
+        <IconButton icon="settings" onPress={() => navigation.navigate("Settings")} />
       </View>
 
-      <View style={styles.profileTop}>
-        <View style={styles.profileAvatarWrap}>
-          <View style={styles.profileAvatar}>
-            <Text style={styles.avatarInitials}>{initialsFor(name)}</Text>
+      <View style={[styles.profileTop, { alignItems: "center", paddingTop: SPACING.md }]}>
+        <View style={[styles.profileAvatarWrap, { position: "relative", marginBottom: SPACING.xl2 }]}>
+          <View
+            style={[
+              styles.profileAvatar,
+              SHADOWS.glow(COLORS.teal),
+              {
+                width: 96,
+                height: 96,
+                borderRadius: 48,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: COLORS.teal,
+              },
+            ]}
+          >
+            <Text style={[styles.avatarInitials, { color: "#000000", fontSize: 28, fontWeight: "800" }]}>
+              {initialsFor(name)}
+            </Text>
           </View>
-          <Pressable style={styles.profileEditButton} onPress={() => navigation.navigate("ProfileSetup")}>
-            <Feather name="edit-3" size={13} color={COLORS.teal} />
+          <Pressable
+            style={[
+              styles.profileEditButton,
+              {
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: COLORS.surface,
+                borderWidth: 2,
+                borderColor: COLORS.screen,
+              },
+            ]}
+            onPress={() => navigation.navigate("ProfileSetup")}
+          >
+            <Icon name="pencil" size={13} color={COLORS.teal} />
           </Pressable>
         </View>
         <Text style={styles.heroTitle}>{name}</Text>
-        <Text style={styles.detailLabel}>@{user?.username ?? "athlete"}</Text>
-        <View style={[styles.rowGapTiny, { marginTop: 8 }]}>
-          <View style={[styles.statusDot, { backgroundColor: COLORS.green }]} />
+        <Text style={[styles.detailLabel, { color: COLORS.muted }]}>
+          @{user?.username ?? "athlete"}
+        </Text>
+        <View style={[styles.rowGapTiny, { marginTop: SPACING.md }]}>
+          <View style={[styles.statusDot, { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.green }]} />
           <Text style={styles.listMeta}>
-            {profile?.fitness_level ?? "Fitness level"} - {profile?.height_cm ? `${profile.height_cm}cm` : "height"} -{" "}
-            {profile?.weight_kg ? formatKg(profile.weight_kg) : "weight"}
+            {profile?.fitness_level ?? "Fitness level"}
+            {profile?.height_cm ? ` - ${profile.height_cm}cm` : ""}
+            {profile?.weight_kg ? ` - ${formatKg(profile.weight_kg)}` : ""}
           </Text>
         </View>
 
-        <Card style={{ width: "100%", marginTop: 18, paddingVertical: 0 }}>
-          <View style={styles.profileStatsRow}>
-            {[
+        <Card elevated style={{ width: "100%", marginTop: SPACING.xl3, paddingVertical: 0 }}>
+          <View style={[styles.profileStatsRow, { flexDirection: "row", alignItems: "stretch" }]}>
+            {([
               { label: "Sessions", value: overview.data?.stats.completed_sessions ?? 0 },
               { label: "Templates", value: overview.data?.stats.total_workout_templates ?? 0 },
               { label: "PRs", value: overview.data?.stats.personal_record_count ?? 0 },
-            ].map((stat, index, array) => (
-                <View key={stat.label} style={styles.profileStatCell}>
-                  <Text style={[styles.profileStatValue, { color: COLORS.teal }]}>{stat.value}</Text>
-                  <Text style={styles.profileStatLabel}>{stat.label}</Text>
-                  {index < array.length - 1 ? <View style={styles.profileStatDivider} /> : null}
-                </View>
-              ))}
+            ] as const).map((stat, index, array) => (
+              <View key={stat.label} style={[styles.profileStatCell, { flex: 1, alignItems: "center", paddingVertical: SPACING.xl3, position: "relative" }]}>
+                <Text style={[styles.profileStatValue, { color: COLORS.teal, fontSize: 20, fontWeight: "900" }]}>
+                  {stat.value}
+                </Text>
+                <Text style={[styles.profileStatLabel, { color: COLORS.muted, fontSize: 10, marginTop: SPACING.sm }]}>
+                  {stat.label}
+                </Text>
+                {index < array.length - 1 ? (
+                  <View style={[styles.profileStatDivider, { position: "absolute", right: 0, top: SPACING.xl3, bottom: SPACING.xl3, width: 1, backgroundColor: COLORS.border }]} />
+                ) : null}
+              </View>
+            ))}
           </View>
         </Card>
       </View>
 
-      <View style={{ marginTop: 18 }}>
-        <View style={styles.sectionHeadingRow}>
+      <View style={{ marginTop: SPACING.xl3 }}>
+        <View style={[styles.sectionHeadingRow, { marginBottom: SPACING.lg }]}>
           <Text style={styles.sectionCardTitle}>Achievements</Text>
           <Text style={styles.linkText}>See All</Text>
         </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, marginTop: 10 }}>
-          {(overview.data?.recent_personal_records.length ? overview.data.recent_personal_records : []).map((record) => (
-            <Card key={record.id} style={styles.achievementCard}>
-              <Text style={{ fontSize: 24 }}>🏆</Text>
-              <Text style={[styles.smallStrongText, { marginTop: 10 }]}>{record.record_type}</Text>
-              <Text style={[styles.listMeta, { color: COLORS.teal, marginTop: 6 }]}>{formatShortDate(record.achieved_on)}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: SPACING.xl }}
+        >
+          {(overview.data?.recent_personal_records.length
+            ? overview.data.recent_personal_records
+            : []
+          ).map((record) => (
+            <Card
+              key={record.id}
+              elevated
+              style={[styles.achievementCard, { width: 110, padding: SPACING.xl2, gap: SPACING.sm }]}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: RADIUS.iconWrap,
+                  backgroundColor: "rgba(251,191,36,0.15)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icon name="trophy" size={18} color={COLORS.gold} />
+              </View>
+              <Text style={[styles.smallStrongText, { marginTop: SPACING.sm }]}>
+                {record.record_type}
+              </Text>
+              <Text style={[styles.listMeta, { color: COLORS.teal }]}>
+                {formatShortDate(record.achieved_on)}
+              </Text>
             </Card>
           ))}
           {overview.data?.recent_personal_records.length === 0 ? (
-            <Card style={styles.achievementCard}>
+            <Card elevated style={[styles.achievementCard, { width: 110, padding: SPACING.xl2 }]}>
               <Text style={styles.detailLabel}>No PRs yet</Text>
             </Card>
           ) : null}
         </ScrollView>
       </View>
 
-      <View style={{ marginTop: 18, gap: 16 }}>
-        {menuSections.map((section) => (
+      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl3 }}>
+        {MENU_ITEMS.map((section) => (
           <View key={section.label}>
             <SectionEyebrow>{section.label}</SectionEyebrow>
-            <Card style={{ paddingVertical: 0, marginTop: 10 }}>
+            <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
               {section.items.map((item, index) => (
                 <View key={item.label}>
                   <Pressable
-                    style={styles.settingsRow}
+                    style={[
+                      styles.settingsRow,
+                      {
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: SPACING.xl,
+                        paddingHorizontal: SPACING.xl3,
+                        paddingVertical: SPACING.xl2,
+                      },
+                    ]}
                     onPress={() => {
-                      if ("id" in item && item.id) {
-                        (navigation.navigate as any)(item.route, { id: item.id });
-                      } else {
-                        (navigation.navigate as any)(item.route);
-                      }
+                      (navigation.navigate as any)(item.route);
                     }}
                   >
-                    <View style={[styles.softIconWrap, { backgroundColor: `${item.color}18` }]}>{item.icon}</View>
+                    <View
+                      style={[
+                        styles.softIconWrap,
+                        {
+                          width: 34,
+                          height: 34,
+                          borderRadius: RADIUS.iconWrap,
+                          backgroundColor: `${item.color}18`,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        },
+                      ]}
+                    >
+                      <Icon name={item.icon} size={15} color={item.color} />
+                    </View>
                     <Text style={[styles.listRowTitle, { flex: 1 }]}>{item.label}</Text>
-                    {"badge" in item && item.badge ? <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>{item.badge}</Text> : null}
-                    <Ionicons name="chevron-forward" size={14} color="rgba(255,255,255,0.25)" />
+                    {item.badge ? (
+                      <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>
+                        {item.badge}
+                      </Text>
+                    ) : null}
+                    <Icon name="chevron-right" size={14} color={COLORS.faint} />
                   </Pressable>
-                  {index < section.items.length - 1 ? <View style={styles.rowDivider} /> : null}
+                  {index < section.items.length - 1 ? (
+                    <View style={[styles.rowDivider, { height: 1, backgroundColor: COLORS.border, marginHorizontal: SPACING.xl3 }]} />
+                  ) : null}
                 </View>
               ))}
             </Card>
@@ -144,15 +234,32 @@ export function ProfileScreen({ navigation }: Props) {
           await signOut();
           navigation.replace("Login");
         }}
-        style={{ marginTop: 18 }}
+        style={{ marginTop: SPACING.xl3 }}
       >
-        <View style={styles.logoutButton}>
-          <Feather name="log-out" size={15} color={COLORS.red} />
-          <Text style={styles.logoutText}>Sign Out</Text>
+        <View
+          style={[
+            styles.logoutButton,
+            {
+              minHeight: 52,
+              borderRadius: RADIUS.input,
+              borderWidth: 1,
+              borderColor: "rgba(239,68,68,0.22)",
+              backgroundColor: COLORS.redDark,
+              alignItems: "center",
+              justifyContent: "center",
+              flexDirection: "row",
+              gap: SPACING.md,
+            },
+          ]}
+        >
+          <Icon name="log-out" size={15} color={COLORS.red} />
+          <Text style={[styles.logoutText, { color: COLORS.red }]}>Sign Out</Text>
         </View>
       </Pressable>
 
-      <Text style={styles.footerText}>Athelix - member since {formatShortDate(user?.created_at)}</Text>
+      <Text style={[styles.footerText, { color: COLORS.faint, fontSize: 10, textAlign: "center", marginTop: SPACING.xl4 }]}>
+        Athelix - member since {formatShortDate(user?.created_at)}
+      </Text>
     </Screen>
   );
 }

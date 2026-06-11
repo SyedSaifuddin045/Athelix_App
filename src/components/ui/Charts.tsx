@@ -1,128 +1,133 @@
-import { useState } from "react";
-import { LayoutChangeEvent, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 import { COLORS } from "../../theme/colors";
+import { SPACING, RADIUS } from "../../theme/spacing";
 import { styles } from "../../theme/styles";
 
 export function VerticalBars({
   data,
-  height = 80,
-  activeColor = COLORS.teal,
-  mutedColor = "rgba(255,255,255,0.18)",
+  height = 120,
+  barColor = COLORS.teal,
+  maxValue,
 }: {
-  data: { label?: string; day?: string; value: number; highlight?: boolean }[];
+  data: { label: string; value: number }[];
   height?: number;
-  activeColor?: string;
-  mutedColor?: string;
+  barColor?: string;
+  maxValue?: number;
 }) {
-  const max = Math.max(...data.map((item) => item.value), 1);
+  const max = maxValue ?? Math.max(...data.map((d) => d.value), 1);
 
   return (
-    <View style={{ height: height + 20 }}>
-      <View style={[styles.barRow, { height }]}>
-        {data.map((item, index) => {
-          const barHeight = item.value === 0 ? 6 : Math.max(14, (item.value / max) * (height - 8));
-          const isActive = item.highlight ?? index === data.length - 1;
-          return (
-            <View key={`${item.label ?? item.day}-${index}`} style={styles.barColumn}>
-              <View style={[styles.barTrackShell, { height }]}>
-                <View
-                  style={[
-                    styles.bar,
-                    {
-                      height: barHeight,
-                      backgroundColor: item.value === 0 ? "rgba(255,255,255,0.08)" : isActive ? activeColor : mutedColor,
-                    },
-                  ]}
-                />
-              </View>
-              <Text style={styles.barLabel}>{item.label ?? item.day}</Text>
+    <View style={[styles.barRow, { gap: SPACING.xs }]}>
+      {data.map((item, i) => {
+        const barHeight = Math.max((item.value / max) * height, 4);
+        return (
+          <View key={i} style={[styles.barColumn, { gap: SPACING.xxs }]}>
+            <View style={[styles.barTrackShell, { height }]}>
+              <View
+                style={[
+                  styles.bar,
+                  {
+                    height: barHeight,
+                    backgroundColor: barColor,
+                    opacity: 0.4 + (item.value / max) * 0.6,
+                    borderRadius: RADIUS.stepper,
+                  },
+                ]}
+              />
             </View>
-          );
-        })}
-      </View>
+            <Text style={styles.barLabel}>{item.label}</Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
 export function TrendChart({
-  data,
+  segments,
+  height = 100,
   color = COLORS.teal,
-  height = 130,
-  labelEvery = 2,
-  referenceValue,
 }: {
-  data: { label: string; value: number }[];
-  color?: string;
+  segments: { value: number; label?: string }[][];
   height?: number;
-  labelEvery?: number;
-  referenceValue?: number;
+  color?: string;
 }) {
-  const [width, setWidth] = useState(0);
-  const values = data.map((item) => item.value);
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const chartHeight = height - 28;
-  const innerWidth = Math.max(width - 12, 1);
-  const points = data.map((item, index) => ({
-    x: 6 + (data.length === 1 ? innerWidth / 2 : (innerWidth * index) / (data.length - 1)),
-    y: 6 + (chartHeight - 12) * (1 - (item.value - min) / range),
-  }));
+  if (!segments.length) return null;
 
-  const referenceY =
-    referenceValue === undefined ? undefined : 6 + (chartHeight - 12) * (1 - (referenceValue - min) / range);
+  const allValues = segments.flat().map((s) => s.value);
+  const min = Math.min(...allValues);
+  const max = Math.max(...allValues);
+  const range = max - min || 1;
 
   return (
-    <View style={{ height }} onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}>
-      <View style={[styles.chartArea, { height: chartHeight }]}>
-        <View style={[styles.chartGridLine, { top: 6 }]} />
-        <View style={[styles.chartGridLine, { top: chartHeight / 2 }]} />
-        <View style={[styles.chartGridLine, { top: chartHeight - 6 }]} />
-        {referenceY !== undefined ? <View style={[styles.referenceLine, { top: referenceY }]} /> : null}
-        {points.map((point, index) => {
-          if (index === data.length - 1) return null;
-          const next = points[index + 1];
-          const distance = Math.hypot(next.x - point.x, next.y - point.y);
-          const angle = Math.atan2(next.y - point.y, next.x - point.x);
+    <View style={{ gap: SPACING.xs }}>
+      <View style={[styles.chartArea, { height }]}>
+        {[0.25, 0.5, 0.75].map((f, i) => (
+          <View
+            key={i}
+            style={[
+              styles.chartGridLine,
+              { top: height * (1 - f) },
+            ]}
+          />
+        ))}
+        {segments.map((segment, si) =>
+          segment.map((point, pi) => {
+            if (pi === 0) return null;
+            const prev = segment[pi - 1];
+            const y1 = height - ((prev.value - min) / range) * height * 0.8 - height * 0.1;
+            const y2 = height - ((point.value - min) / range) * height * 0.8 - height * 0.1;
+            const x1 = ((pi - 1) / (segment.length - 1)) * 100;
+            const x2 = (pi / (segment.length - 1)) * 100;
+            const width = Math.abs(x2 - x1);
+
+            return (
+              <View
+                key={`${si}-${pi}`}
+                style={[
+                  styles.chartSegment,
+                  {
+                    left: `${x1}%`,
+                    top: Math.min(y1, y2),
+                    width: `${width}%`,
+                    height: Math.abs(y2 - y1) || 2,
+                    backgroundColor: color,
+                    transform: [{ rotate: `${Math.atan2(y2 - y1, width * 3)}rad` }],
+                  },
+                ]}
+              />
+            );
+          })
+        )}
+        {segments.flat().map((point, i) => {
+          const y = height - ((point.value - min) / range) * height * 0.8 - height * 0.1;
+          const x = (i % (segments[0]?.length ?? 1)) / ((segments[0]?.length ?? 1) - 1) * 100;
           return (
             <View
-              key={`segment-${index}`}
+              key={`dot-${i}`}
               style={[
-                styles.chartSegment,
+                styles.chartDot,
                 {
-                  width: distance,
-                  left: (point.x + next.x) / 2 - distance / 2,
-                  top: (point.y + next.y) / 2 - 1,
+                  left: `${x}%`,
+                  top: y - 4,
                   backgroundColor: color,
-                  transform: [{ rotateZ: `${angle}rad` }],
+                  borderColor: COLORS.screen,
                 },
               ]}
             />
           );
         })}
-        {points.map((point, index) => (
-          <View
-            key={`dot-${index}`}
-            style={[
-              styles.chartDot,
-              {
-                left: point.x - 4,
-                top: point.y - 4,
-                backgroundColor: index === data.length - 1 ? color : COLORS.screen,
-                borderColor: color,
-              },
-            ]}
-          />
-        ))}
       </View>
-      <View style={styles.chartLabels}>
-        {data.map((item, index) => (
-          <Text key={item.label} style={styles.chartLabelText}>
-            {index % labelEvery === 0 || index === data.length - 1 ? item.label : " "}
-          </Text>
-        ))}
-      </View>
+      {segments[0] && (
+        <View style={styles.chartLabels}>
+          {segments[0].map((point, i) => (
+            <Text key={i} style={styles.chartLabelText}>
+              {point.label ?? ""}
+            </Text>
+          ))}
+        </View>
+      )}
     </View>
   );
 }

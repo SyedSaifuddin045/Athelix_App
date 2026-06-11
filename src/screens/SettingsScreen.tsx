@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 import { Alert, Pressable, Switch, Text, TextInput, View } from "react-native";
-import { Feather } from "@expo/vector-icons";
 import { usePostHog } from "posthog-react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
-
 import { useAuth } from "@clerk/expo";
 import { useCurrentUserQuery } from "../api/queries";
 import { useSaveAccount } from "../api/mutations";
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS } from "../theme/spacing";
 import { styles } from "../theme/styles";
 import { Card, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput } from "../components/ui/Input";
+import { Icon } from "../components/ui/Icon";
 import { getApiErrorMessage } from "../api/client";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
@@ -25,12 +25,7 @@ export function SettingsScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const posthog = usePostHog();
   const currentUser = useCurrentUserQuery(isAuthenticated);
-  const [form, setForm] = useState({
-    username: "",
-    email: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const [form, setForm] = useState({ username: "", email: "", newPassword: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +38,7 @@ export function SettingsScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (!currentUser.data) return;
-    setForm((current) => ({ ...current, username: currentUser.data.username, email: currentUser.data.email }));
+    setForm((c) => ({ ...c, username: currentUser.data.username, email: currentUser.data.email }));
   }, [currentUser.data]);
 
   const saveAccount = useSaveAccount({
@@ -60,10 +55,7 @@ export function SettingsScreen({ navigation }: Props) {
 
   const handleSave = () => {
     setError("");
-    saveAccount.mutate({
-      username: form.username.trim() || null,
-      email: form.email.trim() || null,
-    });
+    saveAccount.mutate({ username: form.username.trim() || null, email: form.email.trim() || null });
   };
 
   return (
@@ -73,10 +65,21 @@ export function SettingsScreen({ navigation }: Props) {
         onBack={() => navigation.goBack()}
         right={
           <Pressable
-            style={[styles.saveChip, saved ? { backgroundColor: "rgba(34,197,94,0.2)" } : null]}
+            style={[
+              styles.saveChip,
+              {
+                minHeight: 34,
+                borderRadius: RADIUS.tag,
+                backgroundColor: saved ? COLORS.greenDark : COLORS.teal,
+                paddingHorizontal: SPACING.xl,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: SPACING.sm,
+              },
+            ]}
             onPress={handleSave}
           >
-            <Feather name="check" size={13} color={saved ? COLORS.green : "#000000"} />
+            <Icon name="check" size={13} color={saved ? COLORS.green : "#000000"} />
             <Text style={[styles.saveChipText, saved ? { color: COLORS.green } : null]}>
               {saveAccount.isPending ? "Saving" : saved ? "Saved!" : "Save"}
             </Text>
@@ -86,46 +89,53 @@ export function SettingsScreen({ navigation }: Props) {
 
       {currentUser.isPending ? <LoadingCard label="Loading account..." /> : null}
       {error ? (
-        <View style={[styles.errorBox, { marginTop: 12 }]}>
+        <View style={[styles.errorBox, { marginTop: SPACING.xl, backgroundColor: COLORS.redDark }]}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : null}
 
-      <View style={{ marginTop: 18, gap: 22 }}>
+      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl5 }}>
         <View>
           <SectionEyebrow>Account Details</SectionEyebrow>
-          <Card style={{ paddingVertical: 0, marginTop: 10 }}>
-            <View style={styles.settingsSectionPad}>
-              <LabeledInput label="Username" value={form.username} onChangeText={(value) => setForm((current) => ({ ...current, username: value }))} />
+          <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
+            <View style={[styles.settingsSectionPad, { paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2 }]}>
+              <LabeledInput label="Username" value={form.username} onChangeText={(v) => setForm((c) => ({ ...c, username: v }))} />
             </View>
-            <View style={styles.rowDivider} />
-            <View style={styles.settingsSectionPad}>
-              <LabeledInput
-                label="Email Address"
-                value={form.email}
-                onChangeText={(value) => setForm((current) => ({ ...current, email: value }))}
-                keyboardType="email-address"
-              />
+            <View style={[styles.rowDivider, { height: 1, backgroundColor: COLORS.border, marginHorizontal: SPACING.xl3 }]} />
+            <View style={[styles.settingsSectionPad, { paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2 }]}>
+              <LabeledInput label="Email Address" value={form.email} onChangeText={(v) => setForm((c) => ({ ...c, email: v }))} keyboardType="email-address" />
             </View>
           </Card>
         </View>
 
         <View>
           <SectionEyebrow>Security</SectionEyebrow>
-          <Card style={{ paddingVertical: 0, marginTop: 10 }}>
-            <View style={styles.settingsSectionPad}>
+          <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
+            <View style={[styles.settingsSectionPad, { paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2 }]}>
               <Text style={styles.fieldLabel}>New Password</Text>
-              <View style={styles.inputWrap}>
+              <View style={[styles.inputWrap, { position: "relative" }]}>
                 <TextInput
                   value={form.newPassword}
-                  onChangeText={(value) => setForm((current) => ({ ...current, newPassword: value }))}
+                  onChangeText={(v) => setForm((c) => ({ ...c, newPassword: v }))}
                   placeholder="Leave blank to keep current"
-                  placeholderTextColor="rgba(255,255,255,0.28)"
-                  style={[styles.input, styles.inputWithRight]}
+                  placeholderTextColor={COLORS.faint}
+                  style={[
+                    styles.input,
+                    styles.inputWithRight,
+                    {
+                      backgroundColor: COLORS.cardSoft,
+                      borderColor: COLORS.border,
+                      color: COLORS.text,
+                      borderRadius: RADIUS.input,
+                    },
+                  ]}
                   secureTextEntry={!showPassword}
                 />
-                <Pressable style={styles.inputRightIcon} onPress={() => setShowPassword((value) => !value)}>
-                  <Feather name={showPassword ? "eye-off" : "eye"} size={16} color="rgba(255,255,255,0.42)" />
+                <Pressable
+                  style={[styles.inputRightIcon, { position: "absolute", right: SPACING.xl2, top: SPACING.xl3 }]}
+                  onPress={() => setShowPassword((v) => !v)}
+                >
+                  <Icon name={showPassword ? "eye-off" : "eye"} size={16} color={COLORS.muted} />
                 </Pressable>
               </View>
             </View>
@@ -134,19 +144,21 @@ export function SettingsScreen({ navigation }: Props) {
 
         <View>
           <SectionEyebrow>Notifications</SectionEyebrow>
-          <Card style={{ paddingVertical: 0, marginTop: 10 }}>
-            {(
-              [
-                ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
-                ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
-                ["weeklyReport", "Weekly Report", "Weekly summary of your training"],
-                ["newFeatures", "New Features", "Updates about new app features"],
-              ] as const
-            ).map(([key, label, description], index, array) => (
+          <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
+            {([
+              ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
+              ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
+              ["weeklyReport", "Weekly Report", "Weekly summary of your training"],
+              ["newFeatures", "New Features", "Updates about new app features"],
+            ] as const).map(([key, label, description], index, array) => (
               <View key={key}>
-                <View style={styles.notificationRow}>
-                  <View style={[styles.rowGap, { flex: 1 }]}>
-                    <Feather name="bell" size={15} color={notifications[key] ? COLORS.teal : "rgba(255,255,255,0.3)"} />
+                <View style={[styles.notificationRow, { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2, gap: SPACING.xl2 }]}>
+                  <View style={[styles.rowGap, { flex: 1, gap: SPACING.xl }]}>
+                    <Icon
+                      name="bell"
+                      size={15}
+                      color={notifications[key] ? COLORS.teal : COLORS.faint}
+                    />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.listRowTitle}>{label}</Text>
                       <Text style={styles.listMeta}>{description}</Text>
@@ -156,31 +168,49 @@ export function SettingsScreen({ navigation }: Props) {
                     value={notifications[key]}
                     onValueChange={() => {
                       const newValue = !notifications[key];
-                      setNotifications((current) => ({ ...current, [key]: newValue }));
+                      setNotifications((c) => ({ ...c, [key]: newValue }));
                       posthog.capture(Events.NOTIFICATION_SETTING_CHANGED, {
                         setting_name: key,
                         new_value: newValue,
                       });
                     }}
-                    trackColor={{ false: "rgba(255,255,255,0.18)", true: COLORS.teal }}
+                    trackColor={{ false: COLORS.border, true: COLORS.teal }}
                     thumbColor="#ffffff"
                   />
                 </View>
-                {index < array.length - 1 ? <View style={styles.rowDivider} /> : null}
+                {index < array.length - 1 ? (
+                  <View style={[styles.rowDivider, { height: 1, backgroundColor: COLORS.border, marginHorizontal: SPACING.xl3 }]} />
+                ) : null}
               </View>
             ))}
           </Card>
         </View>
 
         <View>
-          <SectionEyebrow color="rgba(239,68,68,0.7)">Danger Zone</SectionEyebrow>
+          <SectionEyebrow color={COLORS.red}>Danger Zone</SectionEyebrow>
           <Pressable
             onPress={() =>
               Alert.alert("Delete Account", "This would permanently delete all data. This demo does not perform the action.")
             }
           >
-            <View style={styles.dangerZone}>
-              <Feather name="trash-2" size={16} color={COLORS.red} />
+            <View
+              style={[
+                styles.dangerZone,
+                {
+                  minHeight: 74,
+                  borderRadius: RADIUS.input,
+                  borderWidth: 1,
+                  borderColor: "rgba(239,68,68,0.2)",
+                  backgroundColor: COLORS.redDark,
+                  paddingHorizontal: SPACING.xl3,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: SPACING.xl,
+                  marginTop: SPACING.lg,
+                },
+              ]}
+            >
+              <Icon name="trash-2" size={16} color={COLORS.red} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.listRowTitle, { color: COLORS.red }]}>Delete Account</Text>
                 <Text style={[styles.listMeta, { color: "rgba(239,68,68,0.66)" }]}>

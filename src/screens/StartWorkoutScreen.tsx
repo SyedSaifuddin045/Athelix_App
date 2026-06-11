@@ -3,15 +3,13 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
-import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useAuth } from "@clerk/expo";
 import { useTemplatesQuery, useMesocyclesQuery } from "../api/queries";
 import { useStartSession } from "../api/mutations";
-
 import { usePostHog } from "posthog-react-native";
-
 import { getApiErrorMessage } from "../api/client";
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS } from "../theme/spacing";
 import { styles } from "../theme/styles";
 import { Card, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
@@ -19,6 +17,7 @@ import { Radio, SelectableRow } from "../components/ui/Input";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { MetaInline } from "../components/ui/Stats";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
+import { Icon } from "../components/ui/Icon";
 import { toNumberId } from "../utils/helpers";
 import { formatShortDate } from "../utils/format";
 import { Events } from "../analytics/events";
@@ -43,15 +42,10 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
       posthog.capture(Events.WORKOUT_STARTED, {
         source: hasTemplate ? "template" : "empty",
         has_mesocycle: !!selectedMeso,
-        ...(hasTemplate && template
-          ? { template_id: selectedTemplate, template_name: template.name }
-          : {}),
+        ...(hasTemplate && template ? { template_id: selectedTemplate, template_name: template.name } : {}),
       });
       if (hasTemplate && template && selectedTemplate) {
-        posthog.capture(Events.TEMPLATE_USED, {
-          template_id: selectedTemplate,
-          template_name: template.name,
-        });
+        posthog.capture(Events.TEMPLATE_USED, { template_id: selectedTemplate, template_name: template.name });
       }
       navigation.replace("ActiveWorkout", {
         sessionId: session.id,
@@ -67,35 +61,30 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
 
       <Pressable
         onPress={() =>
-          startSession.mutate({
-            template_id: null,
-            mesocycle_id: toNumberId(selectedMeso),
-            name: "Workout",
-            started_at: new Date().toISOString(),
-            is_completed: false,
-          })
+          startSession.mutate({ template_id: null, mesocycle_id: toNumberId(selectedMeso), name: "Workout", started_at: new Date().toISOString(), is_completed: false })
         }
-        style={{ marginTop: 18 }}
-        disabled={startSession.isPending}>
-        <Card style={{ borderColor: "rgba(255,90,54,0.3)", backgroundColor: "rgba(255,90,54,0.12)" }}>
+        style={{ marginTop: SPACING.xl3 }}
+        disabled={startSession.isPending}
+      >
+        <Card elevated accent="coral">
           <View style={styles.rowBetween}>
             <View style={styles.rowGap}>
-              <View style={[styles.sectionIconWrapSmall, { backgroundColor: "rgba(255,90,54,0.2)" }]}>
-                <Feather name="zap" size={22} color={COLORS.teal} />
+              <View style={[styles.sectionIconWrapSmall, { backgroundColor: "rgba(255,90,54,0.2)", width: 44, height: 44, borderRadius: RADIUS.iconWrap, alignItems: "center", justifyContent: "center" }]}>
+                <Icon name="zap" size={22} color={COLORS.teal} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.cardTitle}>Empty Workout</Text>
                 <Text style={styles.detailLabel}>Start from scratch</Text>
               </View>
             </View>
-            <Feather name="play" size={20} color={COLORS.teal} />
+            <Icon name="play" size={20} color={COLORS.teal} />
           </View>
         </Card>
       </Pressable>
 
-      <View style={{ marginTop: 20 }}>
+      <View style={{ marginTop: SPACING.xl5 }}>
         <SectionEyebrow>Attach to Mesocycle (optional)</SectionEyebrow>
-        <View style={{ gap: 10, marginTop: 12 }}>
+        <View style={{ gap: SPACING.lg, marginTop: SPACING.xl }}>
           <SelectableRow selected={selectedMeso === null} onPress={() => setSelectedMeso(null)} label="No mesocycle" />
           {(mesocycles.data ?? []).map((meso) => (
             <SelectableRow
@@ -110,13 +99,14 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
         </View>
       </View>
 
-      <View style={{ marginTop: 20 }}>
+      <View style={{ marginTop: SPACING.xl5 }}>
         <SectionEyebrow>From Template</SectionEyebrow>
-        <View style={{ gap: 10, marginTop: 12 }}>
+        <View style={{ gap: SPACING.lg, marginTop: SPACING.xl }}>
           {templates.isPending ? <LoadingCard label="Loading templates..." /> : null}
           {(templates.data ?? []).map((template) => (
-            <Pressable key={template.id} onPress={() => setSelectedTemplate((current) => (current === String(template.id) ? null : String(template.id)))}>
+            <Pressable key={template.id} onPress={() => setSelectedTemplate((c) => (c === String(template.id) ? null : String(template.id)))}>
               <Card
+                elevated
                 style={{
                   borderColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.44)" : COLORS.border,
                   backgroundColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.12)" : COLORS.card,
@@ -127,12 +117,9 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
                     <Radio selected={selectedTemplate === String(template.id)} color={COLORS.teal} />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.listRowTitle}>{template.name}</Text>
-                      <View style={[styles.rowGapLarge, { marginTop: 6 }]}>
-                        <MetaInline
-                          icon={<MaterialCommunityIcons name="dumbbell" size={10} color="rgba(255,255,255,0.32)" />}
-                          text={template.description ?? "Template"}
-                        />
-                        <MetaInline icon={<Feather name="calendar" size={10} color="rgba(255,255,255,0.32)" />} text={formatShortDate(template.updated_at)} />
+                      <View style={[styles.rowGapLarge, { marginTop: SPACING.sm }]}>
+                        <MetaInline icon="dumbbell" label={template.description ?? "Template"} />
+                        <MetaInline icon="calendar" label={formatShortDate(template.updated_at)} />
                       </View>
                     </View>
                   </View>
@@ -161,11 +148,11 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
           });
         }}
         disabled={startSession.isPending}
-        icon={startSession.isPending ? <ActivityIndicator color="#000000" /> : <Feather name="play" size={18} color="#000000" />}
-        style={{ marginTop: 22 }}
+        icon={startSession.isPending ? <ActivityIndicator color="#000000" /> : <Icon name="play" size={18} color="#000000" />}
+        style={{ marginTop: SPACING.xl5 }}
       />
       {startSession.isError ? (
-        <View style={[styles.errorBox, { marginTop: 12 }]}>
+        <View style={[styles.errorBox, { marginTop: SPACING.xl, backgroundColor: COLORS.redDark }]}>
           <Text style={styles.errorText}>{getApiErrorMessage(startSession.error)}</Text>
         </View>
       ) : null}
