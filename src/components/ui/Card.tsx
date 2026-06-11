@@ -1,10 +1,26 @@
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View, type ViewStyle } from "react-native";
 
 import { getApiErrorMessage } from "../../api/client";
 import { COLORS } from "../../theme/colors";
 import { RADIUS, SPACING, SHADOWS } from "../../theme/spacing";
 import { styles } from "../../theme/styles";
 import { Icon } from "./Icon";
+
+const ACCENT_BORDER: Record<string, string> = {
+  green: COLORS.greenDark,
+  purple: COLORS.purpleDark,
+  blue: COLORS.blueDark,
+  red: COLORS.redDark,
+  coral: "rgba(255,90,54,0.15)",
+  gold: "rgba(251,191,36,0.12)",
+};
+
+const ACCENT_BG: Record<string, string> = {
+  green: COLORS.greenDark,
+  purple: COLORS.purpleDark,
+  blue: COLORS.blueDark,
+  red: COLORS.redDark,
+};
 
 export function Card({
   children,
@@ -14,40 +30,14 @@ export function Card({
   accentColor,
 }: {
   children: React.ReactNode;
-  style?: object | object[];
+  style?: ViewStyle | ViewStyle[];
   elevated?: boolean;
-  accent?: "green" | "purple" | "blue" | "red" | "coral" | "gold" | "none";
+  accent?: keyof typeof ACCENT_BORDER | "none";
   accentColor?: string;
 }) {
-  const borderColor = accent
-    ? accent === "green"
-      ? COLORS.greenDark
-      : accent === "purple"
-        ? COLORS.purpleDark
-        : accent === "blue"
-          ? COLORS.blueDark
-          : accent === "red"
-            ? COLORS.redDark
-            : accent === "coral"
-              ? "rgba(255,90,54,0.15)"
-              : accent === "gold"
-                ? "rgba(251,191,36,0.12)"
-                : COLORS.border
-    : COLORS.border;
-
-  const bgColor = accent
-    ? accent === "green"
-      ? COLORS.greenDark
-      : accent === "purple"
-        ? COLORS.purpleDark
-        : accent === "blue"
-          ? COLORS.blueDark
-          : accent === "red"
-            ? COLORS.redDark
-            : COLORS.card
-    : COLORS.card;
-
-  const leftAccentStyle = accentColor
+  const borderColor = accent && accent in ACCENT_BORDER ? ACCENT_BORDER[accent] : COLORS.border;
+  const bgColor = accent && accent in ACCENT_BG ? ACCENT_BG[accent] : COLORS.card;
+  const leftAccentStyle: ViewStyle | null = accentColor
     ? { borderLeftWidth: 3, borderLeftColor: accentColor }
     : null;
 
