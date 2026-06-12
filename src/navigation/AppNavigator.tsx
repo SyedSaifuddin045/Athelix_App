@@ -21,6 +21,7 @@ import { WorkoutHistoryScreen } from "../screens/WorkoutHistoryScreen";
 import { SessionDetailScreen } from "../screens/SessionDetailScreen";
 import { MesocycleListScreen } from "../screens/MesocycleListScreen";
 import { MesocycleDetailScreen } from "../screens/MesocycleDetailScreen";
+import { AchievementsScreen } from "../screens/AchievementsScreen";
 import { PersonalRecordsScreen } from "../screens/PersonalRecordsScreen";
 import { ExerciseProgressScreen } from "../screens/ExerciseProgressScreen";
 import { MuscleBalanceScreen } from "../screens/MuscleBalanceScreen";
@@ -92,6 +93,7 @@ export function AppNavigator() {
         <RootStack.Screen name="SessionDetail" component={SessionDetailScreen} />
         <RootStack.Screen name="MesocycleList" component={MesocycleListScreen} />
         <RootStack.Screen name="MesocycleDetail" component={MesocycleDetailScreen} />
+        <RootStack.Screen name="Achievements" component={AchievementsScreen} />
         <RootStack.Screen name="PersonalRecords" component={PersonalRecordsScreen} />
         <RootStack.Screen name="ExerciseProgress" component={ExerciseProgressScreen} />
         <RootStack.Screen name="MuscleBalance" component={MuscleBalanceScreen} />

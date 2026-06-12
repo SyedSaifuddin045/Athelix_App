@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
+import { Pressable, Text, View, ActivityIndicator } from "react-native";
 import { useAuth } from "@clerk/expo";
 import type { CompositeNavigationProp } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
@@ -194,86 +194,41 @@ export function HomeScreen({ navigation }: Props) {
               </View>
               {latestSession ? <Tag label="Done" color={COLORS.teal} /> : null}
             </View>
-            <View style={[styles.rowGapLarge, { marginTop: SPACING.xl2 }]}>
-              <MetricBlock
-                icon="clock"
-                value={`${latestSession?.duration_minutes ?? 0} min`}
-                label="Duration"
-                color={COLORS.muted}
-              />
-              <MetricBlock
-                icon="list-checks"
-                value={`${latestSession?.total_sets ?? 0} sets`}
-                label="Sets"
-                color={COLORS.muted}
-              />
-              <MetricBlock
-                icon="gauge"
-                value={formatVolume(latestSession?.total_volume)}
-                label="Volume"
-                color={COLORS.muted}
-              />
-            </View>
+            {latestSession ? (
+              <View style={[styles.rowGapLarge, { marginTop: SPACING.xl2 }]}>
+                {latestSession.duration_minutes ? (
+                  <MetricBlock
+                    icon="clock"
+                    value={`${latestSession.duration_minutes} min`}
+                    label="Duration"
+                    color={COLORS.muted}
+                  />
+                ) : null}
+                {latestSession.total_sets ? (
+                  <MetricBlock
+                    icon="list-checks"
+                    value={`${latestSession.total_sets} sets`}
+                    label="Sets"
+                    color={COLORS.muted}
+                  />
+                ) : null}
+                {latestSession.total_volume ? (
+                  <MetricBlock
+                    icon="gauge"
+                    value={formatVolume(latestSession.total_volume)}
+                    label="Volume"
+                    color={COLORS.muted}
+                  />
+                ) : null}
+                {!latestSession.duration_minutes && !latestSession.total_sets && !latestSession.total_volume ? (
+                  <Text style={styles.detailLabel}>
+                    Tap to view full workout details
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
           </Card>
         </Pressable>
-      </View>
-
-      <View style={{ marginBottom: SPACING.xl4 }}>
-        <View style={[styles.sectionHeadingRow, { marginBottom: SPACING.lg }]}>
-          <Text style={styles.sectionCardTitle}>Recent PRs</Text>
-          <Pressable
-            style={styles.rowGapTiny}
-            onPress={() => navigation.navigate("PersonalRecords")}
-          >
-            <Text style={styles.linkText}>All PRs</Text>
-            <Icon name="chevron-right" size={12} color={COLORS.teal} />
-          </Pressable>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: SPACING.xl }}
-        >
-          {(data?.recent_personal_records.length ? data.recent_personal_records : []).map(
-            (item) => (
-              <Pressable
-                key={item.id}
-                onPress={() => navigation.navigate("PersonalRecords")}
-              >
-                <Card
-                  elevated
-                  style={[
-                    styles.prCard,
-                    {
-                      width: 130,
-                      borderColor: "rgba(251,191,36,0.3)",
-                      backgroundColor: "rgba(251,191,36,0.06)",
-                    },
-                  ]}
-                >
-                  <View style={styles.rowGapTiny}>
-                    <Icon name="award" size={12} color={COLORS.gold} />
-                    <Text style={[styles.prBadge, { color: COLORS.gold }]}>PR</Text>
-                  </View>
-                  <Text style={[styles.detailLabel, { marginTop: SPACING.lg }]}>
-                    {item.exercise_id}
-                  </Text>
-                  <Text style={[styles.prValue, { color: COLORS.gold }]}>
-                    {Math.round(item.value)}
-                  </Text>
-                  <Text style={[styles.detailLabel, { marginTop: SPACING.sm }]}>
-                    {formatShortDate(item.achieved_on)}
-                  </Text>
-                </Card>
-              </Pressable>
-            ),
-          )}
-          {data?.recent_personal_records.length === 0 ? (
-            <Card elevated style={[styles.prCard, { width: 130 }]}>
-              <Text style={styles.detailLabel}>No PRs yet</Text>
-            </Card>
-          ) : null}
-        </ScrollView>
       </View>
 
       <PrimaryButton

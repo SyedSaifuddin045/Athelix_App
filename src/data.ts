@@ -460,6 +460,13 @@ export const LINKED_SESSIONS = [
 
 export const PROGRESS_SECTIONS = [
   {
+    path: "achievements",
+    color: "#fbbf24",
+    title: "Achievements",
+    desc: "All personal records and milestones earned",
+    badgeKey: "prs" as const,
+  },
+  {
     path: "personalRecords",
     color: "#fbbf24",
     title: "Personal Records",

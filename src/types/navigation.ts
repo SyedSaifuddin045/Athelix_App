@@ -13,6 +13,7 @@ export type RootStackParamList = {
   SessionDetail: { id: string };
   MesocycleList: undefined;
   MesocycleDetail: { id: string };
+  Achievements: undefined;
   PersonalRecords: undefined;
   ExerciseProgress: { id?: string };
   MuscleBalance: { mesocycleId?: number } | undefined;

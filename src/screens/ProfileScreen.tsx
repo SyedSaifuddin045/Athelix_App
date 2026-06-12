@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -125,53 +125,6 @@ export function ProfileScreen({ navigation }: Props) {
             ))}
           </View>
         </Card>
-      </View>
-
-      <View style={{ marginTop: SPACING.xl3 }}>
-        <View style={[styles.sectionHeadingRow, { marginBottom: SPACING.lg }]}>
-          <Text style={styles.sectionCardTitle}>Achievements</Text>
-          <Text style={styles.linkText}>See All</Text>
-        </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: SPACING.xl }}
-        >
-          {(overview.data?.recent_personal_records.length
-            ? overview.data.recent_personal_records
-            : []
-          ).map((record) => (
-            <Card
-              key={record.id}
-              elevated
-              style={[styles.achievementCard, { width: 110, padding: SPACING.xl2, gap: SPACING.sm }]}
-            >
-              <View
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: RADIUS.iconWrap,
-                  backgroundColor: "rgba(251,191,36,0.15)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Icon name="trophy" size={18} color={COLORS.gold} />
-              </View>
-              <Text style={[styles.smallStrongText, { marginTop: SPACING.sm }]}>
-                {record.record_type}
-              </Text>
-              <Text style={[styles.listMeta, { color: COLORS.teal }]}>
-                {formatShortDate(record.achieved_on)}
-              </Text>
-            </Card>
-          ))}
-          {overview.data?.recent_personal_records.length === 0 ? (
-            <Card elevated style={[styles.achievementCard, { width: 110, padding: SPACING.xl2 }]}>
-              <Text style={styles.detailLabel}>No PRs yet</Text>
-            </Card>
-          ) : null}
-        </ScrollView>
       </View>
 
       <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl3 }}>

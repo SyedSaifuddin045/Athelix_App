@@ -32,14 +32,17 @@ function VolumeBar({
   current,
   average,
   color,
+  score,
 }: {
   current: number;
   average: number;
   color: string;
+  score: number;
 }) {
+  const fillPercent = Math.min(Math.max(score / 100, 0), 1);
   const maxVal = Math.max(current, average, 1);
-  const fillPercent = (current / maxVal) * 100;
-  const refPercent = (average / maxVal) * 100;
+  const refPercent = average > 0 ? average / maxVal : 0;
+  const shouldShowRef = average > 0 && current > 0 && refPercent < 0.95;
 
   return (
     <View style={{ marginTop: SPACING.lg }}>
@@ -49,23 +52,29 @@ function VolumeBar({
           borderRadius: 999,
           backgroundColor: "rgba(255,255,255,0.08)",
           position: "relative",
-          overflow: "visible",
+          overflow: "hidden",
+          flexDirection: "row",
         }}
       >
         <View
           style={{
             height: "100%",
             borderRadius: 999,
-            width: `${fillPercent}%`,
+            flex: fillPercent,
             backgroundColor: color,
           }}
         />
-        {average > 0 ? (
+        <View
+          style={{
+            flex: 1 - fillPercent,
+          }}
+        />
+        {shouldShowRef ? (
           <View
             style={{
               position: "absolute",
               top: -2,
-              left: `${refPercent}%`,
+              left: `${refPercent * 100}%`,
               width: 2,
               height: 12,
               borderRadius: 1,
@@ -90,7 +99,7 @@ function ExerciseRow({
   color: string;
 }) {
   const maxVal = Math.max(exercise.completed_sets, exercise.average_weekly_sets, 1);
-  const fillPercent = (exercise.completed_sets / maxVal) * 100;
+  const fillPercent = exercise.completed_sets / maxVal;
 
   return (
     <View style={[styles.rowGap, { paddingLeft: SPACING.xl }]}>
@@ -113,14 +122,20 @@ function ExerciseRow({
             borderRadius: 2,
             backgroundColor: "rgba(255,255,255,0.08)",
             overflow: "hidden",
+            flexDirection: "row",
           }}
         >
           <View
             style={{
               height: "100%",
               borderRadius: 2,
-              width: `${fillPercent}%`,
+              flex: fillPercent,
               backgroundColor: color,
+            }}
+          />
+          <View
+            style={{
+              flex: 1 - fillPercent,
             }}
           />
         </View>
@@ -223,6 +238,7 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
                   current={item.weekly_sets}
                   average={item.average_weekly_sets}
                   color={accent}
+                  score={item.score}
                 />
               </Pressable>
 

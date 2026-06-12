@@ -12,13 +12,12 @@ import { Screen } from "../components/ui/Layout";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { CompactStatCard } from "../components/ui/Stats";
 import { PROGRESS_SECTIONS } from "../data";
-import { recordValue } from "../utils/mapping";
-import { formatShortDate } from "../utils/format";
 import { Icon, type IconName } from "../components/ui/Icon";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
 
 const SECTION_ICONS: Record<string, IconName> = {
+  achievements: "trophy",
   personalRecords: "award",
   exerciseProgress: "trending-up",
   muscleBalance: "bar-chart-2",
@@ -27,7 +26,6 @@ const SECTION_ICONS: Record<string, IconName> = {
 export function ProgressHubScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const overview = useOverviewQuery(isAuthenticated);
-  const latestPr = overview.data?.recent_personal_records[0];
 
   return (
     <Screen>
@@ -71,7 +69,9 @@ export function ProgressHubScreen({ navigation }: Props) {
             <Pressable
               key={section.title}
               onPress={() => {
-                if (section.path === "personalRecords")
+                if (section.path === "achievements")
+                  navigation.navigate({ name: "Achievements", params: undefined });
+                else if (section.path === "personalRecords")
                   navigation.navigate({ name: "PersonalRecords", params: undefined });
                 else if (section.path === "exerciseProgress")
                   navigation.navigate({ name: "ExerciseProgress", params: {} });
@@ -119,37 +119,6 @@ export function ProgressHubScreen({ navigation }: Props) {
           );
         })}
       </View>
-
-      {latestPr ? (
-        <Card
-          elevated
-          accent="gold"
-          style={{ marginTop: SPACING.xl3 }}
-        >
-          <View style={styles.rowGap}>
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 14,
-                backgroundColor: "rgba(251,191,36,0.15)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Icon name="trophy" size={22} color={COLORS.gold} />
-            </View>
-            <View>
-              <Text style={[styles.listRowTitle, { color: COLORS.gold }]}>
-                New {latestPr.record_type} PR
-              </Text>
-              <Text style={styles.detailLabel}>
-                {recordValue(latestPr)} - {formatShortDate(latestPr.achieved_on)}
-              </Text>
-            </View>
-          </View>
-        </Card>
-      ) : null}
     </Screen>
   );
 }

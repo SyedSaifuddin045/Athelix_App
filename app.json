@@ -48,11 +48,20 @@
         {
           "android": {
             "packagingOptions": {
-              "exclude": ["META-INF/versions/9/OSGI-INF/MANIFEST.MF"]
+              "exclude": [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+              ]
             }
           }
         }
       ]
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": true,
+      "url": "https://u.expo.dev/c54ecbdd-2a96-4a57-8f51-57c7df8d94c8"
+    }
   }
 }
