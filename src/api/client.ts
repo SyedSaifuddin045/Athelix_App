@@ -47,16 +47,26 @@ async function ensureToken(): Promise<string | null> {
   tokenPromise = new Promise((resolve) => {
     tokenResolve = resolve;
   });
-  const timeoutPromise = new Promise<null>((resolve) => {
-    setTimeout(() => {
-      if (tokenPromise) {
-        tokenPromise = null;
-        tokenResolve = null;
-        resolve(null);
-      }
-    }, 6000);
+  setTimeout(() => {
+    if (tokenResolve) {
+      tokenResolve(null);
+      tokenPromise = null;
+      tokenResolve = null;
+    }
+  }, 6000);
+  return tokenPromise;
+}
+
+export function getTokenWithTimeout(
+  getTokenFn: () => Promise<string | null>,
+  timeoutMs = 8000,
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(null), timeoutMs);
+    getTokenFn()
+      .then((token) => { clearTimeout(timer); resolve(token); })
+      .catch(() => { clearTimeout(timer); resolve(null); });
   });
-  return Promise.race([tokenPromise, timeoutPromise]);
 }
 
 let refreshTokenHandler: (() => Promise<string | null>) | null = null;

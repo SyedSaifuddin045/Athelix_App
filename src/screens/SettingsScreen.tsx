@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, Switch, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Pressable, Switch, Text, TextInput, View } from "react-native";
 import { usePostHog } from "posthog-react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -15,7 +15,7 @@ import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput } from "../components/ui/Input";
 import { Icon } from "../components/ui/Icon";
-import { getApiErrorMessage } from "../api/client";
+import { apiFetch, getApiErrorMessage } from "../api/client";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
 
@@ -184,6 +184,48 @@ export function SettingsScreen({ navigation }: Props) {
               </View>
             ))}
           </Card>
+        </View>
+
+        <View>
+          <SectionEyebrow>Feedback</SectionEyebrow>
+          <Pressable
+            onPress={async () => {
+              posthog.capture(Events.FEEDBACK_PORTAL_OPENED);
+              try {
+                const resp = await apiFetch("/auth/generate-portal-token", { method: "POST" });
+                const data = await resp.json() as { url: string };
+                Linking.openURL(data.url).catch(() => Alert.alert("Error", "Could not open feedback portal"));
+              } catch {
+                Linking.openURL("https://feedback.athelix.fit").catch(() =>
+                  Alert.alert("Error", "Could not open feedback portal"),
+                );
+              }
+            }}
+          >
+            <View
+              style={{
+                  minHeight: 74,
+                  borderRadius: RADIUS.input,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,90,54,0.2)",
+                  backgroundColor: "rgba(255,90,54,0.08)",
+                  paddingHorizontal: SPACING.xl3,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: SPACING.xl,
+                  marginTop: SPACING.lg,
+              }}
+            >
+              <Icon name="message-circle" size={16} color={COLORS.accent} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.listRowTitle, { color: COLORS.accent }]}>Feedback & Feature Requests</Text>
+                <Text style={[styles.listMeta, { color: "rgba(255,90,54,0.66)" }]}>
+                  Suggest features, report bugs, or write a review
+                </Text>
+              </View>
+              <Icon name="external-link" size={14} color="rgba(255,90,54,0.5)" />
+            </View>
+          </Pressable>
         </View>
 
         <View>

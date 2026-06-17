@@ -32,4 +32,5 @@ export const Events = {
   EXERCISE_FILTERED: "exercise filtered",
   NOTIFICATION_SETTING_CHANGED: "notification setting changed",
   ACCOUNT_SETTINGS_UPDATED: "account settings updated",
+  FEEDBACK_PORTAL_OPENED: "feedback portal opened",
 } as const;

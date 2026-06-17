@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, AppState, View } from "react-native";
 import { useAuth } from "@clerk/expo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
@@ -27,7 +27,7 @@ import { ExerciseProgressScreen } from "../screens/ExerciseProgressScreen";
 import { MuscleBalanceScreen } from "../screens/MuscleBalanceScreen";
 import { BodyweightHistoryScreen } from "../screens/BodyweightHistoryScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
-import { setRefreshTokenHandler, updateClerkToken } from "../api/client";
+import { getTokenWithTimeout, setRefreshTokenHandler, updateClerkToken } from "../api/client";
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
@@ -35,7 +35,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, getToken } = useAuth();
 
   useEffect(() => {
-    setRefreshTokenHandler(isSignedIn ? () => getToken() : null);
+    setRefreshTokenHandler(isSignedIn ? () => getTokenWithTimeout(getToken) : null);
     return () => setRefreshTokenHandler(null);
   }, [isSignedIn, getToken]);
 
@@ -43,22 +43,27 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (!isLoaded) return;
 
     if (isSignedIn) {
-      getToken().then((token) => {
-        if (token) updateClerkToken(token);
-      });
+      getTokenWithTimeout(getToken).then((t) => { if (t) updateClerkToken(t); });
     } else {
       updateClerkToken(null);
     }
-  }, [isLoaded, isSignedIn]);
 
-  useEffect(() => {
-    if (!isSignedIn) return;
     const interval = setInterval(async () => {
-      const token = await getToken();
-      updateClerkToken(token);
-    }, 10 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [isSignedIn]);
+      const token = await getTokenWithTimeout(getToken);
+      if (token) updateClerkToken(token);
+    }, 5 * 60 * 1000);
+
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active" && isSignedIn) {
+        getTokenWithTimeout(getToken).then((t) => { if (t) updateClerkToken(t); });
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      sub.remove();
+    };
+  }, [isLoaded, isSignedIn]);
 
   if (!isLoaded) {
     return (
