@@ -1,9 +1,18 @@
-import { useEffect } from "react";
-import { ActivityIndicator, AppState, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, AppState, Text, TouchableOpacity, View } from "react-native";
+import * as SecureStore from "expo-secure-store";
+import * as Updates from "expo-updates";
 import { useAuth } from "@clerk/expo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { COLORS } from "../theme/colors";
+
+const CLERK_CACHE_KEYS = [
+  "__clerk_client_jwt",
+  "__clerk_cache_environment",
+  "__clerk_cache_client",
+  "__clerk_cache_session_jwt",
+];
 
 import type { RootStackParamList } from "../types/navigation";
 
@@ -33,6 +42,13 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn, getToken } = useAuth();
+  const [isLoadedTimedOut, setIsLoadedTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded) return;
+    const timer = setTimeout(() => setIsLoadedTimedOut(true), 15000);
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
 
   useEffect(() => {
     setRefreshTokenHandler(isSignedIn ? () => getTokenWithTimeout(getToken) : null);
@@ -64,6 +80,38 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       sub.remove();
     };
   }, [isLoaded, isSignedIn]);
+
+  if (isLoadedTimedOut) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.root, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <Text style={{ color: COLORS.text, fontSize: 18, textAlign: "center", marginBottom: 8 }}>
+          Could not restore session
+        </Text>
+        <Text style={{ color: COLORS.muted, fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+          We had trouble loading your account. Please try again.
+        </Text>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={async () => {
+            await Promise.allSettled(
+              CLERK_CACHE_KEYS.map((k) => SecureStore.deleteItemAsync(k))
+            );
+            await Updates.reloadAsync();
+          }}
+          style={{
+            backgroundColor: COLORS.accent,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+            Retry
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (!isLoaded) {
     return (

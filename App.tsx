@@ -8,7 +8,7 @@ import { ClerkProvider } from "@clerk/expo";
 import Constants from "expo-constants";
 
 WebBrowser.maybeCompleteAuthSession();
-import { tokenCache } from "@clerk/expo/token-cache";
+import { tokenCache } from "./src/utils/timedTokenCache";
 
 import { queryClient } from "./src/api/queryClient";
 import { AppContent } from "./src/navigation/AppContent";
