@@ -35,7 +35,7 @@ describe("ErrorBoundary", () => {
     );
     expect(getByText("Something went wrong")).toBeTruthy();
     expect(getByText("Test error")).toBeTruthy();
-    expect(getByText("Retry")).toBeTruthy();
+    expect(getByText("Restart App")).toBeTruthy();
   });
 
   it("renders custom fallback when provided", () => {
@@ -48,13 +48,13 @@ describe("ErrorBoundary", () => {
     expect(queryByText("Something went wrong")).toBeNull();
   });
 
-  it("retry button is pressable without crashing", () => {
+  it("restart button is pressable without crashing", () => {
     const { getByText } = render(
       <ErrorBoundary>
         <Boom shouldThrow={true} />
       </ErrorBoundary>
     );
-    const retryBtn = getByText("Retry");
-    expect(() => fireEvent.press(retryBtn)).not.toThrow();
+    const restartBtn = getByText("Restart App");
+    expect(() => fireEvent.press(restartBtn)).not.toThrow();
   });
 });

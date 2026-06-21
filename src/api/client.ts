@@ -158,19 +158,12 @@ export async function apiFetch(input: RequestInfo | URL, init?: RetryInit): Prom
     }
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  let response: Response;
-  try {
-    response = await originalFetch(url, { ...init, headers, signal: controller.signal });
-  } catch (error: unknown) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new ApiError("Request timed out.");
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
-  }
+  const response = await Promise.race<Response>([
+    originalFetch(url, { ...init, headers }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new ApiError("Request timed out.")), FETCH_TIMEOUT_MS),
+    ),
+  ]);
 
   if (response.status === 401 && !init?.__didRetry && !isPublicPath(urlString)) {
     if (refreshTokenHandler) {

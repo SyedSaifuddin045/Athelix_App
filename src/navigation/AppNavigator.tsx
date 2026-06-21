@@ -6,6 +6,8 @@ import { useAuth } from "@clerk/expo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import { COLORS } from "../theme/colors";
+import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
+import { Icon } from "../components/ui/Icon";
 
 const CLERK_CACHE_KEYS = [
   "__clerk_client_jwt",
@@ -116,7 +118,27 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   if (!isLoaded) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.root, alignItems: "center", justifyContent: "center" }}>
+        <View
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: RADIUS.card,
+            backgroundColor: COLORS.teal,
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 24,
+            ...SHADOWS.glow(COLORS.teal),
+          }}
+        >
+          <Icon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
+        </View>
+        <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: "700", marginBottom: 32 }}>
+          Athelix
+        </Text>
         <ActivityIndicator size="small" color={COLORS.accent} />
+        <Text style={{ color: COLORS.muted, fontSize: 12, marginTop: 16 }}>
+          Restoring session...
+        </Text>
       </View>
     );
   }

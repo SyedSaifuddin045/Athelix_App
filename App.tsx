@@ -37,11 +37,11 @@ export default function App() {
               captureTouches: true,
             }}
           >
-            <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
-              <ErrorBoundary>
+            <ErrorBoundary>
+              <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
                 <AppContent />
-              </ErrorBoundary>
-            </ClerkProvider>
+              </ClerkProvider>
+            </ErrorBoundary>
           </PostHogProvider>
         </QueryClientProvider>
       </GestureHandlerRootView>

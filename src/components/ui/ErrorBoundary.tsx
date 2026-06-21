@@ -1,8 +1,10 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { Pressable, Text, View } from "react-native";
+import * as Updates from "expo-updates";
 
 import { COLORS } from "../../theme/colors";
-import { styles } from "../../theme/styles";
+import { RADIUS, SHADOWS } from "../../theme/spacing";
+import { Icon } from "./Icon";
 
 interface Props {
   children: ReactNode;
@@ -37,13 +39,40 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
 
       return (
-        <View style={[styles.screen, { justifyContent: "center", alignItems: "center", padding: 24 }]}>
-          <Text style={[styles.cardTitle, { color: COLORS.red, marginBottom: 8 }]}>Something went wrong</Text>
-          <Text style={[styles.detailLabel, { textAlign: "center", marginBottom: 24 }]}>
+        <View style={{ flex: 1, backgroundColor: COLORS.root, alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <View
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: RADIUS.card,
+              backgroundColor: COLORS.teal,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 24,
+              ...SHADOWS.glow(COLORS.teal),
+            }}
+          >
+            <Icon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
+          </View>
+          <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: "700", marginBottom: 8 }}>
+            Athelix
+          </Text>
+          <Text style={{ color: COLORS.red, fontSize: 16, marginBottom: 16 }}>
+            Something went wrong
+          </Text>
+          <Text style={{ color: COLORS.muted, fontSize: 14, textAlign: "center", marginBottom: 32, maxWidth: 280 }}>
             {this.state.error?.message ?? "An unexpected error occurred"}
           </Text>
-          <Pressable onPress={this.handleRetry} style={[styles.primaryButton, { paddingHorizontal: 32 }]}>
-            <Text style={styles.primaryButtonText}>Retry</Text>
+          <Pressable
+            onPress={() => Updates.reloadAsync()}
+            style={{
+              backgroundColor: COLORS.accent,
+              paddingHorizontal: 32,
+              paddingVertical: 12,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>Restart App</Text>
           </Pressable>
         </View>
       );
