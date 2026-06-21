@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -17,23 +17,34 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Splash
 export function SplashScreen({ navigation }: Props) {
   const { isLoaded, isSignedIn = false } = useAuth();
   const appConfig = useAppConfigQuery();
-  const progress = appConfig.isPending || !isLoaded ? 65 : 100;
-  const status =
-    appConfig.isPending
-      ? "Fetching app config..."
-      : !isLoaded
-        ? "Restoring session..."
-        : isSignedIn
-          ? "Ready!"
-          : "Sign in to continue";
+  const [fetchTimedOut, setFetchTimedOut] = useState(false);
 
   useEffect(() => {
-    if (appConfig.isPending || !isLoaded) return;
+    if (!appConfig.isPending) return;
+    const timer = setTimeout(() => setFetchTimedOut(true), 10000);
+    return () => clearTimeout(timer);
+  }, [appConfig.isPending]);
+
+  const ready = isLoaded && (!appConfig.isPending || fetchTimedOut);
+  const progress = appConfig.isPending && !fetchTimedOut && !isLoaded ? 30 : fetchTimedOut || (!appConfig.isPending && isLoaded) ? 100 : 65;
+  const status =
+    fetchTimedOut
+      ? "Continuing..."
+      : appConfig.isPending
+        ? "Fetching app config..."
+        : !isLoaded
+          ? "Restoring session..."
+          : isSignedIn
+            ? "Ready!"
+            : "Sign in to continue";
+
+  useEffect(() => {
+    if (!ready) return;
     const timer = setTimeout(() => {
       navigation.replace(isSignedIn ? "MainTabs" : "Login");
     }, 450);
     return () => clearTimeout(timer);
-  }, [appConfig.isPending, isLoaded, isSignedIn, navigation]);
+  }, [ready, isSignedIn, navigation]);
 
   return (
     <Screen scroll={false} contentContainerStyle={styles.centeredContent}>

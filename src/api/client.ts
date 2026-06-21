@@ -28,6 +28,8 @@ const originalFetch = globalScope.__athelixOriginalFetch ?? globalThis.fetch.bin
 globalScope.__athelixOriginalFetch = originalFetch;
 let installed = false;
 
+const FETCH_TIMEOUT_MS = 10000;
+
 let clerkSessionToken: string | null = null;
 let tokenResolve: ((token: string | null) => void) | null = null;
 let tokenPromise: Promise<string | null> | null = null;
@@ -156,7 +158,19 @@ export async function apiFetch(input: RequestInfo | URL, init?: RetryInit): Prom
     }
   }
 
-  const response = await originalFetch(url, { ...init, headers });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await originalFetch(url, { ...init, headers, signal: controller.signal });
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new ApiError("Request timed out.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (response.status === 401 && !init?.__didRetry && !isPublicPath(urlString)) {
     if (refreshTokenHandler) {

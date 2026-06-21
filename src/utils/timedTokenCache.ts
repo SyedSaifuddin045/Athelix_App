@@ -6,15 +6,23 @@ const secureStoreOpts: SecureStore.SecureStoreOptions = {
 
 export const tokenCache = {
   async getToken(key: string): Promise<string | null | undefined> {
-    return Promise.race([
-      SecureStore.getItemAsync(key, secureStoreOpts),
-      new Promise<null>((resolve) => setTimeout(resolve, 5000, null)),
-    ]);
+    try {
+      return await Promise.race([
+        SecureStore.getItemAsync(key, secureStoreOpts),
+        new Promise<null>((resolve) => setTimeout(resolve, 5000, null)),
+      ]);
+    } catch {
+      return null;
+    }
   },
   async saveToken(key: string, token: string): Promise<void> {
-    await SecureStore.setItemAsync(key, token, secureStoreOpts);
+    try {
+      await SecureStore.setItemAsync(key, token, secureStoreOpts);
+    } catch {}
   },
   async clearToken(key: string): Promise<void> {
-    await SecureStore.deleteItemAsync(key, secureStoreOpts);
+    try {
+      await SecureStore.deleteItemAsync(key, secureStoreOpts);
+    } catch {}
   },
 };
