@@ -3,27 +3,50 @@ import { useNavigate } from "react-router";
 import { X, Plus, Check, ChevronDown, Smile, MapPin, FileText } from "lucide-react";
 
 interface WSet {
-  id: string; weight: string; reps: string; rpe: string; done: boolean; warmup: boolean;
+  id: string; weight: string; reps: string; duration: string; distance: string;
+  rpe: string; done: boolean; warmup: boolean;
 }
 interface WExercise {
-  id: string; name: string; emoji: string; sets: WSet[]; notes: string;
+  id: string; name: string; emoji: string; category: "strength" | "cardio";
+  sets: WSet[]; notes: string;
+}
+
+function newStrengthSet(prevWeight?: string, prevReps?: string): WSet {
+  return { id: Date.now().toString(), weight: prevWeight || "60", reps: prevReps || "8", duration: "", distance: "", rpe: "", done: false, warmup: false };
+}
+
+function newCardioSet(): WSet {
+  return { id: Date.now().toString(), weight: "", reps: "", duration: "", distance: "", rpe: "", done: false, warmup: false };
 }
 
 const INIT_EXERCISES: WExercise[] = [
   {
-    id: "1", name: "Bench Press", emoji: "🏋️", notes: "",
+    id: "1", name: "Bench Press", emoji: "🏋️", category: "strength", notes: "",
     sets: [
-      { id: "w1", weight: "80", reps: "5", rpe: "", done: false, warmup: true },
-      { id: "s1", weight: "100", reps: "5", rpe: "", done: false, warmup: false },
-      { id: "s2", weight: "100", reps: "5", rpe: "", done: false, warmup: false },
-      { id: "s3", weight: "100", reps: "5", rpe: "", done: false, warmup: false },
+      { id: "w1", weight: "80", reps: "5", duration: "", distance: "", rpe: "", done: false, warmup: true },
+      { id: "s1", weight: "100", reps: "5", duration: "", distance: "", rpe: "", done: false, warmup: false },
+      { id: "s2", weight: "100", reps: "5", duration: "", distance: "", rpe: "", done: false, warmup: false },
+      { id: "s3", weight: "100", reps: "5", duration: "", distance: "", rpe: "", done: false, warmup: false },
     ],
   },
   {
-    id: "2", name: "OHP", emoji: "🙌", notes: "",
+    id: "2", name: "OHP", emoji: "🙌", category: "strength", notes: "",
     sets: [
-      { id: "s4", weight: "60", reps: "8", rpe: "", done: false, warmup: false },
-      { id: "s5", weight: "60", reps: "8", rpe: "", done: false, warmup: false },
+      { id: "s4", weight: "60", reps: "8", duration: "", distance: "", rpe: "", done: false, warmup: false },
+      { id: "s5", weight: "60", reps: "8", duration: "", distance: "", rpe: "", done: false, warmup: false },
+    ],
+  },
+  {
+    id: "3", name: "Running", emoji: "🏃", category: "cardio", notes: "",
+    sets: [
+      { id: "c1", weight: "", reps: "", duration: "10:00", distance: "2.0", rpe: "6", done: false, warmup: false },
+      { id: "c2", weight: "", reps: "", duration: "8:30", distance: "1.7", rpe: "7", done: false, warmup: false },
+    ],
+  },
+  {
+    id: "4", name: "Cycling", emoji: "🚴", category: "cardio", notes: "",
+    sets: [
+      { id: "c3", weight: "", reps: "", duration: "15:00", distance: "5.0", rpe: "7", done: false, warmup: false },
     ],
   },
 ];
@@ -56,27 +79,29 @@ export function ActiveWorkoutScreen() {
       ? { ...ex, sets: ex.sets.map(s => s.id === sid ? { ...s, done: !s.done } : s) }
       : ex));
 
-  const updateSet = (eid: string, sid: string, field: "weight" | "reps" | "rpe", val: string) =>
+  const updateSet = (eid: string, sid: string, field: "weight" | "reps" | "rpe" | "duration" | "distance", val: string) =>
     setExercises(es => es.map(ex => ex.id === eid
       ? { ...ex, sets: ex.sets.map(s => s.id === sid ? { ...s, [field]: val } : s) }
       : ex));
 
   const addSet = (eid: string) =>
-    setExercises(es => es.map(ex => ex.id === eid
-      ? {
-        ...ex, sets: [...ex.sets, {
-          id: Date.now().toString(),
-          weight: ex.sets.filter(s => !s.warmup).at(-1)?.weight || "60",
-          reps: ex.sets.filter(s => !s.warmup).at(-1)?.reps || "8",
-          rpe: "", done: false, warmup: false,
-        }]
-      }
-      : ex));
+    setExercises(es => es.map(ex => {
+      if (ex.id !== eid) return ex;
+      const last = ex.sets.filter(s => !s.warmup).at(-1);
+      const newSet = ex.category === "cardio"
+        ? newCardioSet()
+        : newStrengthSet(last?.weight, last?.reps);
+      return { ...ex, sets: [...ex.sets, newSet] };
+    }));
 
-  const addExercise = () => {
+  const addExercise = (category: "strength" | "cardio" = "strength") => {
     const newEx: WExercise = {
-      id: Date.now().toString(), name: "New Exercise", emoji: "💪", notes: "",
-      sets: [{ id: Date.now().toString() + "s", weight: "60", reps: "8", rpe: "", done: false, warmup: false }],
+      id: Date.now().toString(), name: category === "cardio" ? "Cardio" : "New Exercise",
+      emoji: category === "cardio" ? "🏃" : "💪",
+      category, notes: "",
+      sets: category === "cardio"
+        ? [newCardioSet()]
+        : [newStrengthSet()],
     };
     setExercises(es => [...es, newEx]);
     setExpanded(newEx.id);
@@ -151,12 +176,21 @@ export function ActiveWorkoutScreen() {
             {expanded === ex.id && (
               <div className="px-3.5 pb-3.5">
                 {/* Headers */}
-                <div className="grid gap-2 mb-1.5" style={{ gridTemplateColumns: "32px 1fr 1fr 1fr 36px" }}>
-                  {["Set", "kg", "Reps", "RPE", ""].map((h, i) => (
-                    <span key={i} className="text-[10px] font-semibold uppercase text-center"
-                      style={{ color: "rgba(255,255,255,0.28)" }}>{h}</span>
-                  ))}
-                </div>
+                {ex.category === "cardio" ? (
+                  <div className="grid gap-2 mb-1.5" style={{ gridTemplateColumns: "32px 1fr 1fr 1fr 36px" }}>
+                    {["Set", "Time", "Dist", "RPE", ""].map(h => (
+                      <span key={h} className="text-[10px] font-semibold uppercase text-center"
+                        style={{ color: "rgba(255,255,255,0.28)" }}>{h}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid gap-2 mb-1.5" style={{ gridTemplateColumns: "32px 1fr 1fr 1fr 36px" }}>
+                    {["Set", "kg", "Reps", "RPE", ""].map(h => (
+                      <span key={h} className="text-[10px] font-semibold uppercase text-center"
+                        style={{ color: "rgba(255,255,255,0.28)" }}>{h}</span>
+                    ))}
+                  </div>
+                )}
 
                 {ex.sets.map((set) => (
                   <div key={set.id}
@@ -173,22 +207,47 @@ export function ActiveWorkoutScreen() {
                         </span>
                       }
                     </div>
-                    <input
-                      style={{ ...cellInput, textDecoration: set.done ? "line-through" : "none" }}
-                      value={set.weight}
-                      onChange={e => updateSet(ex.id, set.id, "weight", e.target.value)}
-                    />
-                    <input
-                      style={{ ...cellInput, textDecoration: set.done ? "line-through" : "none" }}
-                      value={set.reps}
-                      onChange={e => updateSet(ex.id, set.id, "reps", e.target.value)}
-                    />
-                    <input
-                      style={cellInput}
-                      value={set.rpe}
-                      placeholder="–"
-                      onChange={e => updateSet(ex.id, set.id, "rpe", e.target.value)}
-                    />
+                    {ex.category === "cardio" ? (
+                      <>
+                        <input
+                          style={cellInput}
+                          value={set.duration}
+                          placeholder="mm:ss"
+                          onChange={e => updateSet(ex.id, set.id, "duration", e.target.value)}
+                        />
+                        <input
+                          style={cellInput}
+                          value={set.distance}
+                          placeholder="km"
+                          onChange={e => updateSet(ex.id, set.id, "distance", e.target.value)}
+                        />
+                        <input
+                          style={cellInput}
+                          value={set.rpe}
+                          placeholder="–"
+                          onChange={e => updateSet(ex.id, set.id, "rpe", e.target.value)}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          style={{ ...cellInput, textDecoration: set.done ? "line-through" : "none" }}
+                          value={set.weight}
+                          onChange={e => updateSet(ex.id, set.id, "weight", e.target.value)}
+                        />
+                        <input
+                          style={{ ...cellInput, textDecoration: set.done ? "line-through" : "none" }}
+                          value={set.reps}
+                          onChange={e => updateSet(ex.id, set.id, "reps", e.target.value)}
+                        />
+                        <input
+                          style={cellInput}
+                          value={set.rpe}
+                          placeholder="–"
+                          onChange={e => updateSet(ex.id, set.id, "rpe", e.target.value)}
+                        />
+                      </>
+                    )}
                     <button
                       onClick={() => toggleSet(ex.id, set.id)}
                       className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90"
@@ -212,17 +271,29 @@ export function ActiveWorkoutScreen() {
           </div>
         ))}
 
-        {/* Add Exercise */}
-        <button
-          onClick={addExercise}
-          className="p-4 rounded-2xl flex items-center gap-3 transition-all active:scale-[0.98]"
-          style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.1)" }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ background: "rgba(0,212,168,0.12)" }}>
-            <Plus size={18} color="#00d4a8" />
-          </div>
-          <p className="text-[14px] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>Add Exercise</p>
-        </button>
+        {/* Add Exercise buttons */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => addExercise("strength")}
+            className="flex-1 p-4 rounded-2xl flex items-center gap-3 transition-all active:scale-[0.98]"
+            style={{ background: "rgba(59,130,246,0.08)", border: "1px dashed rgba(59,130,246,0.25)" }}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(59,130,246,0.15)" }}>
+              <Plus size={18} color="#3b82f6" />
+            </div>
+            <p className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>Strength</p>
+          </button>
+          <button
+            onClick={() => addExercise("cardio")}
+            className="flex-1 p-4 rounded-2xl flex items-center gap-3 transition-all active:scale-[0.98]"
+            style={{ background: "rgba(245,158,11,0.08)", border: "1px dashed rgba(245,158,11,0.25)" }}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(245,158,11,0.15)" }}>
+              <Plus size={18} color="#f59e0b" />
+            </div>
+            <p className="text-[13px] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>Cardio</p>
+          </button>
+        </div>
 
         {/* Session meta */}
         <div className="rounded-2xl p-4" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}>

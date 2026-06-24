@@ -2,43 +2,65 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Search, SlidersHorizontal, ChevronRight, X } from "lucide-react";
 
+type ExerciseCategory = "strength" | "cardio" | "flexibility" | "all";
+
 interface Exercise {
   id: string;
   name: string;
   primaryMuscle: string;
   equipment: string;
   difficulty: "Beginner" | "Intermediate" | "Advanced";
+  category: ExerciseCategory;
   emoji: string;
 }
 
 const ALL_EXERCISES: Exercise[] = [
-  { id: "1", name: "Bench Press", primaryMuscle: "Chest", equipment: "Barbell", difficulty: "Intermediate", emoji: "🏋️" },
-  { id: "2", name: "Back Squat", primaryMuscle: "Quadriceps", equipment: "Barbell", difficulty: "Intermediate", emoji: "🦵" },
-  { id: "3", name: "Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Advanced", emoji: "💪" },
-  { id: "4", name: "Overhead Press", primaryMuscle: "Shoulders", equipment: "Barbell", difficulty: "Intermediate", emoji: "🙌" },
-  { id: "5", name: "Pull-up", primaryMuscle: "Back", equipment: "Bodyweight", difficulty: "Intermediate", emoji: "⬆️" },
-  { id: "6", name: "Barbell Row", primaryMuscle: "Back", equipment: "Barbell", difficulty: "Intermediate", emoji: "🏋️" },
-  { id: "7", name: "Romanian Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Intermediate", emoji: "🔃" },
-  { id: "8", name: "Dumbbell Curl", primaryMuscle: "Biceps", equipment: "Dumbbell", difficulty: "Beginner", emoji: "💪" },
-  { id: "9", name: "Tricep Dips", primaryMuscle: "Triceps", equipment: "Bodyweight", difficulty: "Beginner", emoji: "👇" },
-  { id: "10", name: "Leg Press", primaryMuscle: "Quadriceps", equipment: "Machine", difficulty: "Beginner", emoji: "🦵" },
-  { id: "11", name: "Lateral Raise", primaryMuscle: "Shoulders", equipment: "Dumbbell", difficulty: "Beginner", emoji: "🙆" },
-  { id: "12", name: "Cable Row", primaryMuscle: "Back", equipment: "Cable", difficulty: "Beginner", emoji: "🔗" },
-  { id: "13", name: "Incline DB Press", primaryMuscle: "Chest", equipment: "Dumbbell", difficulty: "Intermediate", emoji: "📐" },
-  { id: "14", name: "Face Pull", primaryMuscle: "Rear Delts", equipment: "Cable", difficulty: "Beginner", emoji: "😤" },
-  { id: "15", name: "Bulgarian Split Squat", primaryMuscle: "Quadriceps", equipment: "Dumbbell", difficulty: "Advanced", emoji: "🦵" },
-  { id: "16", name: "Hip Thrust", primaryMuscle: "Glutes", equipment: "Barbell", difficulty: "Intermediate", emoji: "🍑" },
+  { id: "1", name: "Bench Press", primaryMuscle: "Chest", equipment: "Barbell", difficulty: "Intermediate", category: "strength", emoji: "🏋️" },
+  { id: "2", name: "Back Squat", primaryMuscle: "Quadriceps", equipment: "Barbell", difficulty: "Intermediate", category: "strength", emoji: "🦵" },
+  { id: "3", name: "Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Advanced", category: "strength", emoji: "💪" },
+  { id: "4", name: "Overhead Press", primaryMuscle: "Shoulders", equipment: "Barbell", difficulty: "Intermediate", category: "strength", emoji: "🙌" },
+  { id: "5", name: "Pull-up", primaryMuscle: "Back", equipment: "Bodyweight", difficulty: "Intermediate", category: "strength", emoji: "⬆️" },
+  { id: "6", name: "Barbell Row", primaryMuscle: "Back", equipment: "Barbell", difficulty: "Intermediate", category: "strength", emoji: "🏋️" },
+  { id: "7", name: "Romanian Deadlift", primaryMuscle: "Hamstrings", equipment: "Barbell", difficulty: "Intermediate", category: "strength", emoji: "🔃" },
+  { id: "8", name: "Dumbbell Curl", primaryMuscle: "Biceps", equipment: "Dumbbell", difficulty: "Beginner", category: "strength", emoji: "💪" },
+  { id: "9", name: "Tricep Dips", primaryMuscle: "Triceps", equipment: "Bodyweight", difficulty: "Beginner", category: "strength", emoji: "👇" },
+  { id: "10", name: "Leg Press", primaryMuscle: "Quadriceps", equipment: "Machine", difficulty: "Beginner", category: "strength", emoji: "🦵" },
+  { id: "11", name: "Lateral Raise", primaryMuscle: "Shoulders", equipment: "Dumbbell", difficulty: "Beginner", category: "strength", emoji: "🙆" },
+  { id: "12", name: "Cable Row", primaryMuscle: "Back", equipment: "Cable", difficulty: "Beginner", category: "strength", emoji: "🔗" },
+  { id: "13", name: "Incline DB Press", primaryMuscle: "Chest", equipment: "Dumbbell", difficulty: "Intermediate", category: "strength", emoji: "📐" },
+  { id: "14", name: "Face Pull", primaryMuscle: "Rear Delts", equipment: "Cable", difficulty: "Beginner", category: "strength", emoji: "😤" },
+  { id: "15", name: "Bulgarian Split Squat", primaryMuscle: "Quadriceps", equipment: "Dumbbell", difficulty: "Advanced", category: "strength", emoji: "🦵" },
+  { id: "16", name: "Hip Thrust", primaryMuscle: "Glutes", equipment: "Barbell", difficulty: "Intermediate", category: "strength", emoji: "🍑" },
+  { id: "17", name: "Running", primaryMuscle: "Cardio", equipment: "Bodyweight", difficulty: "Beginner", category: "cardio", emoji: "🏃" },
+  { id: "18", name: "Cycling", primaryMuscle: "Cardio", equipment: "Bike", difficulty: "Beginner", category: "cardio", emoji: "🚴" },
+  { id: "19", name: "Swimming", primaryMuscle: "Cardio", equipment: "Bodyweight", difficulty: "Intermediate", category: "cardio", emoji: "🏊" },
+  { id: "20", name: "Jump Rope", primaryMuscle: "Cardio", equipment: "Rope", difficulty: "Beginner", category: "cardio", emoji: "🪢" },
+  { id: "21", name: "Rowing Machine", primaryMuscle: "Cardio", equipment: "Machine", difficulty: "Intermediate", category: "cardio", emoji: "🚣" },
+  { id: "22", name: "Elliptical", primaryMuscle: "Cardio", equipment: "Machine", difficulty: "Beginner", category: "cardio", emoji: "🏃" },
+  { id: "23", name: "Stair Climber", primaryMuscle: "Cardio", equipment: "Machine", difficulty: "Intermediate", category: "cardio", emoji: "🪜" },
+  { id: "24", name: "HIIT", primaryMuscle: "Cardio", equipment: "Bodyweight", difficulty: "Advanced", category: "cardio", emoji: "💥" },
+  { id: "25", name: "Walking", primaryMuscle: "Cardio", equipment: "Bodyweight", difficulty: "Beginner", category: "cardio", emoji: "🚶" },
+  { id: "26", name: "Yoga", primaryMuscle: "Flexibility", equipment: "Bodyweight", difficulty: "Beginner", category: "flexibility", emoji: "🧘" },
+  { id: "27", name: "Stretching", primaryMuscle: "Flexibility", equipment: "Bodyweight", difficulty: "Beginner", category: "flexibility", emoji: "🙆" },
+  { id: "28", name: "Pilates", primaryMuscle: "Flexibility", equipment: "Bodyweight", difficulty: "Intermediate", category: "flexibility", emoji: "🤸" },
 ];
 
-const MUSCLES = ["All", "Chest", "Back", "Shoulders", "Quadriceps", "Hamstrings", "Biceps", "Triceps", "Glutes"];
-const EQUIPMENT = ["All", "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"];
+const MUSCLES = ["All", "Chest", "Back", "Shoulders", "Quadriceps", "Hamstrings", "Biceps", "Triceps", "Glutes", "Cardio", "Flexibility"];
+const EQUIPMENT = ["All", "Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight", "Bike", "Rope"];
 const DIFFICULTY_COLORS: Record<string, string> = { Beginner: "#22c55e", Intermediate: "#f59e0b", Advanced: "#ef4444" };
+const CATEGORIES: { key: ExerciseCategory; label: string; accent: string }[] = [
+  { key: "all", label: "All", accent: "#00d4a8" },
+  { key: "strength", label: "Strength", accent: "#3b82f6" },
+  { key: "cardio", label: "Cardio", accent: "#f59e0b" },
+  { key: "flexibility", label: "Flexibility", accent: "#8b5cf6" },
+];
 
 export function ExploreScreen() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [muscle, setMuscle] = useState("All");
   const [equip, setEquip] = useState("All");
+  const [category, setCategory] = useState<ExerciseCategory>("all");
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = ALL_EXERCISES.filter(e => {
@@ -46,7 +68,8 @@ export function ExploreScreen() {
     return (
       (e.name.toLowerCase().includes(q) || e.primaryMuscle.toLowerCase().includes(q)) &&
       (muscle === "All" || e.primaryMuscle === muscle) &&
-      (equip === "All" || e.equipment === equip)
+      (equip === "All" || e.equipment === equip) &&
+      (category === "all" || e.category === category)
     );
   });
 
@@ -66,7 +89,22 @@ export function ExploreScreen() {
         </p>
 
         {/* Search */}
-        <div className="flex gap-2 mt-4">
+        {/* Category Tabs */}
+        <div className="flex gap-2 mt-4 mb-3">
+          {CATEGORIES.map(c => (
+            <button key={c.key} onClick={() => setCategory(c.key)}
+              className="px-4 py-2 rounded-full text-[12px] font-semibold transition-all active:scale-95"
+              style={{
+                background: category === c.key ? `${c.accent}20` : "rgba(255,255,255,0.06)",
+                border: category === c.key ? `1px solid ${c.accent}50` : "1px solid rgba(255,255,255,0.08)",
+                color: category === c.key ? c.accent : "rgba(255,255,255,0.5)",
+              }}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex gap-2 mt-1">
           <div className="flex-1 flex items-center gap-2.5 px-3.5 py-3 rounded-2xl"
             style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.09)" }}>
             <Search size={15} color="rgba(255,255,255,0.4)" />
