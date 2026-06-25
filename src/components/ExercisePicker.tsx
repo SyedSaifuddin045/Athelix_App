@@ -301,21 +301,21 @@ export function ExercisePicker({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.equipChipRow, { marginBottom: 10 }]}
+        contentContainerStyle={styles.categoryTabRow}
       >
         {CATEGORIES.map((cat) => (
           <Pressable
             key={cat.label}
             onPress={() => handleCategorySelect(cat.key)}
             style={[
-              styles.equipChip,
-              selectedCategory === cat.key ? styles.equipChipActive : null,
+              styles.categoryTab,
+              selectedCategory === cat.key ? styles.categoryTabActive : null,
             ]}
           >
             <Text
               style={[
-                styles.equipChipText,
-                selectedCategory === cat.key ? styles.equipChipTextActive : null,
+                styles.categoryTabText,
+                selectedCategory === cat.key ? styles.categoryTabTextActive : null,
               ]}
             >
               {cat.label}
@@ -486,6 +486,25 @@ const styles = StyleSheet.create({
   equipChipTextActive: {
     color: COLORS.teal,
     fontWeight: "700",
+  },
+  categoryTabRow: {
+    flexDirection: "row",
+    gap: 20,
+    paddingHorizontal: 2,
+    marginBottom: 14,
+  },
+  categoryTab: {
+    paddingVertical: 2,
+  },
+  categoryTabActive: {},
+  categoryTabText: {
+    color: "rgba(255,255,255,0.35)",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  categoryTabTextActive: {
+    color: COLORS.teal,
+    fontWeight: "800",
   },
   gridRow: {
     gap: 8,
