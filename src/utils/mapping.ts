@@ -68,6 +68,7 @@ export type WorkoutDraftSet = WorkoutSet & {
 
 export type WorkoutDraftExercise = Omit<WorkoutExercise, "sets"> & {
   exerciseId: string;
+  exerciseCategory?: string | null;
   sets: WorkoutDraftSet[];
 };
 
@@ -109,10 +110,13 @@ export function workoutDraftFromTemplate(
         exerciseId: item.exercise_id,
       name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup) ?? item.exercise_id,
         notes: item.notes ?? "",
+        exerciseCategory: lookup.get(item.exercise_id)?.exercise_category ?? null,
         sets: Array.from({ length: totalSets }, (_, index) => ({
           id: `${item.id}-${index + 1}`,
           weight: "",
           reps: item.target_reps ? String(item.target_reps) : "8",
+          duration_sec: "",
+          distance_m: "",
           rpe: item.target_rpe ? String(item.target_rpe) : "",
           done: false,
           warmup: false,

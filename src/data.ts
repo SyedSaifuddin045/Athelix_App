@@ -36,6 +36,8 @@ export interface WorkoutSet {
   id: string;
   weight: string;
   reps: string;
+  duration_sec: string;
+  distance_m: string;
   rpe: string;
   done: boolean;
   warmup: boolean;
@@ -304,10 +306,10 @@ export const INITIAL_WORKOUT_EXERCISES: WorkoutExercise[] = [
     name: "Bench Press",
     notes: "",
     sets: [
-      { id: "w1", weight: "80", reps: "5", rpe: "", done: false, warmup: true },
-      { id: "s1", weight: "100", reps: "5", rpe: "", done: false, warmup: false },
-      { id: "s2", weight: "100", reps: "5", rpe: "", done: false, warmup: false },
-      { id: "s3", weight: "100", reps: "5", rpe: "", done: false, warmup: false },
+      { id: "w1", weight: "80", reps: "5", duration_sec: "", distance_m: "", rpe: "", done: false, warmup: true },
+      { id: "s1", weight: "100", reps: "5", duration_sec: "", distance_m: "", rpe: "", done: false, warmup: false },
+      { id: "s2", weight: "100", reps: "5", duration_sec: "", distance_m: "", rpe: "", done: false, warmup: false },
+      { id: "s3", weight: "100", reps: "5", duration_sec: "", distance_m: "", rpe: "", done: false, warmup: false },
     ],
   },
   {
@@ -315,8 +317,8 @@ export const INITIAL_WORKOUT_EXERCISES: WorkoutExercise[] = [
     name: "OHP",
     notes: "",
     sets: [
-      { id: "s4", weight: "60", reps: "8", rpe: "", done: false, warmup: false },
-      { id: "s5", weight: "60", reps: "8", rpe: "", done: false, warmup: false },
+      { id: "s4", weight: "60", reps: "8", duration_sec: "", distance_m: "", rpe: "", done: false, warmup: false },
+      { id: "s5", weight: "60", reps: "8", duration_sec: "", distance_m: "", rpe: "", done: false, warmup: false },
     ],
   },
 ];

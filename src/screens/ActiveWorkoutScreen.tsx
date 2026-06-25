@@ -8,6 +8,7 @@ import { usePostHog } from "posthog-react-native";
 import { useAuth } from "@clerk/expo";
 
 import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
+import type { ExerciseResponse } from "../api/model";
 import {
   deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete,
   updateExerciseSetWorkoutSessionsSessionIdSetsSetIdPatch,
@@ -36,7 +37,7 @@ import {
   WorkoutDraftSet,
 } from "../utils/mapping";
 import { nameForExercise, muscleAccentColor } from "../utils/display";
-import { formatTime } from "../utils/format";
+import { formatTime, parseDurationSec, parseDistanceM, formatDurationSec, formatDistanceM } from "../utils/format";
 import { numberOrNull, rpeError } from "../utils/validation";
 import { toNumberId } from "../utils/helpers";
 import { Events } from "../analytics/events";
@@ -73,6 +74,8 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
 
+  const isCardio = (exerciseId: string) => lookup.get(exerciseId)?.exercise_category === "cardio";
+
   useEffect(() => {
     const interval = setInterval(() => setElapsed((value) => value + 1), 1000);
     return () => clearInterval(interval);
@@ -89,7 +92,10 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       );
       return;
     }
-    const draft = workoutDraftFromTemplate(template.data, lookup);
+    const draft = workoutDraftFromTemplate(template.data, lookup).map((ex) => ({
+      ...ex,
+      exerciseCategory: lookup.get(ex.exerciseId)?.exercise_category ?? null,
+    }));
     setExercises(draft);
     setExpanded(draft[0]?.id ?? null);
   }, [lookup, template.data]);
@@ -106,12 +112,15 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     const rpeErr = rpeError(set.rpe);
     if (rpeErr) throw new Error(`"${exercise.name}": ${rpeErr}`);
     const setNumber = exercise.sets.filter((item) => !item.warmup).findIndex((item) => item.id === set.id) + 1;
+    const cardio = exercise.exerciseCategory === "cardio";
     const payload = {
       exercise_id: exercise.exerciseId,
       set_number: Math.max(1, setNumber),
       set_type: set.warmup ? "warmup" : ("working" as const),
-      reps: numberOrNull(set.reps),
-      weight_kg: numberOrNull(set.weight),
+      reps: cardio ? null : numberOrNull(set.reps),
+      weight_kg: cardio ? null : numberOrNull(set.weight),
+      duration_sec: cardio ? parseDurationSec(set.duration_sec) : null,
+      distance_m: cardio ? parseDistanceM(set.distance_m) : null,
       rpe: numberOrNull(set.rpe),
       is_pr: false,
       notes: null,
@@ -151,7 +160,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     }
   };
 
-  const updateSet = (exerciseId: string, setId: string, field: "weight" | "reps" | "rpe", value: string) => {
+  const updateSet = (exerciseId: string, setId: string, field: "weight" | "reps" | "duration_sec" | "distance_m" | "rpe", value: string) => {
     setExercises((current) =>
       current.map((ex) =>
         ex.id === exerciseId
@@ -163,35 +172,45 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
 
   const addSet = (exerciseId: string) => {
     setExercises((current) =>
-      current.map((ex) =>
-        ex.id === exerciseId
-          ? {
-              ...ex,
-              sets: [
-                ...ex.sets,
-                {
-                  id: Date.now().toString(),
-                  weight: ex.sets.filter((s) => !s.warmup).at(-1)?.weight ?? "60",
-                  reps: ex.sets.filter((s) => !s.warmup).at(-1)?.reps ?? "8",
-                  rpe: "",
-                  done: false,
-                  warmup: false,
-                },
-              ],
-            }
-          : ex,
-      ),
+      current.map((ex) => {
+        const last = ex.sets.filter((s) => !s.warmup).at(-1);
+        const isCardioEx = isCardio(ex.exerciseId);
+        const newSet: WorkoutDraftSet = {
+          id: Date.now().toString(),
+          weight: isCardioEx ? "" : (last?.weight ?? "60"),
+          reps: isCardioEx ? "" : (last?.reps ?? "8"),
+          duration_sec: isCardioEx ? (last?.duration_sec ?? "") : "",
+          distance_m: isCardioEx ? (last?.distance_m ?? "") : "",
+          rpe: "",
+          done: false,
+          warmup: false,
+        };
+        return ex.id === exerciseId
+          ? { ...ex, sets: [...ex.sets, newSet] }
+          : ex;
+      }),
     );
   };
 
-  const addExercise = (exercise: any) => {
+  const addExercise = (exercise: ExerciseResponse) => {
     const nextId = Date.now().toString();
+    const isCardioEx = exercise.exercise_category === "cardio";
     const nextExercise: WorkoutDraftExercise = {
       id: nextId,
       exerciseId: exercise.id,
+      exerciseCategory: exercise.exercise_category,
       name: exercise.name,
       notes: "",
-      sets: [{ id: `${nextId}-1`, weight: "60", reps: "8", rpe: "", done: false, warmup: false }],
+      sets: [{
+        id: `${nextId}-1`,
+        weight: isCardioEx ? "" : "60",
+        reps: isCardioEx ? "" : "8",
+        duration_sec: isCardioEx ? "" : "",
+        distance_m: isCardioEx ? "" : "",
+        rpe: "",
+        done: false,
+        warmup: false,
+      }],
     };
     setExercises((current) => [...current, nextExercise]);
     setExpanded(nextId);
@@ -199,7 +218,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     posthog.capture(Events.EXERCISE_ADDED, {
       exercise_name: exercise.name,
       exercise_id: exercise.id,
-      exercise_muscle: exercise.muscle_group ?? exercise.primary_muscle ?? undefined,
+      exercise_muscle: exercise.target ?? null,
     });
   };
 
@@ -353,50 +372,51 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                 {expanded === exercise.id ? (
                   <View style={{ marginTop: SPACING.xl2 }}>
                     <View style={styles.workoutGridHeader}>
-                      {["Set", "kg", "Reps", "RPE", ""].map((label) => (
-                        <Text
-                          key={label}
-                          style={[
-                            styles.gridHeaderText,
-                            label === "" ? { width: 36 } : { flex: 1 },
-                          ]}
-                        >
-                          {label}
-                        </Text>
-                      ))}
+                      {isCardio(exercise.exerciseId)
+                        ? ["Set", "Time", "km", "RPE", ""].map((label) => (
+                            <Text key={label} style={[styles.gridHeaderText, label === "" ? { width: 36 } : { flex: 1 }]}>{label}</Text>
+                          ))
+                        : ["Set", "kg", "Reps", "RPE", ""].map((label) => (
+                            <Text key={label} style={[styles.gridHeaderText, label === "" ? { width: 36 } : { flex: 1 }]}>{label}</Text>
+                          ))}
                     </View>
                     <View style={{ gap: SPACING.md }}>
                       {exercise.sets.map((set) => (
-                        <View
-                          key={set.id}
-                          style={[styles.workoutGridRow, set.done ? { opacity: 0.5 } : null]}
-                        >
+                        <View key={set.id} style={[styles.workoutGridRow, set.done ? { opacity: 0.5 } : null]}>
                           <View style={styles.workoutGridIndex}>
-                            <Text
-                              style={[
-                                styles.smallStrongText,
-                                {
-                                  color: set.warmup
-                                    ? COLORS.orange
-                                    : "rgba(255,255,255,0.55)",
-                                },
-                              ]}
-                            >
-                              {set.warmup
-                                ? "W"
-                                : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
+                            <Text style={[styles.smallStrongText, { color: set.warmup ? COLORS.orange : "rgba(255,255,255,0.55)" }]}>
+                              {set.warmup ? "W" : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
                             </Text>
                           </View>
-                          <MiniInput
-                            value={set.weight}
-                            onChangeText={(v) => updateSet(exercise.id, set.id, "weight", v)}
-                            strike={set.done}
-                          />
-                          <MiniInput
-                            value={set.reps}
-                            onChangeText={(v) => updateSet(exercise.id, set.id, "reps", v)}
-                            strike={set.done}
-                          />
+                          {isCardio(exercise.exerciseId) ? (
+                            <>
+                              <MiniInput
+                                value={set.duration_sec}
+                                onChangeText={(v) => updateSet(exercise.id, set.id, "duration_sec", v)}
+                                placeholder="mm:ss"
+                                strike={set.done}
+                              />
+                              <MiniInput
+                                value={set.distance_m}
+                                onChangeText={(v) => updateSet(exercise.id, set.id, "distance_m", v)}
+                                placeholder="km"
+                                strike={set.done}
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <MiniInput
+                                value={set.weight}
+                                onChangeText={(v) => updateSet(exercise.id, set.id, "weight", v)}
+                                strike={set.done}
+                              />
+                              <MiniInput
+                                value={set.reps}
+                                onChangeText={(v) => updateSet(exercise.id, set.id, "reps", v)}
+                                strike={set.done}
+                              />
+                            </>
+                          )}
                           <MiniInput
                             value={set.rpe}
                             onChangeText={(v) => updateSet(exercise.id, set.id, "rpe", v)}

@@ -18,6 +18,13 @@ import { useAllExercisesQuery, useExerciseFiltersQuery, useExercisesQuery } from
 import type { ExerciseResponse } from "../api/model";
 import { getApiErrorMessage } from "../api/client";
 
+const CATEGORIES = [
+  { key: null, label: "All" },
+  { key: "strength", label: "Strength" },
+  { key: "cardio", label: "Cardio" },
+  { key: "flexibility", label: "Flexibility" },
+] as const;
+
 function muscleAccentColor(muscle: string | null | undefined): string | undefined {
   const key = (muscle ?? "").toLowerCase();
   if (key.includes("chest")) return "#FF5A36";
@@ -74,6 +81,7 @@ export function ExercisePicker({
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [equipment, setEquipment] = useState("All");
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,15 +99,21 @@ export function ExercisePicker({
     () => ({
       q: debouncedQuery.trim() || undefined,
       equipment: equipment !== "All" ? equipment : undefined,
+      category: selectedCategory ?? undefined,
       limit: 100,
       offset: 0,
       ...(trackedOnly ? { tracked: true } : {}),
     }),
-    [debouncedQuery, equipment, trackedOnly],
+    [debouncedQuery, equipment, selectedCategory, trackedOnly],
   );
 
   const exercisesQuery = useExercisesQuery(queryParams, enabled);
-  const allExercisesQuery = useAllExercisesQuery(enabled, equipment !== "All" ? equipment : undefined, trackedOnly);
+  const allExercisesQuery = useAllExercisesQuery(
+    enabled,
+    equipment !== "All" ? equipment : undefined,
+    trackedOnly,
+    selectedCategory ?? undefined,
+  );
 
   const activeQuery = exercisesQuery;
   const isPending = activeQuery.isPending;
@@ -127,7 +141,7 @@ export function ExercisePicker({
     if (selectedGroup && allExercisesQuery.data) {
       return allExercisesQuery.data.filter((e) => groupForExercise(e) === selectedGroup);
     }
-    return [];
+    return allExercisesQuery.data ?? [];
   }, [isSearching, selectedGroup, allExercisesQuery.data, activeQuery.data?.items]);
 
   const equipmentOptions = useMemo(
@@ -135,6 +149,11 @@ export function ExercisePicker({
       ["All", ...(filters.data?.equipment ?? ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"]).filter((item) => item !== "All")],
     [filters.data?.equipment],
   );
+
+  const handleCategorySelect = (category: string | null) => {
+    setSelectedCategory(category);
+    setSelectedGroup(null);
+  };
 
   const handleGroupSelect = (group: string) => {
     setSelectedGroup(group);
@@ -238,10 +257,11 @@ export function ExercisePicker({
   const gridExercises = useMemo(() => {
     if (isSearching) return filteredExercises;
     if (selectedGroup) return filteredExercises;
+    if (selectedCategory) return filteredExercises;
     return [];
-  }, [isSearching, filteredExercises, selectedGroup]);
+  }, [isSearching, filteredExercises, selectedGroup, selectedCategory]);
 
-  const showGrid = !isSearching && !selectedGroup;
+  const showCategoryGrid = (selectedCategory === null || selectedCategory === "strength") && !isSearching && !selectedGroup;
 
   const content = (
     <View style={variant === "browse" ? styles.browseContainer : styles.pickContainer}>
@@ -277,6 +297,33 @@ export function ExercisePicker({
         </View>
       </View>
 
+      {/* Category tabs */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.equipChipRow, { marginBottom: 10 }]}
+      >
+        {CATEGORIES.map((cat) => (
+          <Pressable
+            key={cat.label}
+            onPress={() => handleCategorySelect(cat.key)}
+            style={[
+              styles.equipChip,
+              selectedCategory === cat.key ? styles.equipChipActive : null,
+            ]}
+          >
+            <Text
+              style={[
+                styles.equipChipText,
+                selectedCategory === cat.key ? styles.equipChipTextActive : null,
+              ]}
+            >
+              {cat.label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+
       {showFilters ? (
         <View style={styles.equipChipBar}>
           <ScrollView
@@ -299,7 +346,7 @@ export function ExercisePicker({
         </View>
       ) : null}
 
-      {showGrid ? (
+      {showCategoryGrid ? (
         <FlatList
           key="grid"
           data={MUSCLE_GROUPS}

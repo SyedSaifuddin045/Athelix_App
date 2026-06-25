@@ -21,7 +21,7 @@ import { ConfirmDialog } from "../components/ui/Modal";
 import { Icon, type IconName } from "../components/ui/Icon";
 import { exerciseLookup, groupSetsByExercise } from "../utils/mapping";
 import { workoutTitle, muscleAccentColor } from "../utils/display";
-import { formatDateLabel, formatVolume, formatKg } from "../utils/format";
+import { formatDateLabel, formatVolume, formatKg, formatCalories, formatDurationSec, formatDistanceM } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
 
 type Props = {
@@ -152,20 +152,27 @@ export function SessionDetailScreen({ navigation, route }: Props) {
           <DetailStat icon="clock" value={`${session.duration_minutes ?? 0}m`} label="Duration" color={COLORS.teal} />
           <DetailStat icon="list-checks" value={String(session.total_sets ?? session.sets.length)} label="Sets" color={COLORS.teal} />
           <DetailStat icon="gauge" value={formatVolume(session.total_volume)} label="Volume" color={COLORS.teal} />
+          {(session.calories_burned ?? 0) > 0 ? (
+            <DetailStat icon="flame" value={formatCalories(session.calories_burned)} label="Calories" color="#FF5A36" />
+          ) : null}
         </View>
       </View>
 
       <View style={{ gap: SPACING.xl, marginTop: SPACING.xl3 }}>
-        {exerciseGroups.map((exercise) => (
+        {exerciseGroups.map((exercise) => {
+          const isCardioEx = lookup.get(exercise.exerciseId)?.exercise_category === "cardio";
+          const exCalories = exercise.sets.reduce((sum, s) => sum + (s.calories_burned ?? 0), 0);
+          return (
           <Card key={exercise.name} elevated style={{ paddingHorizontal: SPACING.xl3, paddingVertical: 0 }}>
             <View style={[styles.exerciseHeader, { flexDirection: "row", alignItems: "center", gap: SPACING.xl, paddingVertical: SPACING.xl2, borderBottomWidth: 1, borderBottomColor: COLORS.border }]}>
               <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? COLORS.teal }} />
               <Text style={[styles.listRowTitle, { flex: 1, fontSize: 14 }]}>{exercise.name}</Text>
+              {exCalories > 0 ? <Tag label={`${formatCalories(exCalories)} kcal`} color="#FF5A36" /> : null}
               {exercise.sets.some((set) => set.is_pr) ? <Tag label="PR" color={COLORS.gold} /> : null}
             </View>
             <View style={{ paddingVertical: SPACING.xl2 }}>
               <View style={[styles.sessionGridHeader, { flexDirection: "row", alignItems: "center", gap: SPACING.md, marginBottom: SPACING.lg }]}>
-                {["Set", "kg", "Reps", "RPE"].map((label) => (
+                {(isCardioEx ? ["Set", "Time", "km", "RPE", "kcal"] : ["Set", "kg", "Reps", "RPE"]).map((label) => (
                   <Text key={label} style={[styles.gridHeaderText, { flex: 1, color: COLORS.faint, fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center" }]}>
                     {label}
                   </Text>
@@ -177,17 +184,35 @@ export function SessionDetailScreen({ navigation, route }: Props) {
                     <Text style={[styles.smallStrongText, { width: 28, textAlign: "center", color: set.set_type === "warmup" ? COLORS.orange : COLORS.muted }]}>
                       {set.set_type === "warmup" ? "W" : set.set_number}
                     </Text>
-                    {[formatKg(set.weight_kg, ""), set.reps ?? "-", set.rpe ?? "-"].map((value, index) => (
-                      <View key={`${set.id}-${index}`} style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-                        <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{value}</Text>
-                      </View>
-                    ))}
+                    {isCardioEx ? (
+                      <>
+                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{formatDurationSec(set.duration_sec)}</Text>
+                        </View>
+                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{formatDistanceM(set.distance_m)}</Text>
+                        </View>
+                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{set.rpe ?? "-"}</Text>
+                        </View>
+                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: "rgba(255,90,54,0.1)", alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[styles.sessionCellText, { color: "#FF5A36", fontSize: 11, fontWeight: "700" }]}>{formatCalories(set.calories_burned)}</Text>
+                        </View>
+                      </>
+                    ) : (
+                      [formatKg(set.weight_kg, ""), set.reps ?? "-", set.rpe ?? "-"].map((value, index) => (
+                        <View key={`${set.id}-${index}`} style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{value}</Text>
+                        </View>
+                      ))
+                    )}
                   </View>
                 ))}
               </View>
             </View>
           </Card>
-        ))}
+          );
+        })}
       </View>
 
       <View style={{ marginTop: SPACING.xl5, marginBottom: SPACING.xl7 }}>

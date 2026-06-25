@@ -131,9 +131,9 @@ export function useExercisesQuery(params: ListExercisesExercisesGetParams, enabl
   });
 }
 
-export function useAllExercisesQuery(enabled: boolean, equipment?: string, trackedOnly?: boolean) {
+export function useAllExercisesQuery(enabled: boolean, equipment?: string, trackedOnly?: boolean, category?: string) {
   return useQuery({
-    queryKey: ["exercises", "all", equipment ?? "all", trackedOnly ?? false] as const,
+    queryKey: ["exercises", "all", equipment ?? "all", trackedOnly ?? false, category ?? "all"] as const,
     queryFn: async () => {
       const limit = 200;
       let offset = 0;
@@ -143,6 +143,7 @@ export function useAllExercisesQuery(enabled: boolean, equipment?: string, track
         offset: 0,
         ...(equipment ? { equipment } : {}),
         ...(trackedOnly ? { tracked: true } : {}),
+        ...(category ? { category } : {}),
       };
 
       while (true) {
