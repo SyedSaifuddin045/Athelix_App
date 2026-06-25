@@ -29,8 +29,7 @@ function muscleAccentColor(muscle: string | null | undefined): string | undefine
   const key = (muscle ?? "").toLowerCase();
   if (key.includes("chest")) return "#FF5A36";
   if (key.includes("back")) return "#22C55E";
-  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute"))
-    return "#8B5CF6";
+  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute")) return "#8B5CF6";
   if (key.includes("shoulder")) return "#3B82F6";
   if (key.includes("arm") || key.includes("bicep") || key.includes("tricep")) return "#F59E0B";
   if (key.includes("core") || key.includes("ab") || key.includes("waist")) return "#EC4899";
@@ -43,8 +42,7 @@ function groupForExercise(exercise: ExerciseResponse): string {
   const key = `${exercise.target ?? ""} ${exercise.body_part ?? ""}`.toLowerCase();
   if (key.includes("chest")) return "Chest";
   if (key.includes("back") || key.includes("lat")) return "Back";
-  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute"))
-    return "Legs";
+  if (key.includes("leg") || key.includes("quad") || key.includes("hamstring") || key.includes("glute")) return "Legs";
   if (key.includes("shoulder")) return "Shoulders";
   if (key.includes("arm") || key.includes("bicep") || key.includes("tricep")) return "Arms";
   return "Core";
@@ -145,8 +143,10 @@ export function ExercisePicker({
   }, [isSearching, selectedGroup, allExercisesQuery.data, activeQuery.data?.items]);
 
   const equipmentOptions = useMemo(
-    () =>
-      ["All", ...(filters.data?.equipment ?? ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"]).filter((item) => item !== "All")],
+    () => [
+      "All",
+      ...(filters.data?.equipment ?? ["Barbell", "Dumbbell", "Machine", "Cable", "Bodyweight"]).filter((item) => item !== "All"),
+    ],
     [filters.data?.equipment],
   );
 
@@ -183,11 +183,7 @@ export function ExercisePicker({
             {exercise.target ?? exercise.body_part ?? "Unknown"} · {exercise.equipment ?? "Unknown"}
           </Text>
         </View>
-        <Icon
-          name={variant === "browse" ? "chevron-right" : "plus"}
-          size={14}
-          color="rgba(255,255,255,0.22)"
-        />
+        <Icon name={variant === "browse" ? "chevron-right" : "plus"} size={14} color="rgba(255,255,255,0.22)" />
       </Card>
     </Pressable>
   );
@@ -196,10 +192,7 @@ export function ExercisePicker({
     const count = groupCounts[item] ?? 0;
     const accent = muscleAccentColor(item) ?? "rgba(255,255,255,0.2)";
     return (
-      <Pressable
-        onPress={() => handleGroupSelect(item)}
-        style={{ flex: 1, maxWidth: "50%" }}
-      >
+      <Pressable onPress={() => handleGroupSelect(item)} style={{ flex: 1, maxWidth: "50%" }}>
         <Card elevated accentColor={accent} style={styles.gridCard}>
           <Text style={styles.gridCardName} numberOfLines={1}>
             {item}
@@ -301,25 +294,16 @@ export function ExercisePicker({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={styles.categoryTabScroller}
         contentContainerStyle={styles.categoryTabRow}
       >
         {CATEGORIES.map((cat) => (
           <Pressable
             key={cat.label}
             onPress={() => handleCategorySelect(cat.key)}
-            style={[
-              styles.categoryTab,
-              selectedCategory === cat.key ? styles.categoryTabActive : null,
-            ]}
+            style={[styles.categoryTab, selectedCategory === cat.key ? styles.categoryTabActive : null]}
           >
-            <Text
-              style={[
-                styles.categoryTabText,
-                selectedCategory === cat.key ? styles.categoryTabTextActive : null,
-              ]}
-            >
-              {cat.label}
-            </Text>
+            <Text style={[styles.categoryTabText, selectedCategory === cat.key ? styles.categoryTabTextActive : null]}>{cat.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
@@ -329,6 +313,7 @@ export function ExercisePicker({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.equipChipScroller}
             contentContainerStyle={styles.equipChipRow}
           >
             {equipmentOptions.map((item) => (
@@ -337,9 +322,7 @@ export function ExercisePicker({
                 onPress={() => setEquipment(item)}
                 style={[styles.equipChip, equipment === item ? styles.equipChipActive : null]}
               >
-                <Text style={[styles.equipChipText, equipment === item ? styles.equipChipTextActive : null]}>
-                  {item}
-                </Text>
+                <Text style={[styles.equipChipText, equipment === item ? styles.equipChipTextActive : null]}>{item}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -464,8 +447,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     paddingVertical: 0,
   },
+  categoryTabScroller: {
+    flexGrow: 0,
+    flexShrink: 0,
+    marginBottom: 14,
+  },
   equipChipBar: {
     marginBottom: 10,
+  },
+  equipChipScroller: {
+    flexGrow: 0,
+    flexShrink: 0,
   },
   equipChipRow: {
     gap: 12,
@@ -491,7 +483,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 20,
     paddingHorizontal: 2,
-    marginBottom: 14,
   },
   categoryTab: {
     paddingVertical: 2,
