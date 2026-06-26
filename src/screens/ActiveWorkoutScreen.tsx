@@ -154,15 +154,13 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
 
     persistSet(exercise, { ...set, done: shouldComplete }, shouldComplete)
       .then((serverId) => {
-        if (serverId) {
-          setExercises((current) =>
-            current.map((ce) =>
-              ce.id === exerciseId
-                ? { ...ce, sets: ce.sets.map((cs) => cs.id === setId ? { ...cs, serverId } : cs) }
-                : ce,
-            ),
-          );
-        }
+        setExercises((current) =>
+          current.map((ce) =>
+            ce.id === exerciseId
+              ? { ...ce, sets: ce.sets.map((cs) => cs.id === setId ? { ...cs, serverId } : cs) }
+              : ce,
+          ),
+        );
         queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
       })
       .catch((err) => {
