@@ -90,7 +90,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
         name: activity.label,
         started_at: startedAt.toISOString(),
         finished_at: finishedAt.toISOString(),
-        is_completed: false,
+        is_completed: true,
       });
       const session = sessionRes.data as import("../api/model/workoutSessionResponse").WorkoutSessionResponse;
 
