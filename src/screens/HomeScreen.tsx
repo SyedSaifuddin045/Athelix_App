@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Pressable, Text, View, ActivityIndicator } from "react-native";
+import { Pressable, Text, View, ActivityIndicator, FlatList } from "react-native";
 import { useAuth } from "@clerk/expo";
 import type { CompositeNavigationProp } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
@@ -18,6 +18,7 @@ import { PrimaryButton, RoundButton, IconButton } from "../components/ui/Button"
 import { StatPill, DividerVertical, MetricBlock } from "../components/ui/Stats";
 import { VerticalBars } from "../components/ui/Charts";
 import { Icon } from "../components/ui/Icon";
+import { CARDIO_ACTIVITIES, iconForActivity, type CardioActivity } from "../utils/cardio";
 
 type Props = {
   navigation: CompositeNavigationProp<
@@ -160,6 +161,61 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </Card>
       </Pressable>
+
+      <View style={{ marginBottom: SPACING.xl2 }}>
+        <View style={[styles.sectionHeadingRow, { marginBottom: SPACING.lg }]}>
+          <Text style={styles.sectionCardTitle}>Quick Cardio</Text>
+        </View>
+        <FlatList
+          data={CARDIO_ACTIVITIES}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: SPACING.md }}
+          keyExtractor={(item) => item.type}
+          renderItem={({ item }: { item: CardioActivity }) => (
+            <Pressable
+              onPress={() => navigation.navigate("QuickCardio", { activityType: item.type })}
+            >
+              <View
+                style={{
+                  width: 80,
+                  height: 100,
+                  backgroundColor: COLORS.cardElevated,
+                  borderRadius: RADIUS.card,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: SPACING.sm,
+                  borderWidth: 1,
+                  borderColor: COLORS.border,
+                }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: item.color + "20",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ fontSize: 20 }}>{iconForActivity(item.type)}</Text>
+                </View>
+                <Text
+                  style={{
+                    color: COLORS.text,
+                    fontSize: 12,
+                    fontWeight: "600",
+                    textAlign: "center",
+                  }}
+                >
+                  {item.label}
+                </Text>
+              </View>
+            </Pressable>
+          )}
+        />
+      </View>
 
       <View style={{ marginBottom: SPACING.xl2 }}>
         <View style={[styles.sectionHeadingRow, { marginBottom: SPACING.lg }]}>

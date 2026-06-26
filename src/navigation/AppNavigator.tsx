@@ -37,6 +37,7 @@ import { PersonalRecordsScreen } from "../screens/PersonalRecordsScreen";
 import { ExerciseProgressScreen } from "../screens/ExerciseProgressScreen";
 import { MuscleBalanceScreen } from "../screens/MuscleBalanceScreen";
 import { BodyweightHistoryScreen } from "../screens/BodyweightHistoryScreen";
+import { QuickCardioScreen } from "../screens/QuickCardioScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { getTokenWithTimeout, setRefreshTokenHandler, updateClerkToken } from "../api/client";
 
@@ -173,6 +174,7 @@ export function AppNavigator() {
         <RootStack.Screen name="ExerciseProgress" component={ExerciseProgressScreen} />
         <RootStack.Screen name="MuscleBalance" component={MuscleBalanceScreen} />
         <RootStack.Screen name="BodyweightHistory" component={BodyweightHistoryScreen} />
+        <RootStack.Screen name="QuickCardio" component={QuickCardioScreen} />
         <RootStack.Screen name="Settings" component={SettingsScreen} />
       </RootStack.Navigator>
     </AuthGate>

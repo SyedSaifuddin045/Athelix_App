@@ -118,7 +118,8 @@ export function useExerciseFiltersQuery(enabled: boolean) {
     queryKey: queryKeys.exerciseFilters,
     queryFn: async () => dataOf(await getExerciseFiltersExercisesFiltersGet()),
     enabled,
-    staleTime: 10 * 60_000,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
   });
 }
 
@@ -128,6 +129,8 @@ export function useExercisesQuery(params: ListExercisesExercisesGetParams, enabl
     queryFn: async () => dataOf(await listExercisesExercisesGet(params)),
     enabled,
     placeholderData: keepPreviousData,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
   });
 }
 
@@ -158,7 +161,8 @@ export function useAllExercisesQuery(enabled: boolean, equipment?: string, track
       return all;
     },
     enabled,
-    staleTime: 5 * 60_000,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
   });
 }
 
@@ -167,6 +171,8 @@ export function useExerciseDetailQuery(id: string | undefined, enabled: boolean)
     queryKey: queryKeys.exerciseDetail(id),
     queryFn: async () => dataOf(await getExerciseExercisesExerciseIdGet(id ?? "")),
     enabled: enabled && !!id,
+    staleTime: Infinity,
+    gcTime: 24 * 60 * 60 * 1000,
   });
 }
 

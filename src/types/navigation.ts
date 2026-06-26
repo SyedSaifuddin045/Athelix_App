@@ -1,3 +1,5 @@
+import type { CardioActivityType } from "../utils/cardio";
+
 export type RootStackParamList = {
   Splash: undefined;
   Login: undefined;
@@ -19,6 +21,7 @@ export type RootStackParamList = {
   MuscleBalance: { mesocycleId?: number } | undefined;
   BodyweightHistory: undefined;
   Settings: undefined;
+  QuickCardio: { activityType: CardioActivityType };
 };
 
 export type TabParamList = {
