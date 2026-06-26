@@ -43,6 +43,7 @@ export function MiniInput({
   strike,
   error,
   keyboardType,
+  style,
 }: {
   value: string;
   onChangeText: (value: string) => void;
@@ -50,6 +51,7 @@ export function MiniInput({
   strike?: boolean;
   error?: boolean;
   keyboardType?: "default" | "decimal-pad";
+  style?: Record<string, unknown>;
 }) {
   return (
     <TextInput
@@ -61,7 +63,6 @@ export function MiniInput({
       style={[
         styles.miniInput,
         {
-          flex: 1,
           minWidth: 0,
           minHeight: 38,
           borderRadius: RADIUS.stepper,
@@ -75,6 +76,7 @@ export function MiniInput({
           textDecorationLine: strike ? "line-through" : "none",
           opacity: strike ? 0.5 : 1,
         },
+        style,
       ]}
     />
   );

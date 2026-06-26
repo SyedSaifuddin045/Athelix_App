@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -42,6 +42,8 @@ import { numberOrNull, rpeError } from "../utils/validation";
 import { toNumberId } from "../utils/helpers";
 import { Events } from "../analytics/events";
 
+const GRID_COL_WIDTHS = { index: 32, input: 72, rpe: 44, checkbox: 36 } as const;
+
 const MOODS = [
   { icon: "sleep" as const, label: "Tired" },
   { icon: "meh" as const, label: "Okay" },
@@ -70,6 +72,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [error, setError] = useState("");
+  const [rpePicker, setRpePicker] = useState<{ exerciseId: string; setId: string } | null>(null);
   const template = useTemplateDetailQuery(templateId, isAuthenticated && !!templateId);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
@@ -134,30 +137,44 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     return successData(response).id;
   };
 
-  const toggleSet = async (exerciseId: string, setId: string) => {
+  const toggleSet = (exerciseId: string, setId: string) => {
     const exercise = exercises.find((item) => item.id === exerciseId);
     const set = exercise?.sets.find((item) => item.id === setId);
     if (!exercise || !set) return;
     const shouldComplete = !set.done;
     setError("");
-    try {
-      const serverId = await persistSet(exercise, set, shouldComplete);
-      setExercises((current) =>
-        current.map((ce) =>
-          ce.id === exerciseId
-            ? {
-                ...ce,
-                sets: ce.sets.map((cs) =>
-                  cs.id === setId ? { ...cs, done: shouldComplete, serverId: shouldComplete ? serverId : undefined } : cs,
-                ),
-              }
-            : ce,
-        ),
-      );
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    }
+
+    setExercises((current) =>
+      current.map((ce) =>
+        ce.id === exerciseId
+          ? { ...ce, sets: ce.sets.map((cs) => cs.id === setId ? { ...cs, done: shouldComplete } : cs) }
+          : ce,
+      ),
+    );
+
+    persistSet(exercise, { ...set, done: shouldComplete }, shouldComplete)
+      .then((serverId) => {
+        if (serverId) {
+          setExercises((current) =>
+            current.map((ce) =>
+              ce.id === exerciseId
+                ? { ...ce, sets: ce.sets.map((cs) => cs.id === setId ? { ...cs, serverId } : cs) }
+                : ce,
+            ),
+          );
+        }
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
+      })
+      .catch((err) => {
+        setExercises((current) =>
+          current.map((ce) =>
+            ce.id === exerciseId
+              ? { ...ce, sets: ce.sets.map((cs) => cs.id === setId ? { ...cs, done: !shouldComplete } : cs) }
+              : ce,
+          ),
+        );
+        setError(getApiErrorMessage(err));
+      });
   };
 
   const updateSet = (exerciseId: string, setId: string, field: "weight" | "reps" | "duration_sec" | "distance_m" | "rpe", value: string) => {
@@ -372,18 +389,20 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                 {expanded === exercise.id ? (
                   <View style={{ marginTop: SPACING.xl2 }}>
                     <View style={styles.workoutGridHeader}>
-                      {isCardio(exercise.exerciseId)
-                        ? ["Set", "Time", "km", "RPE", ""].map((label) => (
-                            <Text key={label} style={[styles.gridHeaderText, label === "" ? { width: 36 } : { flex: 1 }]}>{label}</Text>
-                          ))
-                        : ["Set", "kg", "Reps", "RPE", ""].map((label) => (
-                            <Text key={label} style={[styles.gridHeaderText, label === "" ? { width: 36 } : { flex: 1 }]}>{label}</Text>
-                          ))}
+                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.index }]}>Set</Text>
+                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.input }]}>
+                        {isCardio(exercise.exerciseId) ? "Time" : "kg"}
+                      </Text>
+                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.input }]}>
+                        {isCardio(exercise.exerciseId) ? "km" : "Reps"}
+                      </Text>
+                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.rpe }]}>RPE</Text>
+                      <View style={{ width: GRID_COL_WIDTHS.checkbox }} />
                     </View>
                     <View style={{ gap: SPACING.md }}>
                       {exercise.sets.map((set) => (
                         <View key={set.id} style={[styles.workoutGridRow, set.done ? { opacity: 0.5 } : null]}>
-                          <View style={styles.workoutGridIndex}>
+                          <View style={{ width: GRID_COL_WIDTHS.index, alignItems: "center", justifyContent: "center" }}>
                             <Text style={[styles.smallStrongText, { color: set.warmup ? COLORS.orange : "rgba(255,255,255,0.55)" }]}>
                               {set.warmup ? "W" : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
                             </Text>
@@ -395,12 +414,15 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                                 onChangeText={(v) => updateSet(exercise.id, set.id, "duration_sec", v)}
                                 placeholder="mm:ss"
                                 strike={set.done}
+                                style={{ width: GRID_COL_WIDTHS.input }}
                               />
                               <MiniInput
                                 value={set.distance_m}
                                 onChangeText={(v) => updateSet(exercise.id, set.id, "distance_m", v)}
                                 placeholder="km"
                                 strike={set.done}
+                                keyboardType="decimal-pad"
+                                style={{ width: GRID_COL_WIDTHS.input }}
                               />
                             </>
                           ) : (
@@ -409,25 +431,39 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                                 value={set.weight}
                                 onChangeText={(v) => updateSet(exercise.id, set.id, "weight", v)}
                                 strike={set.done}
+                                style={{ width: GRID_COL_WIDTHS.input }}
                               />
                               <MiniInput
                                 value={set.reps}
                                 onChangeText={(v) => updateSet(exercise.id, set.id, "reps", v)}
                                 strike={set.done}
+                                style={{ width: GRID_COL_WIDTHS.input }}
                               />
                             </>
                           )}
-                          <MiniInput
-                            value={set.rpe}
-                            onChangeText={(v) => updateSet(exercise.id, set.id, "rpe", v)}
-                            placeholder="-"
-                          />
                           <Pressable
-                            onPress={() => void toggleSet(exercise.id, set.id)}
+                            onPress={() => setRpePicker({ exerciseId: exercise.id, setId: set.id })}
+                            style={{
+                              width: GRID_COL_WIDTHS.rpe,
+                              height: 38,
+                              borderRadius: RADIUS.stepper,
+                              backgroundColor: COLORS.cardSoft,
+                              borderWidth: 1,
+                              borderColor: COLORS.border,
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            <Text style={{ color: set.rpe ? COLORS.text : COLORS.faint, fontSize: 13, fontWeight: "600" }}>
+                              {set.rpe || "-"}
+                            </Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => toggleSet(exercise.id, set.id)}
                             style={[
                               styles.doneToggle,
                               {
-                                width: 36,
+                                width: GRID_COL_WIDTHS.checkbox,
                                 height: 36,
                                 borderRadius: RADIUS.iconWrap,
                                 backgroundColor: set.done ? COLORS.teal : COLORS.cardSoft,
@@ -653,6 +689,61 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
           onSelect={(exercise) => addExercise(exercise)}
           onClose={() => setShowExercisePicker(false)}
         />
+
+        <Modal visible={!!rpePicker} transparent animationType="fade" onRequestClose={() => setRpePicker(null)}>
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }} onPress={() => setRpePicker(null)}>
+            <Pressable
+              onPress={() => {}}
+              style={{
+                backgroundColor: COLORS.surface,
+                borderRadius: RADIUS.card,
+                padding: SPACING.xl3,
+                width: 260,
+                borderWidth: 1,
+                borderColor: COLORS.border,
+              }}
+            >
+              <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: SPACING.xl }}>
+                Rate of Perceived Exertion
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+                {[1,2,3,4,5,6,7,8,9,10].map((val) => {
+                  const current = rpePicker
+                    ? exercises.find((e) => e.id === rpePicker.exerciseId)
+                        ?.sets.find((s) => s.id === rpePicker.setId)?.rpe
+                    : "";
+                  const isSelected = String(val) === current;
+                  return (
+                    <Pressable
+                      key={val}
+                      onPress={() => {
+                        if (rpePicker) {
+                          updateSet(rpePicker.exerciseId, rpePicker.setId, "rpe", String(val));
+                          setRpePicker(null);
+                        }
+                      }}
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 22,
+                        backgroundColor: isSelected ? COLORS.teal : COLORS.cardSoft,
+                        borderWidth: 1,
+                        borderColor: isSelected ? COLORS.teal : COLORS.border,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ color: isSelected ? "#000" : COLORS.text, fontSize: 15, fontWeight: "700" }}>{val}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <Pressable onPress={() => setRpePicker(null)} style={{ marginTop: SPACING.xl, alignItems: "center" }}>
+                <Text style={{ color: COLORS.muted, fontSize: 13 }}>Clear</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
 
         {showDiscardConfirm && (
           <ConfirmDialog

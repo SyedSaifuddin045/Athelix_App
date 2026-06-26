@@ -17,6 +17,9 @@ import { Card } from "../components/ui/Card";
 import { useAllExercisesQuery, useExerciseFiltersQuery, useExercisesQuery } from "../api/queries";
 import type { ExerciseResponse } from "../api/model";
 import { getApiErrorMessage } from "../api/client";
+import { CARDIO_ACTIVITIES } from "../utils/cardio";
+
+const QUICK_CARDIO_IDS = new Set(CARDIO_ACTIVITIES.map((a) => a.exerciseId));
 
 const CATEGORIES = [
   { key: null, label: "All" },
@@ -93,16 +96,18 @@ export function ExercisePicker({
     }, 300);
   };
 
+  const apiCategory = selectedCategory === "quick_cardio" ? undefined : (selectedCategory ?? undefined);
+
   const queryParams = useMemo(
     () => ({
       q: debouncedQuery.trim() || undefined,
       equipment: equipment !== "All" ? equipment : undefined,
-      category: selectedCategory ?? undefined,
+      category: apiCategory,
       limit: 100,
       offset: 0,
       ...(trackedOnly ? { tracked: true } : {}),
     }),
-    [debouncedQuery, equipment, selectedCategory, trackedOnly],
+    [debouncedQuery, equipment, apiCategory, trackedOnly],
   );
 
   const exercisesQuery = useExercisesQuery(queryParams, enabled);
@@ -110,7 +115,7 @@ export function ExercisePicker({
     enabled,
     equipment !== "All" ? equipment : undefined,
     trackedOnly,
-    selectedCategory ?? undefined,
+    apiCategory,
   );
 
   const activeQuery = exercisesQuery;
@@ -163,7 +168,9 @@ export function ExercisePicker({
     setSelectedGroup(null);
   };
 
-  const renderExerciseItem = (exercise: ExerciseResponse) => (
+  const renderExerciseItem = (exercise: ExerciseResponse) => {
+    const isQuickStart = QUICK_CARDIO_IDS.has(exercise.id);
+    return (
     <Pressable
       key={exercise.id}
       onPress={() => {
@@ -176,9 +183,16 @@ export function ExercisePicker({
     >
       <Card elevated accentColor={muscleAccentColor(exercise.target)} style={styles.exerciseCard}>
         <View style={styles.exerciseBody}>
-          <Text style={styles.exerciseName} numberOfLines={1}>
-            {exercise.name}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Text style={styles.exerciseName} numberOfLines={1}>
+              {exercise.name}
+            </Text>
+            {isQuickStart ? (
+              <View style={styles.quickStartBadge}>
+                <Text style={styles.quickStartBadgeText}>QS</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.exerciseDetail} numberOfLines={1}>
             {exercise.target ?? exercise.body_part ?? "Unknown"} · {exercise.equipment ?? "Unknown"}
           </Text>
@@ -186,7 +200,8 @@ export function ExercisePicker({
         <Icon name={variant === "browse" ? "chevron-right" : "plus"} size={14} color="rgba(255,255,255,0.22)" />
       </Card>
     </Pressable>
-  );
+    );
+  };
 
   const renderGridItem = ({ item }: { item: string }) => {
     const count = groupCounts[item] ?? 0;
@@ -567,6 +582,18 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 14,
     fontWeight: "700",
+  },
+  quickStartBadge: {
+    backgroundColor: COLORS.teal + "20",
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  quickStartBadgeText: {
+    color: COLORS.teal,
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   exerciseDetail: {
     color: COLORS.muted,

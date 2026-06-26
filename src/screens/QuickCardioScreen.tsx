@@ -15,6 +15,7 @@ import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { RpeStepper } from "../components/ui/RpeStepper";
 import { queryKeys } from "../api/queryKeys";
+import { getApiErrorMessage } from "../api/client";
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "QuickCardio">;
@@ -40,6 +41,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   const [rpe, setRpe] = useState(5);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
@@ -106,8 +108,8 @@ export function QuickCardioScreen({ navigation, route }: Props) {
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
 
       navigation.replace("SessionDetail", { id: String(session.id) });
-    } catch {
-      // error handling
+    } catch (e) {
+      setError(getApiErrorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -182,6 +184,20 @@ export function QuickCardioScreen({ navigation, route }: Props) {
               <Text style={{ fontSize: 16, color: COLORS.text, fontWeight: "600" }}>
                 ~{estimatedCalories} kcal estimated
               </Text>
+            </View>
+          ) : null}
+
+          {error ? (
+            <View
+              style={{
+                backgroundColor: "rgba(239,68,68,0.12)",
+                borderRadius: RADIUS.card,
+                padding: SPACING.md,
+                borderWidth: 1,
+                borderColor: "rgba(239,68,68,0.25)",
+              }}
+            >
+              <Text style={{ color: COLORS.red, fontSize: 13 }}>{error}</Text>
             </View>
           ) : null}
 
