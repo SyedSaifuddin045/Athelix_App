@@ -35,7 +35,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
     weight: "",
     fitnessLevel: "",
     unit: "metric",
-    goal: "Improve strength",
+    goal: "",
   });
   const [error, setError] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -51,6 +51,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
       height: profile.height_cm ? String(profile.height_cm) : "",
       weight: profile.weight_kg ? String(profile.weight_kg) : "",
       fitnessLevel: profile.fitness_level ?? "",
+      goal: profile.primary_goal ?? "",
       unit: profile.preferred_unit ?? "metric",
     }));
   }, [profileQuery.data]);
@@ -106,6 +107,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
                 weight_kg: numberOrNull(form.weight),
                 fitness_level: form.fitnessLevel || null,
                 preferred_unit: form.unit,
+                primary_goal: form.goal || null,
               })
             }
             disabled={saveProfile.isPending}
@@ -192,6 +194,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
               weight_kg: numberOrNull(form.weight),
               fitness_level: form.fitnessLevel || null,
               preferred_unit: form.unit,
+              primary_goal: form.goal || null,
             })
           }
           disabled={saveProfile.isPending}

@@ -90,7 +90,7 @@ const mockUser: UserResponse = {
 const mockOverview: UserOverviewResponse = {
   user: mockUser,
   has_profile: true,
-  profile: { id: 1, user_id: 1, display_name: "Test User", date_of_birth: null, gender: null, height_cm: null, weight_kg: null, fitness_level: null, preferred_unit: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
+  profile: { id: 1, user_id: 1, display_name: "Test User", date_of_birth: null, gender: null, height_cm: null, weight_kg: null, fitness_level: null, preferred_unit: null, primary_goal: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z" },
   latest_body_weight_log: null,
   active_mesocycle: null,
   latest_completed_session: null,
@@ -103,6 +103,7 @@ const mockOverview: UserOverviewResponse = {
 const mockProfile: UserProfileResponse = {
   id: 1, user_id: 1, display_name: "Test User", date_of_birth: null, gender: null,
   height_cm: 180, weight_kg: 80, fitness_level: "intermediate", preferred_unit: "kg",
+  primary_goal: "Build muscle",
   created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
 };
 

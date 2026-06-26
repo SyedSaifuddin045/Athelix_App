@@ -16,6 +16,7 @@ export interface UserProfileResponse {
   weight_kg: number | null;
   fitness_level: string | null;
   preferred_unit: string | null;
+  primary_goal: string | null;
   created_at: string;
   updated_at: string;
 }

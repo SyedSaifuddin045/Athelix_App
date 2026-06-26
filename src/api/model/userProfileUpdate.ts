@@ -14,4 +14,5 @@ export interface UserProfileUpdate {
   weight_kg?: number | null;
   fitness_level?: string | null;
   preferred_unit?: string | null;
+  primary_goal?: string | null;
 }
