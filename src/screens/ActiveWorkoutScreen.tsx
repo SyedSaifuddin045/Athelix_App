@@ -6,6 +6,7 @@ import type { RootStackParamList } from "../types/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePostHog } from "posthog-react-native";
 import { useAuth } from "@clerk/expo";
+import { useTheme } from "@tamagui/core";
 
 import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
 import type { ExerciseResponse } from "../api/model";
@@ -18,16 +19,16 @@ import {
 } from "../api/endpoints/workout-sessions/workout-sessions";
 import { getApiErrorMessage } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { SectionEyebrow, ProgressBar } from "../components/ui/Indicators";
 import { MiniInput } from "../components/ui/Input";
 import { PrimaryButton, IconButton } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/Modal";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
+import type { IconName } from "../components/ui/Icon";
 import { ExercisePicker } from "../components/ExercisePicker";
 import {
   exerciseLookup,
@@ -59,6 +60,15 @@ type Props = {
 
 export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
+  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
+  const surface3Color = theme.surface3?.toString() ?? "rgba(255,255,255,0.07)";
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const sessionId = route?.params?.sessionId;
@@ -301,107 +311,102 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Screen>
-        <Card style={[styles.stickyCard, { marginTop: 0, paddingVertical: SPACING.xl }]}>
-          <View style={styles.rowBetween}>
+        <Card style={[{ marginTop: 0, paddingVertical: spacing.xl, borderRadius: 0, marginHorizontal: -20, paddingHorizontal: 20, borderLeftWidth: 0, borderRightWidth: 0, borderTopWidth: 0 }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <Pressable
-              style={[
-                styles.dangerPill,
-                {
-                  backgroundColor: COLORS.redDark,
-                  borderColor: "rgba(239,68,68,0.25)",
+              style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: SPACING.sm,
-                  paddingHorizontal: SPACING.xl2,
-                  paddingVertical: SPACING.md,
-                  borderRadius: RADIUS.input,
-                },
-              ]}
+                  gap: spacing.sm,
+                  paddingHorizontal: spacing.xl2,
+                  paddingVertical: spacing.md,
+                  borderRadius: radii.input,
+                  backgroundColor: theme.colorRedDark?.toString(),
+                  borderColor: "rgba(239,68,68,0.25)",
+                  borderWidth: 1,
+                }}
               onPress={discardWorkout}
             >
-              <Icon name="x" size={13} color={COLORS.red} />
-              <Text style={styles.dangerPillText}>Discard</Text>
+              <AppIcon name="x" size={13} color={theme.colorRed?.toString()} />
+              <Text style={{ color: theme.colorRed?.toString(), fontSize: 12, fontWeight: "600" }}>Discard</Text>
             </Pressable>
             <View style={{ alignItems: "center" }}>
-              <Text style={styles.timerText}>{formatTime(elapsed)}</Text>
-              <Text style={styles.timerSubtext}>
+              <Text style={{ color: textColor, fontSize: 18, fontWeight: "900" }}>{formatTime(elapsed)}</Text>
+              <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 2 }}>
                 {completedSets}/{totalSets} work sets done
               </Text>
             </View>
             <Pressable
-              style={[
-                styles.finishPill,
-                {
-                  backgroundColor: COLORS.teal,
+              style={{
+                  backgroundColor: accent,
                   flexDirection: "row",
                   alignItems: "center",
-                  gap: SPACING.sm,
-                  paddingHorizontal: SPACING.xl2,
-                  paddingVertical: SPACING.md,
-                  borderRadius: RADIUS.input,
-                },
-              ]}
+                  gap: spacing.sm,
+                  paddingHorizontal: spacing.xl2,
+                  paddingVertical: spacing.md,
+                  borderRadius: radii.input,
+                }}
               onPress={() => setShowFinish(true)}
             >
-              <Icon name="check" size={13} color="#000000" />
-              <Text style={styles.finishPillText}>Finish</Text>
+              <AppIcon name="check" size={13} color="#000000" />
+              <Text style={{ color: "#000000", fontSize: 12, fontWeight: "800" }}>Finish</Text>
             </Pressable>
           </View>
-          <View style={{ marginTop: SPACING.xl2 }}>
-            <ProgressBar value={totalSets ? (completedSets / totalSets) * 100 : 0} color={COLORS.teal} />
+          <View style={{ marginTop: spacing.xl2 }}>
+            <ProgressBar value={totalSets ? (completedSets / totalSets) * 100 : 0} color={accent} />
           </View>
         </Card>
 
         {template.isPending && templateId ? <LoadingCard label="Loading template workout..." /> : null}
         {error ? (
-          <View style={[styles.errorBox, { marginTop: SPACING.xl }]}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={{ borderRadius: spacing.xl, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl, backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", marginTop: spacing.xl }}>
+            <Text style={{ color: theme.colorRed?.toString(), fontSize: 12 }}>{error}</Text>
           </View>
         ) : null}
 
-        <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl }}>
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
           {exercises.map((exercise) => {
             const done = exercise.sets.filter((s) => s.done && !s.warmup).length;
             const total = exercise.sets.filter((s) => !s.warmup).length;
             return (
-              <Card key={exercise.id} elevated style={{ paddingHorizontal: SPACING.xl2, paddingVertical: SPACING.xl2 }}>
+              <Card key={exercise.id} elevated style={{ paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl2 }}>
                 <Pressable
                   onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))}
-                  style={styles.rowBetween}
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
                 >
-                  <View style={[styles.rowGap, { flex: 1 }]}>
-                    <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? COLORS.teal }} />
-                    <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
+                  <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { flex: 1 }]}>
+                    <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? accent }} />
+                    <Text style={[{ color: textColor, fontSize: 13, fontWeight: "700" }, { flex: 1 }]}>{exercise.name}</Text>
                   </View>
-                  <View style={styles.rowGap}>
-                    <Text style={styles.listMeta}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <Text style={{ color: "rgba(255,255,255,0.34)", fontSize: 10 }}>
                       {done}/{total}
                     </Text>
-                    <Icon
+                    <AppIcon
                       name={expanded === exercise.id ? "chevron-up" : "chevron-down"}
                       size={15}
-                      color={COLORS.faint}
+                      color={faintColor}
                     />
                   </View>
                 </Pressable>
                 {expanded === exercise.id ? (
-                  <View style={{ marginTop: SPACING.xl2 }}>
-                    <View style={styles.workoutGridHeader}>
-                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.index }]}>Set</Text>
-                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.input }]}>
+                  <View style={{ marginTop: spacing.xl2 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginBottom: 10 }}>
+                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.index }]}>Set</Text>
+                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.input }]}>
                         {isCardio(exercise.exerciseId) ? "Time" : "kg"}
                       </Text>
-                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.input }]}>
+                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.input }]}>
                         {isCardio(exercise.exerciseId) ? "km" : "Reps"}
                       </Text>
-                      <Text style={[styles.gridHeaderText, { width: GRID_COL_WIDTHS.rpe }]}>RPE</Text>
+                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.rpe }]}>RPE</Text>
                       <View style={{ width: GRID_COL_WIDTHS.checkbox }} />
                     </View>
-                    <View style={{ gap: SPACING.md }}>
+                    <View style={{ gap: spacing.md }}>
                       {exercise.sets.map((set) => (
-                        <View key={set.id} style={[styles.workoutGridRow, set.done ? { opacity: 0.5 } : null]}>
+                        <View key={set.id} style={[{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 }, set.done ? { opacity: 0.5 } : null]}>
                           <View style={{ width: GRID_COL_WIDTHS.index, alignItems: "center", justifyContent: "center" }}>
-                            <Text style={[styles.smallStrongText, { color: set.warmup ? COLORS.orange : "rgba(255,255,255,0.55)" }]}>
+                            <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: set.warmup ? theme.colorOrange?.toString() : "rgba(255,255,255,0.55)" }]}>
                               {set.warmup ? "W" : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
                             </Text>
                           </View>
@@ -444,58 +449,54 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                             style={{
                               width: GRID_COL_WIDTHS.rpe,
                               height: 38,
-                              borderRadius: RADIUS.stepper,
-                              backgroundColor: COLORS.cardSoft,
+                              borderRadius: radii.stepper,
+                              backgroundColor: surface2Color,
                               borderWidth: 1,
-                              borderColor: COLORS.border,
+                              borderColor: borderColor,
                               alignItems: "center",
                               justifyContent: "center",
                             }}
                           >
-                            <Text style={{ color: set.rpe ? COLORS.text : COLORS.faint, fontSize: 13, fontWeight: "600" }}>
+                            <Text style={{ color: set.rpe ? textColor : faintColor, fontSize: 13, fontWeight: "600" }}>
                               {set.rpe || "-"}
                             </Text>
                           </Pressable>
                           <Pressable
                             onPress={() => toggleSet(exercise.id, set.id)}
-                            style={[
-                              styles.doneToggle,
-                              {
+                            style={{
                                 width: GRID_COL_WIDTHS.checkbox,
                                 height: 36,
-                                borderRadius: RADIUS.iconWrap,
-                                backgroundColor: set.done ? COLORS.teal : COLORS.cardSoft,
-                                borderColor: set.done ? COLORS.teal : COLORS.border,
+                                borderRadius: radii.iconWrap,
+                                backgroundColor: set.done ? accent : surface2Color,
+                                borderColor: set.done ? accent : borderColor,
+                                borderWidth: 1,
                                 alignItems: "center",
                                 justifyContent: "center",
-                              },
-                            ]}
+                              }}
                           >
-                            {set.done ? <Icon name="check" size={15} color="#000000" /> : null}
+                            {set.done ? <AppIcon name="check" size={15} color="#000000" /> : null}
                           </Pressable>
                         </View>
                       ))}
                     </View>
                     <Pressable
-                      style={[
-                        styles.dashedButton,
-                        {
-                          marginTop: SPACING.lg,
+                      style={{
+                          marginTop: spacing.lg,
                           minHeight: 42,
-                          borderRadius: RADIUS.input,
+                          borderRadius: radii.input,
+                          borderWidth: 1,
                           borderStyle: "dashed",
                           borderColor: "rgba(255,90,54,0.25)",
                           backgroundColor: "rgba(255,90,54,0.08)",
                           alignItems: "center",
                           justifyContent: "center",
                           flexDirection: "row",
-                          gap: SPACING.sm,
-                        },
-                      ]}
+                          gap: spacing.sm,
+                        }}
                       onPress={() => addSet(exercise.id)}
                     >
-                      <Icon name="plus" size={13} color={COLORS.teal} />
-                      <Text style={styles.dashedButtonText}>Add Set</Text>
+                      <AppIcon name="plus" size={13} color={accent} />
+                      <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>Add Set</Text>
                     </Pressable>
                   </View>
                 ) : null}
@@ -505,96 +506,85 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
 
           <Pressable onPress={() => setShowExercisePicker(true)}>
             <View
-              style={[
-                styles.dashedAddCard,
-                {
-                  borderRadius: RADIUS.card,
-                  borderStyle: "dashed",
-                  borderColor: COLORS.border,
-                  backgroundColor: COLORS.card,
-                  padding: SPACING.xl3,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: SPACING.xl,
-                },
-              ]}
+              style={{
+                borderRadius: radii.card,
+                borderWidth: 1,
+                borderStyle: "dashed",
+                borderColor: borderColor,
+                backgroundColor: surface1Color,
+                padding: spacing.xl3,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: spacing.xl,
+              }}
             >
               <View
-                style={[
-                  styles.addCircle,
-                  {
+                style={{
                     width: 40,
                     height: 40,
                     borderRadius: 20,
                     backgroundColor: "rgba(255,90,54,0.12)",
                     alignItems: "center",
                     justifyContent: "center",
-                  },
-                ]}
+                  }}
               >
-                <Icon name="plus" size={18} color={COLORS.teal} />
+                <AppIcon name="plus" size={18} color={accent} />
               </View>
-              <Text style={[styles.cardTitle, { color: COLORS.muted }]}>Add Exercise</Text>
+              <Text style={[{ color: textColor, fontSize: 15, fontWeight: "800" }, { color: mutedColor }]}>Add Exercise</Text>
             </View>
           </Pressable>
 
           <Card elevated>
             <SectionEyebrow>Session Notes</SectionEyebrow>
-            <View style={[styles.rowGap, { marginTop: SPACING.xl, flexWrap: "wrap", gap: SPACING.md }]}>
+            <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { marginTop: spacing.xl, flexWrap: "wrap", gap: spacing.md }]}>
               {MOODS.map((entry) => (
                 <Pressable
                   key={entry.label}
                   onPress={() => setMood(entry.label)}
-                  style={[
-                    styles.moodButton,
-                    {
+                  style={{
                       width: 44,
                       height: 44,
-                      borderRadius: RADIUS.iconWrap,
-                      backgroundColor: mood === entry.label ? "rgba(255,90,54,0.2)" : COLORS.cardSoft,
+                      borderRadius: radii.iconWrap,
+                      backgroundColor: mood === entry.label ? "rgba(255,90,54,0.2)" : surface2Color,
                       borderColor: mood === entry.label ? "rgba(255,90,54,0.4)" : "transparent",
                       borderWidth: 1,
                       alignItems: "center",
                       justifyContent: "center",
-                    },
-                  ]}
+                    }}
                 >
-                  <Icon
+                  <AppIcon
                     name={entry.icon}
                     size={20}
-                    color={mood === entry.label ? COLORS.teal : COLORS.muted}
+                    color={mood === entry.label ? accent : mutedColor}
                   />
                 </Pressable>
               ))}
             </View>
-            <View style={[styles.rowGap, { alignItems: "flex-start", marginTop: SPACING.xl2 }]}>
-              <Icon
+            <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { alignItems: "flex-start", marginTop: spacing.xl2 }]}>
+              <AppIcon
                 name="file-text"
                 size={14}
-                color={COLORS.faint}
-                style={{ marginTop: SPACING.lg }}
+                color={faintColor}
+                style={{ marginTop: spacing.lg }}
               />
               <TextInput
                 value={note}
                 onChangeText={setNote}
                 placeholder="How did this session feel? Any notes..."
-                placeholderTextColor={COLORS.faint}
-                style={[
-                  styles.notesInput,
-                  {
+                placeholderTextColor={faintColor}
+                style={{
                     flex: 1,
                     minHeight: 64,
-                    borderRadius: RADIUS.input,
-                    backgroundColor: COLORS.card,
+                    borderRadius: radii.input,
+                    backgroundColor: surface1Color,
                     borderWidth: 1,
-                    borderColor: COLORS.border,
-                    color: COLORS.text,
-                    paddingHorizontal: SPACING.xl2,
-                    paddingVertical: SPACING.xl,
+                    borderColor: borderColor,
+                    color: textColor,
+                    paddingHorizontal: spacing.xl2,
+                    paddingVertical: spacing.xl,
                     fontSize: 13,
                     textAlignVertical: "top",
-                  },
-                ]}
+                  }}
                 multiline
               />
             </View>
@@ -602,22 +592,19 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
         </View>
 
         <Modal visible={showFinish} transparent animationType="slide" onRequestClose={() => setShowFinish(false)}>
-          <View style={[styles.modalScrim, { backgroundColor: "rgba(0,0,0,0.72)", flex: 1, justifyContent: "flex-end" }]}>
+          <View style={{ backgroundColor: "rgba(0,0,0,0.72)", flex: 1, justifyContent: "flex-end" }}>
             <Pressable style={{ flex: 1 }} onPress={() => setShowFinish(false)} />
             <View
-              style={[
-                styles.bottomSheet,
-                {
-                  backgroundColor: COLORS.surface,
-                  borderTopLeftRadius: RADIUS.sheet,
-                  borderTopRightRadius: RADIUS.sheet,
+              style={{
+                  backgroundColor: theme.surface?.toString(),
+                  borderTopLeftRadius: radii.sheet,
+                  borderTopRightRadius: radii.sheet,
                   borderWidth: 1,
-                  borderColor: COLORS.border,
-                  paddingHorizontal: SPACING.xl5,
-                  paddingTop: SPACING.xl2,
-                  paddingBottom: SPACING.xl6,
-                },
-              ]}
+                  borderColor: borderColor,
+                  paddingHorizontal: spacing.xl5,
+                  paddingTop: spacing.xl2,
+                  paddingBottom: spacing.xl6,
+                }}
             >
               <View
                 style={{
@@ -625,26 +612,26 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                   height: 4,
                   borderRadius: 4,
                   alignSelf: "center",
-                  backgroundColor: COLORS.faint,
-                  marginBottom: SPACING.xl3,
+                  backgroundColor: faintColor,
+                  marginBottom: spacing.xl3,
                 }}
               />
-              <Text style={styles.sheetTitle}>Finish Workout?</Text>
-              <Text style={[styles.sheetSubtitle, { color: COLORS.muted, marginTop: SPACING.sm }]}>
+              <Text style={{ color: textColor, fontSize: 22, fontWeight: "900", textAlign: "center" }}>Finish Workout?</Text>
+              <Text style={[{ color: mutedColor, fontSize: 13, textAlign: "center", marginTop: 6 }, { color: mutedColor, marginTop: spacing.sm }]}>
                 {formatTime(elapsed)} elapsed - {completedSets}/{totalSets} sets completed
               </Text>
               <View
                 style={[
-                  styles.rowGap,
+                  { flexDirection: "row", alignItems: "center", gap: 10 },
                   {
-                    marginTop: SPACING.xl3,
+                    marginTop: spacing.xl3,
                     flexWrap: "wrap",
                     justifyContent: "center",
-                    gap: SPACING.xl,
+                    gap: spacing.xl,
                   },
                 ]}
               >
-                <Icon name="smile" size={16} color={COLORS.teal} />
+                <AppIcon name="smile" size={16} color={accent} />
                 {MOODS.map((entry) => (
                   <Pressable
                     key={entry.label}
@@ -652,13 +639,13 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                     style={{
                       opacity: mood && mood !== entry.label ? 0.45 : 1,
                       alignItems: "center",
-                      gap: SPACING.xxs,
+                      gap: spacing.xxs,
                     }}
                   >
-                    <Icon
+                    <AppIcon
                       name={entry.icon}
                       size={24}
-                      color={mood === entry.label ? COLORS.teal : COLORS.muted}
+                      color={mood === entry.label ? accent : mutedColor}
                     />
                   </Pressable>
                 ))}
@@ -666,14 +653,14 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
               <PrimaryButton
                 label="Finish & Save"
                 onPress={() => void finishWorkout()}
-                icon={<Icon name="check" size={16} color="#000000" />}
-                style={{ marginTop: SPACING.xl3 }}
+                icon={<AppIcon name="check" size={16} color="#000000" />}
+                style={{ marginTop: spacing.xl3 }}
               />
               <PrimaryButton
                 label="Keep going"
                 onPress={() => setShowFinish(false)}
                 subtle
-                style={{ marginTop: SPACING.lg }}
+                style={{ marginTop: spacing.lg }}
               />
             </View>
           </View>
@@ -693,15 +680,15 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
             <Pressable
               onPress={() => {}}
               style={{
-                backgroundColor: COLORS.surface,
-                borderRadius: RADIUS.card,
-                padding: SPACING.xl3,
+                backgroundColor: theme.surface?.toString(),
+                borderRadius: radii.card,
+                padding: spacing.xl3,
                 width: 260,
                 borderWidth: 1,
-                borderColor: COLORS.border,
+                borderColor: borderColor,
               }}
             >
-              <Text style={{ color: COLORS.text, fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: SPACING.xl }}>
+              <Text style={{ color: textColor, fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: spacing.xl }}>
                 Rate of Perceived Exertion
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
@@ -724,20 +711,20 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                         width: 44,
                         height: 44,
                         borderRadius: 22,
-                        backgroundColor: isSelected ? COLORS.teal : COLORS.cardSoft,
+                        backgroundColor: isSelected ? accent : surface2Color,
                         borderWidth: 1,
-                        borderColor: isSelected ? COLORS.teal : COLORS.border,
+                        borderColor: isSelected ? accent : borderColor,
                         alignItems: "center",
                         justifyContent: "center",
                       }}
                     >
-                      <Text style={{ color: isSelected ? "#000" : COLORS.text, fontSize: 15, fontWeight: "700" }}>{val}</Text>
+                      <Text style={{ color: isSelected ? "#000" : textColor, fontSize: 15, fontWeight: "700" }}>{val}</Text>
                     </Pressable>
                   );
                 })}
               </View>
-              <Pressable onPress={() => setRpePicker(null)} style={{ marginTop: SPACING.xl, alignItems: "center" }}>
-                <Text style={{ color: COLORS.muted, fontSize: 13 }}>Clear</Text>
+              <Pressable onPress={() => setRpePicker(null)} style={{ marginTop: spacing.xl, alignItems: "center" }}>
+                <Text style={{ color: mutedColor, fontSize: 13 }}>Clear</Text>
               </Pressable>
             </Pressable>
           </Pressable>

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Pressable, Text, View, ActivityIndicator, FlatList } from "react-native";
 import { useAuth } from "@clerk/expo";
+import { useTheme } from "@tamagui/core";
 import type { CompositeNavigationProp } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -8,16 +9,16 @@ import type { RootStackParamList, TabParamList } from "../types/navigation";
 import { useOverviewQuery } from "../api/queries";
 import { displayName, initialsFor, workoutTitle } from "../utils/display";
 import { formatShortDate, formatTimeLabel, formatVolume } from "../utils/format";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Screen } from "../components/ui/Layout";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { Tag } from "../components/ui/Indicators";
 import { PrimaryButton, RoundButton, IconButton } from "../components/ui/Button";
 import { StatPill, DividerVertical, MetricBlock } from "../components/ui/Stats";
 import { VerticalBars } from "../components/ui/Charts";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
+import type { IconName } from "../components/ui/Icon";
 import { CARDIO_ACTIVITIES, iconForActivity, type CardioActivity } from "../utils/cardio";
 
 type Props = {
@@ -29,6 +30,15 @@ type Props = {
 
 export function HomeScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
+  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
+  const surface3Color = theme.surface3?.toString() ?? "rgba(255,255,255,0.07)";
   const overview = useOverviewQuery(isAuthenticated);
   const data = overview.data;
   const name = displayName(data?.user, data?.profile);
@@ -65,16 +75,16 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <Screen>
-      <View style={[styles.mainHeader, { paddingBottom: SPACING.xl }]}>
-        <Pressable style={styles.homeIdentity} onPress={() => navigation.navigate("Profile")}>
-          <View style={styles.avatarBubble}>
-            <Text style={styles.avatarInitials}>{initialsFor(name)}</Text>
+      <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 8 }, { paddingBottom: spacing.xl }]}>
+        <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 12 }} onPress={() => navigation.navigate("Profile")}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: accent, shadowColor: accent, shadowOpacity: 0.28, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 }}>
+            <Text style={{ color: "#000000", fontSize: 14, fontWeight: "800" }}>{initialsFor(name)}</Text>
           </View>
           <View>
-            <Text style={styles.kickerText}>
+            <Text style={{ color: "rgba(255,255,255,0.38)", fontSize: 10, textTransform: "uppercase", letterSpacing: 1.2 }}>
               {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </Text>
-            <Text style={styles.greetingText}>Hey, {name.split(" ")[0]}</Text>
+            <Text style={{ color: textColor, fontSize: 15, fontWeight: "700", marginTop: 2 }}>Hey, {name.split(" ")[0]}</Text>
           </View>
         </Pressable>
         <IconButton icon="bell" size={40} />
@@ -86,91 +96,95 @@ export function HomeScreen({ navigation }: Props) {
             ? navigation.navigate("MesocycleDetail", { id: String(activeMeso.id) })
             : navigation.navigate("MesocycleList")
         }
-        style={{ marginBottom: SPACING.xl2 }}
+        style={{ marginBottom: spacing.xl2 }}
       >
         <Card elevated accent="coral">
-          <View style={[styles.rowBetween, { gap: SPACING.xl }]}>
-            <View style={styles.rowGap}>
+          <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, { gap: spacing.xl }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View
-                style={[
-                  styles.bannerIcon,
-                  { backgroundColor: "rgba(255,90,54,0.2)", width: 36, height: 36, borderRadius: RADIUS.iconWrap },
-                ]}
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: radii.iconWrap,
+                  backgroundColor: "rgba(255,90,54,0.2)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                <Icon name="trending-up" size={16} color={COLORS.teal} />
+                <AppIcon name="trending-up" size={16} color={accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>
+                <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: accent }]}>
                   {activeMeso ? "Active Mesocycle" : "No Active Mesocycle"}
                 </Text>
-                <Text style={styles.cardTitle}>
+                <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>
                   {activeMeso
                     ? `${activeMeso.name}${activeMeso.weeks ? ` - ${activeMeso.weeks} weeks` : ""}`
                     : "Plan a training block"}
                 </Text>
               </View>
             </View>
-            <Icon name="chevron-right" size={16} color={COLORS.faint} />
+            <AppIcon name="chevron-right" size={16} color={faintColor} />
           </View>
         </Card>
       </Pressable>
 
-      <Card elevated style={{ marginBottom: SPACING.xl2 }}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.sectionCardTitle}>This Week</Text>
-          <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>
+      <Card elevated style={{ marginBottom: spacing.xl2 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>This Week</Text>
+          <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: accent }]}>
             {workoutDaysCount} / {daysCount} days
           </Text>
         </View>
-        <View style={{ marginTop: SPACING.xl3 }}>
+        <View style={{ marginTop: spacing.xl3 }}>
           <VerticalBars data={daysToShow} />
         </View>
-        <View style={[styles.statRowDivider, { marginVertical: SPACING.xl3 }]} />
-        <View style={styles.threeUp}>
-          <StatPill icon="flame" label="Day Streak" value={String(data?.workout_streaks.current_daily_streak ?? 0)} color={COLORS.orange} />
+        <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: spacing.xl3 }} />
+        <View style={{ flexDirection: "row", alignItems: "stretch", justifyContent: "space-between" }}>
+          <StatPill icon="flame" label="Day Streak" value={String(data?.workout_streaks.current_daily_streak ?? 0)} color={theme.colorOrange?.toString()} />
           <DividerVertical />
-          <StatPill icon="dumbbell" label="Workouts" value={String(data?.stats.completed_sessions ?? 0)} color={COLORS.teal} />
+          <StatPill icon="dumbbell" label="Workouts" value={String(data?.stats.completed_sessions ?? 0)} color={accent} />
           <DividerVertical />
-          <StatPill icon="trending-up" label="Templates" value={String(data?.stats.total_workout_templates ?? 0)} color={COLORS.green} />
+          <StatPill icon="trending-up" label="Templates" value={String(data?.stats.total_workout_templates ?? 0)} color={theme.colorGreen?.toString()} />
         </View>
       </Card>
 
-      <Pressable onPress={() => navigation.navigate("BodyweightHistory")} style={{ marginBottom: SPACING.xl2 }}>
+      <Pressable onPress={() => navigation.navigate("BodyweightHistory")} style={{ marginBottom: spacing.xl2 }}>
         <Card elevated>
-          <View style={styles.rowBetween}>
-            <View style={styles.rowGap}>
-              <View style={[styles.softIconWrap, { backgroundColor: COLORS.cardSoft }]}>
-                <Icon name="weight" size={16} color={COLORS.teal} />
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={{ width: 34, height: 34, borderRadius: radii.iconWrap, alignItems: "center", justifyContent: "center", backgroundColor: surface2Color }}>
+                <AppIcon name="weight" size={16} color={accent} />
               </View>
               <View>
-                <Text style={styles.detailLabel}>Latest Bodyweight</Text>
-                <View style={styles.rowGapSmall}>
-                  <Text style={styles.heroMetric}>
+                <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>Latest Bodyweight</Text>
+                <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                  <Text style={{ color: textColor, fontSize: 20, fontWeight: "800" }}>
                     {latestWeight ? latestWeight.weight_kg.toFixed(1) : "-"}
                   </Text>
-                  <Text style={styles.metricSuffix}>kg</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>kg</Text>
                   {latestWeight ? (
-                    <Text style={[styles.metricChange, { color: COLORS.green }]}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.colorGreen?.toString() }}>
                       {formatShortDate(latestWeight.logged_at)}
                     </Text>
                   ) : null}
                 </View>
               </View>
             </View>
-            <Icon name="chevron-right" size={16} color={COLORS.faint} />
+            <AppIcon name="chevron-right" size={16} color={faintColor} />
           </View>
         </Card>
       </Pressable>
 
-      <View style={{ marginBottom: SPACING.xl2 }}>
-        <View style={[styles.sectionHeadingRow, { marginBottom: SPACING.lg }]}>
-          <Text style={styles.sectionCardTitle}>Quick Cardio</Text>
+      <View style={{ marginBottom: spacing.xl2 }}>
+        <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }, { marginBottom: spacing.lg }]}>
+          <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>Quick Cardio</Text>
         </View>
         <FlatList
           data={CARDIO_ACTIVITIES}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: SPACING.md }}
+          contentContainerStyle={{ gap: spacing.md }}
           keyExtractor={(item) => item.type}
           renderItem={({ item }: { item: CardioActivity }) => (
             <Pressable
@@ -180,13 +194,13 @@ export function HomeScreen({ navigation }: Props) {
                 style={{
                   width: 80,
                   height: 100,
-                  backgroundColor: COLORS.cardElevated,
-                  borderRadius: RADIUS.card,
+                  backgroundColor: surface3Color,
+                  borderRadius: radii.card,
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: SPACING.sm,
+                  gap: spacing.sm,
                   borderWidth: 1,
-                  borderColor: COLORS.border,
+                  borderColor: borderColor,
                 }}
               >
                 <View
@@ -203,7 +217,7 @@ export function HomeScreen({ navigation }: Props) {
                 </View>
                 <Text
                   style={{
-                    color: COLORS.text,
+                    color: textColor,
                     fontSize: 12,
                     fontWeight: "600",
                     textAlign: "center",
@@ -217,15 +231,15 @@ export function HomeScreen({ navigation }: Props) {
         />
       </View>
 
-      <View style={{ marginBottom: SPACING.xl2 }}>
-        <View style={[styles.sectionHeadingRow, { marginBottom: SPACING.lg }]}>
-          <Text style={styles.sectionCardTitle}>Last Workout</Text>
+      <View style={{ marginBottom: spacing.xl2 }}>
+        <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }, { marginBottom: spacing.lg }]}>
+          <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>Last Workout</Text>
           <Pressable
-            style={styles.rowGapTiny}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
             onPress={() => navigation.navigate("WorkoutHistory")}
           >
-            <Text style={styles.linkText}>See All</Text>
-            <Icon name="chevron-right" size={12} color={COLORS.teal} />
+            <Text style={{ color: accent, fontSize: 12, fontWeight: "600" }}>See All</Text>
+            <AppIcon name="chevron-right" size={12} color={accent} />
           </Pressable>
         </View>
         <Pressable
@@ -235,29 +249,29 @@ export function HomeScreen({ navigation }: Props) {
           }
         >
           <Card elevated>
-            <View style={styles.rowBetween}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cardTitle}>
+                <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>
                   {latestSession
                     ? workoutTitle(latestSession)
                     : "No completed workouts yet"}
                 </Text>
-                <Text style={styles.detailLabel}>
+                <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>
                   {latestSession
                     ? `${formatShortDate(latestSession.started_at)} - ${formatTimeLabel(latestSession.started_at)}`
                     : "Start a workout to build history"}
                 </Text>
               </View>
-              {latestSession ? <Tag label="Done" color={COLORS.teal} /> : null}
+              {latestSession ? <Tag label="Done" color={accent} /> : null}
             </View>
             {latestSession ? (
-              <View style={[styles.rowGapLarge, { marginTop: SPACING.xl2 }]}>
+              <View style={[{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }, { marginTop: spacing.xl2 }]}>
                 {latestSession.duration_minutes ? (
                   <MetricBlock
                     icon="clock"
                     value={`${latestSession.duration_minutes} min`}
                     label="Duration"
-                    color={COLORS.muted}
+                    color={mutedColor}
                   />
                 ) : null}
                 {latestSession.total_sets ? (
@@ -265,7 +279,7 @@ export function HomeScreen({ navigation }: Props) {
                     icon="list-checks"
                     value={`${latestSession.total_sets} sets`}
                     label="Sets"
-                    color={COLORS.muted}
+                    color={mutedColor}
                   />
                 ) : null}
                 {latestSession.total_volume ? (
@@ -273,11 +287,11 @@ export function HomeScreen({ navigation }: Props) {
                     icon="gauge"
                     value={formatVolume(latestSession.total_volume)}
                     label="Volume"
-                    color={COLORS.muted}
+                    color={mutedColor}
                   />
                 ) : null}
                 {!latestSession.duration_minutes && !latestSession.total_sets && !latestSession.total_volume ? (
-                  <Text style={styles.detailLabel}>
+                  <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>
                     Tap to view full workout details
                   </Text>
                 ) : null}
@@ -290,8 +304,8 @@ export function HomeScreen({ navigation }: Props) {
       <PrimaryButton
         label="Start Workout"
         onPress={() => navigation.navigate({ name: "StartWorkout", params: {} })}
-        icon={<Icon name="plus" size={20} color="#000000" />}
-        style={{ marginBottom: SPACING.xl4 }}
+        icon={<AppIcon name="plus" size={20} color="#000000" />}
+        style={{ marginBottom: spacing.xl4 }}
       />
     </Screen>
   );
