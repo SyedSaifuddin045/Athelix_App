@@ -14,6 +14,8 @@ export interface ExerciseProgressResponse {
   exercise_id: string;
   exercise_name: string;
   default_formula: string;
+  current_e1rm: number | null;
+  best_e1rm: number | null;
   e1rm_history: ExerciseProgressPointResponse[];
   volume_history: ExerciseProgressPointResponse[];
   weekly_volume_history: WeeklyVolumeProgressPointResponse[];

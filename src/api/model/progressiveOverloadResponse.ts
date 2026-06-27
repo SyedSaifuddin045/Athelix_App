@@ -16,6 +16,8 @@ export interface ProgressiveOverloadResponse {
   current_best_weight_kg: number | null;
   previous_best_weight_kg: number | null;
   best_weight_delta: number | null;
+  current_best_reps: number | null;
+  previous_best_reps: number | null;
   current_default_e1rm: number | null;
   previous_default_e1rm: number | null;
   default_e1rm_delta: number | null;

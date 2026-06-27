@@ -30,8 +30,18 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
   const [selectedId, setSelectedId] = useState<string | undefined>(routeId);
   const fromPicker = !routeId;
   const [period, setPeriod] = useState<string>("1M");
-  const progress = useExerciseProgressQuery(selectedId, { weeks: period === "1M" ? 4 : period === "3M" ? 12 : period === "6M" ? 24 : period === "1Y" ? 52 : undefined }, isAuthenticated);
+  const weeks = period === "1M" ? 4 : period === "3M" ? 12 : period === "6M" ? 24 : period === "1Y" ? 52 : undefined;
+  const progress = useExerciseProgressQuery(selectedId, weeks ? { weeks } : {}, isAuthenticated);
   const periods = !selectedId ? [] : EXERCISE_PROGRESS_PERIODS;
+
+  const e1rmChartData = progress.data?.e1rm_history?.map((p) => ({
+    value: p.default_e1rm ?? 0,
+    label: formatShortDate(p.performed_at),
+  }));
+  const volumeChartData = progress.data?.weekly_volume_history?.map((w) => ({
+    label: formatShortDate(w.week_start),
+    value: w.volume_load,
+  }));
 
   return (
     <Screen>
@@ -85,38 +95,38 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
       {progress.data ? (
         <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl3 }}>
           <View style={{ flexDirection: "row", gap: SPACING.lg }}>
-            <CompactStatCard icon="trending-up" label="Current e1RM" value={progress.data?.current_e1rm ? `${Math.round(progress.data.current_e1rm)} kg` : "-"} color={COLORS.teal} />
-            <CompactStatCard icon="gauge" label="Best e1RM" value={progress.data?.best_e1rm ? `${Math.round(progress.data.best_e1rm)} kg` : "-"} color={COLORS.gold} />
+            <CompactStatCard icon="trending-up" label="Current e1RM" value={progress.data.current_e1rm != null ? `${Math.round(progress.data.current_e1rm)} kg` : "-"} color={COLORS.teal} />
+            <CompactStatCard icon="gauge" label="Best e1RM" value={progress.data.best_e1rm != null ? `${Math.round(progress.data.best_e1rm)} kg` : "-"} color={COLORS.gold} />
           </View>
 
-          {progress.data.e1rm_history.length > 0 ? (
+          {(e1rmChartData?.length ?? 0) > 0 ? (
             <Card elevated>
               <SectionEyebrow>e1RM History</SectionEyebrow>
               <View style={{ marginTop: SPACING.xl }}>
-                <TrendChart segments={[progress.data.e1rm_history]} height={120} color={COLORS.teal} />
+                <TrendChart segments={[e1rmChartData!]} height={120} color={COLORS.teal} />
               </View>
             </Card>
           ) : null}
 
-          {progress.data.weekly_volume.length > 0 ? (
+          {(volumeChartData?.length ?? 0) > 0 ? (
             <Card elevated>
               <SectionEyebrow>Weekly Volume</SectionEyebrow>
               <View style={{ marginTop: SPACING.xl }}>
-                <VerticalBars data={progress.data.weekly_volume} barColor={COLORS.teal} />
+                <VerticalBars data={volumeChartData!} barColor={COLORS.teal} />
               </View>
             </Card>
           ) : null}
 
-          {progress.data.progressive_overload_entries.length > 0 ? (
+          {(progress.data.progressive_overload?.length ?? 0) > 0 ? (
             <View>
               <SectionEyebrow>Progressive Overload</SectionEyebrow>
               <View style={{ gap: SPACING.lg, marginTop: SPACING.xl }}>
-                {progress.data.progressive_overload_entries.map((entry, i) => (
+                {progress.data.progressive_overload.map((entry, i) => (
                   <Card key={i} elevated>
                     <View style={styles.rowBetween}>
                       <View>
-                        <Text style={styles.cardTitle}>{entry.weight_kg} kg × {entry.reps} reps</Text>
-                        <Text style={styles.listMeta}>{formatShortDate(entry.achieved_on)}</Text>
+                        <Text style={styles.cardTitle}>{entry.current_best_weight_kg ?? "-"} kg × {entry.current_best_reps ?? "-"} reps</Text>
+                        <Text style={styles.listMeta}>{formatShortDate(entry.performed_at)}</Text>
                       </View>
                       <Icon name="trophy" size={18} color={COLORS.gold} />
                     </View>

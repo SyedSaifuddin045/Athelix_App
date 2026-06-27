@@ -6,6 +6,7 @@ import * as WebBrowser from "expo-web-browser";
 import { PostHogProvider } from "posthog-react-native";
 import { ClerkProvider } from "@clerk/expo";
 import Constants from "expo-constants";
+import * as Sentry from "@sentry/react-native";
 
 WebBrowser.maybeCompleteAuthSession();
 import { tokenCache } from "./src/utils/timedTokenCache";
@@ -24,7 +25,18 @@ if (!publishableKey) {
   throw new Error("Missing clerkPublishableKey — ensure EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is set");
 }
 
-export default function App() {
+Sentry.init({
+  dsn: "https://7c9fd85ca070101f423c88883aeb74fe@o4511630910095360.ingest.de.sentry.io/4511630948958288",
+  sendDefaultPii: true,
+  tracesSampleRate: 1.0,
+  enableLogs: true,
+  profilesSampleRate: 1.0,
+  replaysOnErrorSampleRate: 1.0,
+  replaysSessionSampleRate: 0.1,
+  integrations: [Sentry.mobileReplayIntegration()],
+});
+
+function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -48,3 +60,5 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+export default Sentry.wrap(App);

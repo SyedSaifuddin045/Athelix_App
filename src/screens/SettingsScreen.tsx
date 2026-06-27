@@ -261,6 +261,8 @@ export function SettingsScreen({ navigation }: Props) {
               </View>
             </View>
           </Pressable>
+
+
         </View>
       </View>
     </Screen>

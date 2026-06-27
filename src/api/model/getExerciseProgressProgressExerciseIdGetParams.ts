@@ -8,5 +8,6 @@
 
 export type GetExerciseProgressProgressExerciseIdGetParams = {
 formula?: string;
+weeks?: number;
 reference_date?: string | null;
 };

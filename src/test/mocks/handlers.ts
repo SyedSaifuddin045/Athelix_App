@@ -166,7 +166,7 @@ export const handlers = [
 
   http.get(`${BASE}/progress/:id`, () =>
     HttpResponse.json({
-      data: { exercise_id: "ex1", exercise_name: "Bench Press", default_formula: "epley", e1rm_history: [], volume_history: [], weekly_volume_history: [], progressive_overload: [], workout_streaks: { current_daily_streak: 5, longest_daily_streak: 10, current_weekly_streak: 2, longest_weekly_streak: 4 } },
+      data: { exercise_id: "ex1", exercise_name: "Bench Press", default_formula: "epley", current_e1rm: null, best_e1rm: null, e1rm_history: [], volume_history: [], weekly_volume_history: [], progressive_overload: [], workout_streaks: { current_daily_streak: 5, longest_daily_streak: 10, current_weekly_streak: 2, longest_weekly_streak: 4 } },
       status: 200,
     }),
   ),
