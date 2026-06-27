@@ -2,15 +2,15 @@ import { Pressable, Text, View } from "react-native";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
+import { useTheme } from "@tamagui/core";
 import { useOverviewQuery } from "../api/queries";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { RoundButton, IconButton } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
-import { Icon, type IconName } from "../components/ui/Icon";
+import { AppIcon, type IconName } from "../design-system/icons/AppIcon";
 import { formatKg, formatShortDate } from "../utils/format";
 import { displayName, initialsFor } from "../utils/display";
 
@@ -20,21 +20,22 @@ const MENU_ITEMS: { label: string; items: { label: string; icon: IconName; route
   {
     label: "My Data",
     items: [
-      { label: "Edit Profile", icon: "user", route: "ProfileSetup", color: COLORS.teal },
-      { label: "Bodyweight History", icon: "weight", route: "BodyweightHistory", color: COLORS.green },
-      { label: "Personal Records", icon: "award", route: "PersonalRecords", color: COLORS.gold },
-      { label: "Exercise Progress", icon: "trending-up", route: "ExerciseProgress", color: COLORS.teal },
+      { label: "Edit Profile", icon: "user", route: "ProfileSetup", color: "#FF5A36" },
+      { label: "Bodyweight History", icon: "weight", route: "BodyweightHistory", color: "#22C55E" },
+      { label: "Personal Records", icon: "award", route: "PersonalRecords", color: "#FBBF24" },
+      { label: "Exercise Progress", icon: "trending-up", route: "ExerciseProgress", color: "#FF5A36" },
     ],
   },
   {
     label: "Account",
     items: [
-      { label: "Account Settings", icon: "settings", route: "Settings", color: COLORS.purple },
+      { label: "Account Settings", icon: "settings", route: "Settings", color: "#8B5CF6" },
     ],
   },
 ];
 
 export function ProfileScreen({ navigation }: Props) {
+  const theme = useTheme();
   const { isSignedIn: isAuthenticated = false, signOut } = useAuth();
   const overview = useOverviewQuery(isAuthenticated);
   const user = overview.data?.user;
@@ -42,84 +43,93 @@ export function ProfileScreen({ navigation }: Props) {
   const name = displayName(user, profile);
   const latestWeight = overview.data?.latest_body_weight_log;
 
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const surfaceColor = theme.surface?.toString() ?? "#0D0D0D";
+  const screenColor = theme.backgroundFocus?.toString() ?? "#0A0A0A";
+  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
+
   return (
     <Screen>
-      <View style={[styles.mainHeader, { paddingBottom: SPACING.md }]}>
-        <Text style={styles.headerTitle}>Profile</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 8, paddingBottom: spacing.md }}>
+        <Text style={{ color: textColor, fontSize: 17, fontWeight: "700" }}>Profile</Text>
         <IconButton icon="settings" onPress={() => navigation.navigate("Settings")} />
       </View>
 
-      <View style={[styles.profileTop, { alignItems: "center", paddingTop: SPACING.md }]}>
-        <View style={[styles.profileAvatarWrap, { position: "relative", marginBottom: SPACING.xl2 }]}>
+      <View style={{ alignItems: "center", paddingTop: spacing.md }}>
+        <View style={{ position: "relative", marginBottom: spacing.xl2 }}>
           <View
-            style={[
-              styles.profileAvatar,
-              SHADOWS.glow(COLORS.teal),
-              {
-                width: 96,
-                height: 96,
-                borderRadius: 48,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: COLORS.teal,
-              },
-            ]}
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: 48,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: accent,
+              shadowColor: accent,
+              shadowOpacity: 0.28,
+              shadowRadius: 12,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 6,
+            }}
           >
-            <Text style={[styles.avatarInitials, { color: "#000000", fontSize: 28, fontWeight: "800" }]}>
+            <Text style={{ color: "#000000", fontSize: 28, fontWeight: "800" }}>
               {initialsFor(name)}
             </Text>
           </View>
           <Pressable
-            style={[
-              styles.profileEditButton,
-              {
-                position: "absolute",
-                right: 0,
-                bottom: 0,
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: COLORS.surface,
-                borderWidth: 2,
-                borderColor: COLORS.screen,
-              },
-            ]}
+            style={{
+              position: "absolute",
+              right: 0,
+              bottom: 0,
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: surfaceColor,
+              borderWidth: 2,
+              borderColor: screenColor,
+            }}
             onPress={() => navigation.navigate("ProfileSetup")}
           >
-            <Icon name="pencil" size={13} color={COLORS.teal} />
+            <AppIcon name="pencil" size={13} color={accent} />
           </Pressable>
         </View>
-        <Text style={styles.heroTitle}>{name}</Text>
-        <Text style={[styles.detailLabel, { color: COLORS.muted }]}>
+        <Text style={{ color: textColor, fontSize: 21, fontWeight: "900" }}>{name}</Text>
+        <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
           @{user?.username ?? "athlete"}
         </Text>
-        <View style={[styles.rowGapTiny, { marginTop: SPACING.md }]}>
-          <View style={[styles.statusDot, { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.green }]} />
-          <Text style={styles.listMeta}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: spacing.md }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: greenColor }} />
+          <Text style={{ color: mutedColor, fontSize: 10 }}>
             {profile?.fitness_level ?? "Fitness level"}
             {profile?.height_cm ? ` - ${profile.height_cm}cm` : ""}
             {profile?.weight_kg ? ` - ${formatKg(profile.weight_kg)}` : ""}
           </Text>
         </View>
 
-        <Card elevated style={{ width: "100%", marginTop: SPACING.xl3, paddingVertical: 0 }}>
-          <View style={[styles.profileStatsRow, { flexDirection: "row", alignItems: "stretch" }]}>
+        <Card elevated style={{ width: "100%", marginTop: spacing.xl3, paddingVertical: 0 }}>
+          <View style={{ flexDirection: "row", alignItems: "stretch" }}>
             {([
               { label: "Sessions", value: overview.data?.stats.completed_sessions ?? 0 },
               { label: "Templates", value: overview.data?.stats.total_workout_templates ?? 0 },
               { label: "PRs", value: overview.data?.stats.personal_record_count ?? 0 },
             ] as const).map((stat, index, array) => (
-              <View key={stat.label} style={[styles.profileStatCell, { flex: 1, alignItems: "center", paddingVertical: SPACING.xl3, position: "relative" }]}>
-                <Text style={[styles.profileStatValue, { color: COLORS.teal, fontSize: 20, fontWeight: "900" }]}>
+              <View key={stat.label} style={{ flex: 1, alignItems: "center", paddingVertical: spacing.xl3, position: "relative" }}>
+                <Text style={{ color: accent, fontSize: 20, fontWeight: "900" }}>
                   {stat.value}
                 </Text>
-                <Text style={[styles.profileStatLabel, { color: COLORS.muted, fontSize: 10, marginTop: SPACING.sm }]}>
+                <Text style={{ color: mutedColor, fontSize: 10, marginTop: spacing.sm }}>
                   {stat.label}
                 </Text>
                 {index < array.length - 1 ? (
-                  <View style={[styles.profileStatDivider, { position: "absolute", right: 0, top: SPACING.xl3, bottom: SPACING.xl3, width: 1, backgroundColor: COLORS.border }]} />
+                  <View style={{ position: "absolute", right: 0, top: spacing.xl3, bottom: spacing.xl3, width: 1, backgroundColor: borderColor }} />
                 ) : null}
               </View>
             ))}
@@ -127,53 +137,47 @@ export function ProfileScreen({ navigation }: Props) {
         </Card>
       </View>
 
-      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl3 }}>
+      <View style={{ marginTop: spacing.xl3, gap: spacing.xl3 }}>
         {MENU_ITEMS.map((section) => (
           <View key={section.label}>
             <SectionEyebrow>{section.label}</SectionEyebrow>
-            <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
+            <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
               {section.items.map((item, index) => (
                 <View key={item.label}>
                   <Pressable
-                    style={[
-                      styles.settingsRow,
-                      {
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: SPACING.xl,
-                        paddingHorizontal: SPACING.xl3,
-                        paddingVertical: SPACING.xl2,
-                      },
-                    ]}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: spacing.xl,
+                      paddingHorizontal: spacing.xl3,
+                      paddingVertical: spacing.xl2,
+                    }}
                     onPress={() => {
                       (navigation.navigate as any)(item.route);
                     }}
                   >
                     <View
-                      style={[
-                        styles.softIconWrap,
-                        {
-                          width: 34,
-                          height: 34,
-                          borderRadius: RADIUS.iconWrap,
-                          backgroundColor: `${item.color}18`,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        },
-                      ]}
+                      style={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: radii.iconWrap,
+                        backgroundColor: `${item.color}18`,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                     >
-                      <Icon name={item.icon} size={15} color={item.color} />
+                      <AppIcon name={item.icon} size={15} color={item.color} />
                     </View>
-                    <Text style={[styles.listRowTitle, { flex: 1 }]}>{item.label}</Text>
+                    <Text style={{ color: textColor, fontSize: 13, fontWeight: "700", flex: 1 }}>{item.label}</Text>
                     {item.badge ? (
-                      <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>
+                      <Text style={{ color: accent, fontSize: 11, fontWeight: "700" }}>
                         {item.badge}
                       </Text>
                     ) : null}
-                    <Icon name="chevron-right" size={14} color={COLORS.faint} />
+                    <AppIcon name="chevron-right" size={14} color={faintColor} />
                   </Pressable>
                   {index < section.items.length - 1 ? (
-                    <View style={[styles.rowDivider, { height: 1, backgroundColor: COLORS.border, marginHorizontal: SPACING.xl3 }]} />
+                    <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
                   ) : null}
                 </View>
               ))}
@@ -187,30 +191,27 @@ export function ProfileScreen({ navigation }: Props) {
           await signOut();
           navigation.replace("Login");
         }}
-        style={{ marginTop: SPACING.xl3 }}
+        style={{ marginTop: spacing.xl3 }}
       >
         <View
-          style={[
-            styles.logoutButton,
-            {
-              minHeight: 52,
-              borderRadius: RADIUS.input,
-              borderWidth: 1,
-              borderColor: "rgba(239,68,68,0.22)",
-              backgroundColor: COLORS.redDark,
-              alignItems: "center",
-              justifyContent: "center",
-              flexDirection: "row",
-              gap: SPACING.md,
-            },
-          ]}
+          style={{
+            minHeight: 52,
+            borderRadius: radii.input,
+            borderWidth: 1,
+            borderColor: "rgba(239,68,68,0.22)",
+            backgroundColor: redDarkColor,
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: spacing.md,
+          }}
         >
-          <Icon name="log-out" size={15} color={COLORS.red} />
-          <Text style={[styles.logoutText, { color: COLORS.red }]}>Sign Out</Text>
+          <AppIcon name="log-out" size={15} color={redColor} />
+          <Text style={{ color: redColor, fontSize: 14, fontWeight: "700" }}>Sign Out</Text>
         </View>
       </Pressable>
 
-      <Text style={[styles.footerText, { color: COLORS.faint, fontSize: 10, textAlign: "center", marginTop: SPACING.xl4 }]}>
+      <Text style={{ color: faintColor, fontSize: 10, textAlign: "center", marginTop: spacing.xl4 }}>
         Athelix - member since {formatShortDate(user?.created_at)}
       </Text>
     </Screen>

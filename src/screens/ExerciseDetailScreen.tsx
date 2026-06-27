@@ -5,17 +5,17 @@ import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
 import { usePostHog } from "posthog-react-native";
 import { useAuth } from "@clerk/expo";
+import { useTheme } from "@tamagui/core";
 import { useExerciseDetailQuery } from "../api/queries";
 import { mapExerciseDetail } from "../utils/mapping";
 import { muscleAccentColor } from "../utils/display";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Screen } from "../components/ui/Layout";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow, Tag } from "../components/ui/Indicators";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { Events } from "../analytics/events";
 
 type Props = {
@@ -24,11 +24,19 @@ type Props = {
 };
 
 export function ExerciseDetailScreen({ navigation, route }: Props) {
+  const theme = useTheme();
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const posthog = usePostHog();
   const { id } = route.params;
   const exerciseQuery = useExerciseDetailQuery(id, isAuthenticated);
   const exercise = exerciseQuery.data ? mapExerciseDetail(exerciseQuery.data) : null;
+
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
+  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
 
   useEffect(() => {
     if (exercise) {
@@ -65,29 +73,29 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
         onBack={() => navigation.goBack()}
         right={
           <Pressable onPress={() => navigation.navigate("ExerciseProgress", { id })}>
-            <Tag label="View Progress" color={COLORS.teal} />
+            <Tag label="View Progress" color={accent} />
           </Pressable>
         }
       />
 
-      <Card elevated accentColor={muscleAccentColor(exercise.primaryMuscle)} style={{ marginTop: SPACING.xl3 }}>
-        <Text style={{ fontSize: 21, fontWeight: "900", color: COLORS.text }}>{exercise.name}</Text>
+      <Card elevated accentColor={muscleAccentColor(exercise.primaryMuscle)} style={{ marginTop: spacing.xl3 }}>
+        <Text style={{ fontSize: 21, fontWeight: "900", color: textColor }}>{exercise.name}</Text>
       </Card>
 
-      <View style={{ gap: SPACING.xl, marginTop: SPACING.xl3 }}>
+      <View style={{ gap: spacing.xl, marginTop: spacing.xl3 }}>
         <Card elevated>
           <SectionEyebrow>Muscles Targeted</SectionEyebrow>
-          <View style={[styles.filterTagRow, { gap: SPACING.md, marginTop: SPACING.xl }]}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md, marginTop: spacing.xl }}>
             {exercise.primaryMuscle ? (
-              <View style={[styles.primaryMuscleTag, { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderRadius: RADIUS.tag, backgroundColor: "rgba(255,90,54,0.15)", borderWidth: 1, borderColor: "rgba(255,90,54,0.3)" }]}>
-                <View style={[styles.primaryMuscleDot, { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.teal }]} />
-                <Text style={[styles.primaryMuscleText, { color: COLORS.teal }]}>{exercise.primaryMuscle}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radii.tag, backgroundColor: "rgba(255,90,54,0.15)", borderWidth: 1, borderColor: "rgba(255,90,54,0.3)" }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent }} />
+                <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>{exercise.primaryMuscle}</Text>
               </View>
             ) : null}
             {(exercise.secondaryMuscles ?? []).map((muscle: string) => (
-              <View key={muscle} style={[styles.secondaryMuscleTag, { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderRadius: RADIUS.tag, backgroundColor: COLORS.cardSoft, borderWidth: 1, borderColor: COLORS.border }]}>
-                <View style={[styles.secondaryMuscleDot, { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.muted }]} />
-                <Text style={[styles.secondaryMuscleText, { color: COLORS.muted }]}>{muscle}</Text>
+              <View key={muscle} style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radii.tag, backgroundColor: surface2Color, borderWidth: 1, borderColor }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: mutedColor }} />
+                <Text style={{ color: mutedColor, fontSize: 12 }}>{muscle}</Text>
               </View>
             ))}
           </View>
@@ -96,10 +104,10 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
         {exercise.equipment ? (
           <Card elevated>
             <SectionEyebrow>Equipment</SectionEyebrow>
-            <View style={[styles.filterTagRow, { gap: SPACING.md, marginTop: SPACING.xl }]}>
-              <View style={[styles.secondaryMuscleTag, { flexDirection: "row", alignItems: "center", gap: SPACING.sm, paddingHorizontal: SPACING.xl, paddingVertical: SPACING.md, borderRadius: RADIUS.tag, backgroundColor: COLORS.cardSoft, borderWidth: 1, borderColor: COLORS.border }]}>
-                <Icon name="wrench" size={12} color={COLORS.muted} />
-                <Text style={[styles.secondaryMuscleText, { color: COLORS.muted }]}>{exercise.equipment}</Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md, marginTop: spacing.xl }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radii.tag, backgroundColor: surface2Color, borderWidth: 1, borderColor }}>
+                <AppIcon name="wrench" size={12} color={mutedColor} />
+                <Text style={{ color: mutedColor, fontSize: 12 }}>{exercise.equipment}</Text>
               </View>
             </View>
           </Card>
@@ -108,13 +116,13 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
         {exercise.instructions?.length ? (
           <Card elevated>
             <SectionEyebrow>Instructions</SectionEyebrow>
-            <View style={{ gap: SPACING.xl2, marginTop: SPACING.xl }}>
+            <View style={{ gap: spacing.xl2, marginTop: spacing.xl }}>
               {exercise.instructions.map((step: string, i: number) => (
-                <View key={i} style={[styles.stepRow, { flexDirection: "row", gap: SPACING.xl }]}>
-                  <View style={[styles.stepBubble, { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,90,54,0.2)" }]}>
-                    <Text style={[styles.stepBubbleText, { color: COLORS.teal }]}>{i + 1}</Text>
+                <View key={i} style={{ flexDirection: "row", gap: spacing.xl }}>
+                  <View style={{ width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,90,54,0.2)" }}>
+                    <Text style={{ color: accent, fontSize: 11, fontWeight: "800" }}>{i + 1}</Text>
                   </View>
-                  <Text style={[styles.stepText, { flex: 1, color: COLORS.muted }]}>{step}</Text>
+                  <Text style={{ flex: 1, color: mutedColor, fontSize: 13, lineHeight: 20 }}>{step}</Text>
                 </View>
               ))}
             </View>
@@ -124,11 +132,11 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
         {exercise.tips?.length ? (
           <Card elevated>
             <SectionEyebrow>Tips</SectionEyebrow>
-            <View style={{ gap: SPACING.xl, marginTop: SPACING.xl }}>
+            <View style={{ gap: spacing.xl, marginTop: spacing.xl }}>
               {exercise.tips.map((tip: string, i: number) => (
-                <View key={i} style={[styles.tipRow, { flexDirection: "row", gap: SPACING.lg }]}>
-                  <Icon name="lightbulb" size={14} color={COLORS.gold} style={{ marginTop: 2 }} />
-                  <Text style={[styles.tipText, { flex: 1, color: COLORS.muted }]}>{tip}</Text>
+                <View key={i} style={{ flexDirection: "row", gap: spacing.lg }}>
+                  <AppIcon name="lightbulb" size={14} color={goldColor} style={{ marginTop: 2 }} />
+                  <Text style={{ flex: 1, color: mutedColor, fontSize: 13, lineHeight: 18 }}>{tip}</Text>
                 </View>
               ))}
             </View>

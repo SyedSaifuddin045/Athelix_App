@@ -4,17 +4,17 @@ import { usePostHog } from "posthog-react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
+import { useTheme } from "@tamagui/core";
 import { useCurrentUserQuery } from "../api/queries";
 import { useSaveAccount } from "../api/mutations";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput } from "../components/ui/Input";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { apiFetch, getApiErrorMessage } from "../api/client";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
@@ -22,6 +22,7 @@ import { Events } from "../analytics/events";
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Settings"> };
 
 export function SettingsScreen({ navigation }: Props) {
+  const theme = useTheme();
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const posthog = usePostHog();
   const currentUser = useCurrentUserQuery(isAuthenticated);
@@ -35,6 +36,17 @@ export function SettingsScreen({ navigation }: Props) {
     weeklyReport: false,
     newFeatures: true,
   });
+
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
+  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
+  const greenDarkColor = theme.colorGreenDark?.toString() ?? "rgba(34,197,94,0.12)";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
 
   useEffect(() => {
     if (!currentUser.data) return;
@@ -65,22 +77,20 @@ export function SettingsScreen({ navigation }: Props) {
         onBack={() => navigation.goBack()}
         right={
           <Pressable
-            style={[
-              styles.saveChip,
-              {
-                minHeight: 34,
-                borderRadius: RADIUS.tag,
-                backgroundColor: saved ? COLORS.greenDark : COLORS.teal,
-                paddingHorizontal: SPACING.xl,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: SPACING.sm,
-              },
-            ]}
+            style={{
+              minHeight: 34,
+              borderRadius: radii.tag,
+              backgroundColor: saved ? greenDarkColor : accent,
+              paddingHorizontal: spacing.xl,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: spacing.sm,
+            }}
             onPress={handleSave}
           >
-            <Icon name="check" size={13} color={saved ? COLORS.green : "#000000"} />
-            <Text style={[styles.saveChipText, saved ? { color: COLORS.green } : null]}>
+            <AppIcon name="check" size={13} color={saved ? greenColor : "#000000"} />
+            <Text style={{ color: saved ? greenColor : "#000000", fontSize: 12, fontWeight: "800" }}>
               {saveAccount.isPending ? "Saving" : saved ? "Saved!" : "Save"}
             </Text>
           </Pressable>
@@ -89,20 +99,20 @@ export function SettingsScreen({ navigation }: Props) {
 
       {currentUser.isPending ? <LoadingCard label="Loading account..." /> : null}
       {error ? (
-        <View style={[styles.errorBox, { marginTop: SPACING.xl, backgroundColor: COLORS.redDark }]}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={{ borderRadius: radii.modal, paddingHorizontal: spacing.xl2, paddingVertical: spacing.lg, backgroundColor: redDarkColor, borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", marginTop: spacing.xl }}>
+          <Text style={{ color: redColor, fontSize: 12 }}>{error}</Text>
         </View>
       ) : null}
 
-      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl5 }}>
+      <View style={{ marginTop: spacing.xl3, gap: spacing.xl5 }}>
         <View>
           <SectionEyebrow>Account Details</SectionEyebrow>
-          <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
-            <View style={[styles.settingsSectionPad, { paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2 }]}>
+          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
+            <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
               <LabeledInput label="Username" value={form.username} onChangeText={(v) => setForm((c) => ({ ...c, username: v }))} />
             </View>
-            <View style={[styles.rowDivider, { height: 1, backgroundColor: COLORS.border, marginHorizontal: SPACING.xl3 }]} />
-            <View style={[styles.settingsSectionPad, { paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2 }]}>
+            <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
+            <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
               <LabeledInput label="Email Address" value={form.email} onChangeText={(v) => setForm((c) => ({ ...c, email: v }))} keyboardType="email-address" />
             </View>
           </Card>
@@ -110,32 +120,34 @@ export function SettingsScreen({ navigation }: Props) {
 
         <View>
           <SectionEyebrow>Security</SectionEyebrow>
-          <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
-            <View style={[styles.settingsSectionPad, { paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2 }]}>
-              <Text style={styles.fieldLabel}>New Password</Text>
-              <View style={[styles.inputWrap, { position: "relative" }]}>
+          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
+            <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
+              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>New Password</Text>
+              <View style={{ position: "relative" }}>
                 <TextInput
                   value={form.newPassword}
                   onChangeText={(v) => setForm((c) => ({ ...c, newPassword: v }))}
                   placeholder="Leave blank to keep current"
-                  placeholderTextColor={COLORS.faint}
-                  style={[
-                    styles.input,
-                    styles.inputWithRight,
-                    {
-                      backgroundColor: COLORS.cardSoft,
-                      borderColor: COLORS.border,
-                      color: COLORS.text,
-                      borderRadius: RADIUS.input,
-                    },
-                  ]}
+                  placeholderTextColor={faintColor}
+                  style={{
+                    width: "100%",
+                    minHeight: 52,
+                    borderRadius: radii.input,
+                    backgroundColor: surface2Color,
+                    borderWidth: 1,
+                    borderColor,
+                    color: textColor,
+                    paddingHorizontal: 16,
+                    fontSize: 14,
+                    paddingRight: 46,
+                  }}
                   secureTextEntry={!showPassword}
                 />
                 <Pressable
-                  style={[styles.inputRightIcon, { position: "absolute", right: SPACING.xl2, top: SPACING.xl3 }]}
+                  style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3 }}
                   onPress={() => setShowPassword((v) => !v)}
                 >
-                  <Icon name={showPassword ? "eye-off" : "eye"} size={16} color={COLORS.muted} />
+                  <AppIcon name={showPassword ? "eye-off" : "eye"} size={16} color={mutedColor} />
                 </Pressable>
               </View>
             </View>
@@ -144,7 +156,7 @@ export function SettingsScreen({ navigation }: Props) {
 
         <View>
           <SectionEyebrow>Notifications</SectionEyebrow>
-          <Card elevated style={{ paddingVertical: 0, marginTop: SPACING.lg }}>
+          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
             {([
               ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
               ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
@@ -152,16 +164,16 @@ export function SettingsScreen({ navigation }: Props) {
               ["newFeatures", "New Features", "Updates about new app features"],
             ] as const).map(([key, label, description], index, array) => (
               <View key={key}>
-                <View style={[styles.notificationRow, { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: SPACING.xl3, paddingVertical: SPACING.xl2, gap: SPACING.xl2 }]}>
-                  <View style={[styles.rowGap, { flex: 1, gap: SPACING.xl }]}>
-                    <Icon
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2, gap: spacing.xl2 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, flex: 1 }}>
+                    <AppIcon
                       name="bell"
                       size={15}
-                      color={notifications[key] ? COLORS.teal : COLORS.faint}
+                      color={notifications[key] ? accent : faintColor}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.listRowTitle}>{label}</Text>
-                      <Text style={styles.listMeta}>{description}</Text>
+                      <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{label}</Text>
+                      <Text style={{ color: mutedColor, fontSize: 10 }}>{description}</Text>
                     </View>
                   </View>
                   <Switch
@@ -174,12 +186,12 @@ export function SettingsScreen({ navigation }: Props) {
                         new_value: newValue,
                       });
                     }}
-                    trackColor={{ false: COLORS.border, true: COLORS.teal }}
+                    trackColor={{ false: borderColor, true: accent }}
                     thumbColor="#ffffff"
                   />
                 </View>
                 {index < array.length - 1 ? (
-                  <View style={[styles.rowDivider, { height: 1, backgroundColor: COLORS.border, marginHorizontal: SPACING.xl3 }]} />
+                  <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
                 ) : null}
               </View>
             ))}
@@ -204,65 +216,60 @@ export function SettingsScreen({ navigation }: Props) {
           >
             <View
               style={{
-                  minHeight: 74,
-                  borderRadius: RADIUS.input,
-                  borderWidth: 1,
-                  borderColor: "rgba(255,90,54,0.2)",
-                  backgroundColor: "rgba(255,90,54,0.08)",
-                  paddingHorizontal: SPACING.xl3,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: SPACING.xl,
-                  marginTop: SPACING.lg,
+                minHeight: 74,
+                borderRadius: radii.input,
+                borderWidth: 1,
+                borderColor: "rgba(255,90,54,0.2)",
+                backgroundColor: "rgba(255,90,54,0.08)",
+                paddingHorizontal: spacing.xl3,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: spacing.xl,
+                marginTop: spacing.lg,
               }}
             >
-              <Icon name="message-circle" size={16} color={COLORS.accent} />
+              <AppIcon name="message-circle" size={16} color={accent} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.listRowTitle, { color: COLORS.accent }]}>Feedback & Feature Requests</Text>
-                <Text style={[styles.listMeta, { color: "rgba(255,90,54,0.66)" }]}>
+                <Text style={{ color: accent, fontSize: 13, fontWeight: "700" }}>Feedback & Feature Requests</Text>
+                <Text style={{ color: "rgba(255,90,54,0.66)", fontSize: 10 }}>
                   Suggest features, report bugs, or write a review
                 </Text>
               </View>
-              <Icon name="external-link" size={14} color="rgba(255,90,54,0.5)" />
+              <AppIcon name="external-link" size={14} color="rgba(255,90,54,0.5)" />
             </View>
           </Pressable>
         </View>
 
         <View>
-          <SectionEyebrow color={COLORS.red}>Danger Zone</SectionEyebrow>
+          <SectionEyebrow color={redColor}>Danger Zone</SectionEyebrow>
           <Pressable
             onPress={() =>
               Alert.alert("Delete Account", "This would permanently delete all data. This demo does not perform the action.")
             }
           >
             <View
-              style={[
-                styles.dangerZone,
-                {
-                  minHeight: 74,
-                  borderRadius: RADIUS.input,
-                  borderWidth: 1,
-                  borderColor: "rgba(239,68,68,0.2)",
-                  backgroundColor: COLORS.redDark,
-                  paddingHorizontal: SPACING.xl3,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: SPACING.xl,
-                  marginTop: SPACING.lg,
-                },
-              ]}
+              style={{
+                minHeight: 74,
+                borderRadius: radii.input,
+                borderWidth: 1,
+                borderColor: "rgba(239,68,68,0.2)",
+                backgroundColor: redDarkColor,
+                paddingHorizontal: spacing.xl3,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: spacing.xl,
+                marginTop: spacing.lg,
+              }}
             >
-              <Icon name="trash-2" size={16} color={COLORS.red} />
+              <AppIcon name="trash-2" size={16} color={redColor} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.listRowTitle, { color: COLORS.red }]}>Delete Account</Text>
-                <Text style={[styles.listMeta, { color: "rgba(239,68,68,0.66)" }]}>
+                <Text style={{ color: redColor, fontSize: 13, fontWeight: "700" }}>Delete Account</Text>
+                <Text style={{ color: "rgba(239,68,68,0.66)", fontSize: 10 }}>
                   Permanently delete all data. This cannot be undone.
                 </Text>
               </View>
             </View>
           </Pressable>
-
-
         </View>
       </View>
     </Screen>
