@@ -4,14 +4,15 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useOverviewQuery } from "../api/queries";
 import { TRAIN_SECTIONS } from "../data";
-import { COLORS } from "../theme/colors";
-import { SPACING, SHADOWS } from "../theme/spacing";
-import { styles } from "../theme/styles";
-import { Screen } from "../components/ui/Layout";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../design-system/tokens/spacing";
+import { shadows } from "../design-system/tokens/shadows";
 import { Card } from "../components/ui/Card";
 import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { CompactStatCard } from "../components/ui/Stats";
-import { Icon, type IconName } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
+import type { IconName } from "../components/ui/Icon";
+import { Screen } from "../components/ui/Layout";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
 
@@ -23,55 +24,68 @@ const SECTION_ICONS: Record<string, IconName> = {
 
 export function TrainHubScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
+  const blueColor = theme.colorBlue?.toString() ?? "#3B82F6";
+  const purpleColor = theme.colorPurple?.toString() ?? "#A855F7";
   const overview = useOverviewQuery(isAuthenticated);
   return (
     <Screen>
-      <View style={styles.tabIntro}>
+      <View style={{ paddingTop: 8 }}>
         <SectionEyebrow>Train</SectionEyebrow>
-        <Text style={styles.tabTitle}>Workouts</Text>
+        <Text style={{ color: textColor, fontSize: 28, fontWeight: "900", marginTop: 4 }}>Workouts</Text>
       </View>
 
       <Pressable
         onPress={() => navigation.navigate({ name: "StartWorkout", params: {} })}
-        style={{ marginTop: SPACING.xl3 }}
+        style={{ marginTop: spacing.xl3 }}
       >
         <View
           style={[
-            styles.trainHero,
-            SHADOWS.glow(COLORS.teal),
-            { backgroundColor: COLORS.teal, borderRadius: 28 },
+            {
+              borderRadius: 28,
+              alignItems: "center",
+              paddingHorizontal: 20,
+              paddingVertical: 28,
+              backgroundColor: accent,
+            },
+            shadows.glow(accent),
           ]}
         >
-          <View style={styles.trainHeroIcon}>
-            <Icon name="play" size={24} color="#ffffff" />
+          <View style={{ width: 58, height: 58, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.18)" }}>
+            <AppIcon name="play" size={24} color="#ffffff" />
           </View>
-          <Text style={styles.trainHeroTitle}>Start Workout</Text>
-          <Text style={styles.trainHeroSubtitle}>Begin now or choose a template</Text>
+          <Text style={{ color: "#000000", fontSize: 18, fontWeight: "900", marginTop: 14 }}>Start Workout</Text>
+          <Text style={{ color: "rgba(0,0,0,0.55)", fontSize: 12, marginTop: 4 }}>Begin now or choose a template</Text>
         </View>
       </Pressable>
 
-      <View style={[styles.threeUpGrid, { marginTop: SPACING.xl3, gap: SPACING.lg }]}>
+      <View style={[{ flexDirection: "row", gap: 10, marginTop: spacing.xl3 }]}>
         <CompactStatCard
           icon="list-checks"
           label="Sessions"
           value={String(overview.data?.stats.completed_sessions ?? 0)}
-          color={COLORS.teal}
+          color={accent}
         />
         <CompactStatCard
           icon="book-open"
           label="Templates"
           value={String(overview.data?.stats.total_workout_templates ?? 0)}
-          color={COLORS.blue}
+          color={blueColor}
         />
         <CompactStatCard
           icon="award"
           label="PRs"
           value={String(overview.data?.stats.personal_record_count ?? 0)}
-          color={COLORS.gold}
+          color={goldColor}
         />
       </View>
 
-      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl }}>
+      <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
         {TRAIN_SECTIONS.map((section) => {
           let badgeLabel = "badge" in section ? section.badge : "";
           if ("badgeKey" in section) {
@@ -95,31 +109,35 @@ export function TrainHubScreen({ navigation }: Props) {
               }}
             >
               <Card elevated accent={isAdvanced ? "purple" : "none"}>
-                <View style={styles.rowBetween}>
-                  <View style={[styles.rowGap, { flex: 1 }]}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { flex: 1 }]}>
                     <View
-                      style={[
-                        styles.sectionIconWrapSmall,
-                        { backgroundColor: `${section.color}18` },
-                      ]}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 14,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: `${section.color}18`,
+                      }}
                     >
-                      <Icon
+                      <AppIcon
                         name={SECTION_ICONS[section.title] ?? "circle"}
                         size={18}
                         color={section.color}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitle}>{section.title}</Text>
-                      <Text style={styles.detailLabel}>{section.desc}</Text>
+                      <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>{section.title}</Text>
+                      <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>{section.desc}</Text>
                     </View>
                   </View>
-                  <View style={{ alignItems: "flex-end", gap: SPACING.sm }}>
+                  <View style={{ alignItems: "flex-end", gap: spacing.sm }}>
                     <Tag
                       label={badgeLabel}
-                      color={isAdvanced ? COLORS.purple : section.color}
+                      color={isAdvanced ? purpleColor : section.color}
                     />
-                    <Icon name="chevron-right" size={14} color={COLORS.faint} />
+                    <AppIcon name="chevron-right" size={14} color={faintColor} />
                   </View>
                 </View>
               </Card>

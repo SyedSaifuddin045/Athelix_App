@@ -4,7 +4,6 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
 import { PanGestureHandler, State } from "react-native-gesture-handler";
-import { Icon } from "../components/ui/Icon";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { usePostHog } from "posthog-react-native";
@@ -21,8 +20,10 @@ import {
 import { getApiErrorMessage } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
 import type { ExerciseResponse } from "../api/model";
-import { COLORS } from "../theme/colors";
-import { styles } from "../theme/styles";
+import { useTheme } from "@tamagui/core";
+import { AppIcon } from "../design-system/icons/AppIcon";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { MiniInput, PickerColumn } from "../components/ui/Input";
@@ -47,6 +48,12 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const queryClient = useQueryClient();
   const posthog = usePostHog();
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
   const id = route.params?.id;
   const templateId = toNumberId(id);
   const isEdit = !!templateId;
@@ -338,22 +345,22 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
 
   return (
     <Screen contentContainerStyle={{ paddingBottom: 28 }}>
-      <View style={styles.builderTopBar}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" }}>
         <RoundButton onPress={() => navigation.goBack()}>
-          <Icon name="arrow-left" size={16} color={COLORS.text} />
+          <AppIcon name="arrow-left" size={16} color={textColor} />
         </RoundButton>
-        <Text style={styles.headerTitle}>{isEdit ? "Edit Template" : "New Template"}</Text>
-        <Pressable style={styles.saveChip} onPress={() => saveTemplate.mutate()} disabled={saveTemplate.isPending}>
+        <Text style={{ color: textColor, fontSize: 17, fontWeight: "700" }}>{isEdit ? "Edit Template" : "New Template"}</Text>
+        <Pressable style={{ minHeight: 34, borderRadius: 12, backgroundColor: accent, paddingHorizontal: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }} onPress={() => saveTemplate.mutate()} disabled={saveTemplate.isPending}>
           {saveTemplate.isPending ? <ActivityIndicator color="#000000" size="small" /> : null}
-          <Text style={styles.saveChipText}>{saveTemplate.isPending ? "Saving" : "Save"}</Text>
+          <Text style={{ color: "#000000", fontSize: 12, fontWeight: "800" }}>{saveTemplate.isPending ? "Saving" : "Save"}</Text>
         </Pressable>
       </View>
 
       {detail.isPending && isEdit ? <LoadingCard label="Loading template..." /> : null}
       {detail.isError ? <ErrorCard error={detail.error} onRetry={() => detail.refetch()} /> : null}
       {saveError ? (
-        <View style={[styles.errorBox, { marginTop: 12 }]}>
-          <Text style={styles.errorText}>{saveError}</Text>
+        <View style={{ borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", marginTop: 12 }}>
+          <Text style={{ color: redColor, fontSize: 12 }}>{saveError}</Text>
         </View>
       ) : null}
 
@@ -362,7 +369,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
         onChangeText={setName}
         placeholder="Template name (e.g. Push Day A)"
         placeholderTextColor="rgba(255,255,255,0.28)"
-        style={[styles.input, styles.templateNameInput]}
+        style={[{ width: "100%", minHeight: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: textColor, paddingHorizontal: 16, fontSize: 14 }, { marginTop: 16, minHeight: 58, borderRadius: 18, fontSize: 16, fontWeight: "700" }]}
       />
 
       <View style={{ gap: 12, marginTop: 16 }}>
@@ -382,7 +389,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                 gap: 12,
                 opacity: 0.55,
               }}>
-                <Text style={{ color: COLORS.teal, fontSize: 13, fontWeight: "600", fontStyle: "italic" }}>
+                <Text style={{ color: accent, fontSize: 13, fontWeight: "600", fontStyle: "italic" }}>
                   {exercises.find((ex) => ex.id === draggingId)?.name ?? ""}
                 </Text>
               </View>
@@ -391,16 +398,16 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
               <Animated.View style={{
                 transform: [{ translateY: getGap(exercise.id) }],
               }}>
-                <View style={[styles.card, {
+                <View style={[{ backgroundColor: surface1Color, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", borderRadius: 24, paddingHorizontal: 16, paddingVertical: 16 }, {
                   paddingHorizontal: 14,
                   paddingVertical: 14,
                   zIndex: dragActiveId === exercise.id ? 100 : 1,
                   elevation: dragActiveId === exercise.id ? 10 : 1,
                 }, dragActiveId === exercise.id ? {
-                  borderColor: COLORS.teal,
+                  borderColor: accent,
                   borderWidth: 1.5,
                   backgroundColor: "rgba(255,90,54,0.06)",
-                  ...shadow(COLORS.teal),
+                  ...shadow(accent),
                 } : null]}>
                   <PanGestureHandler
                     onGestureEvent={(e) => handleDragMove(e.nativeEvent.translationY, exercise.id)}
@@ -419,11 +426,11 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                     minDist={5}
                   >
                     <View>
-                      <View style={styles.rowBetween}>
-                        <View style={[styles.rowGap, { flex: 1 }]}>
-                          <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? COLORS.teal }} />
-                          <Icon name="grip-vertical" size={18} color={dragActiveId === exercise.id ? COLORS.teal : "rgba(255,255,255,0.3)"} />
-                          <Text style={[styles.listRowTitle, { flex: 1 }]}>{exercise.name}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { flex: 1 }]}>
+                          <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? accent }} />
+                          <AppIcon name="grip-vertical" size={18} color={dragActiveId === exercise.id ? accent : "rgba(255,255,255,0.3)"} />
+                          <Text style={[{ color: textColor, fontSize: 13, fontWeight: "700" }, { flex: 1 }]}>{exercise.name}</Text>
                         </View>
                       </View>
                     </View>
@@ -433,34 +440,34 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                     <View style={{ marginTop: 14, gap: 14 }}>
                       <View style={{ flexDirection: "row", gap: 12 }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.fieldLabel}>Reps</Text>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Reps</Text>
                           <MiniInput
                             value={exercise.sets[0]?.reps ?? "8"}
                             onChangeText={(value) => updateSingleConfig(exercise.id, "reps", value)}
                           />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.fieldLabel}>Sets</Text>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Sets</Text>
                           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                             <Pressable
                               onPress={() => setSetCount(exercise.id, -1)}
-                              style={[styles.stepperBtn, { opacity: exercise.setCount <= 1 ? 0.3 : 1 }]}
+                              style={[{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, { opacity: exercise.setCount <= 1 ? 0.3 : 1 }]}
                               disabled={exercise.setCount <= 1}
                             >
-                              <Icon name="minus" size={14} color={COLORS.text} />
+                              <AppIcon name="minus" size={14} color={textColor} />
                             </Pressable>
-                            <Text style={[styles.listRowTitle, { minWidth: 22, textAlign: "center" }]}>
+                            <Text style={[{ color: textColor, fontSize: 13, fontWeight: "700" }, { minWidth: 22, textAlign: "center" }]}>
                               {exercise.setCount}
                             </Text>
-                            <Pressable onPress={() => setSetCount(exercise.id, 1)} style={styles.stepperBtn}>
-                              <Icon name="plus" size={14} color={COLORS.text} />
+                            <Pressable onPress={() => setSetCount(exercise.id, 1)} style={{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+                              <AppIcon name="plus" size={14} color={textColor} />
                             </Pressable>
                           </View>
                         </View>
                       </View>
                       <View style={{ flexDirection: "row", gap: 12 }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.fieldLabel}>RPE</Text>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>RPE</Text>
                           <MiniInput
                             value={exercise.sets[0]?.rpe ?? "7"}
                             onChangeText={(value) => updateSingleConfig(exercise.id, "rpe", value)}
@@ -473,11 +480,11 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                           {(() => {
                             const n = Number(exercise.sets[0]?.rpe);
                             const invalid = exercise.sets[0]?.rpe !== "" && (isNaN(n) || n < 1 || n > 10);
-                            return invalid ? <Text style={{ color: COLORS.red, fontSize: 9, marginTop: 4, textAlign: "center" }}>1–10</Text> : null;
+                            return invalid ? <Text style={{ color: redColor, fontSize: 9, marginTop: 4, textAlign: "center" }}>1–10</Text> : null;
                           })()}
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.fieldLabel}>Rest</Text>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
                           <Pressable
                             onPress={() => {
                               const current = exercise.sets[0]?.rest ?? "2:00";
@@ -487,10 +494,10 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                               setTimerExerciseId(exercise.id);
                               setShowTimerModal(true);
                             }}
-                            style={styles.restChip}
+                            style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.04)" }}
                           >
-                            <Icon name="clock" size={12} color="rgba(255,255,255,0.5)" />
-                            <Text style={styles.restChipText}>{exercise.sets[0]?.rest ?? "2:00"}</Text>
+                            <AppIcon name="clock" size={12} color="rgba(255,255,255,0.5)" />
+                            <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: "600" }}>{exercise.sets[0]?.rest ?? "2:00"}</Text>
                           </Pressable>
                         </View>
                       </View>
@@ -499,7 +506,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                         onChangeText={(value) => updateNote(exercise.id, value)}
                         placeholder="Notes (optional)..."
                         placeholderTextColor="rgba(255,255,255,0.28)"
-                        style={[styles.input, { marginTop: 4 }]}
+                        style={[{ width: "100%", minHeight: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: textColor, paddingHorizontal: 16, fontSize: 14 }, { marginTop: 4 }]}
                       />
                     </View>
                   ) : null}
@@ -518,39 +525,39 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
             }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
                 <Pressable onPress={() => moveExercise(index, index - 1)} hitSlop={8}>
-                  <Icon name="chevron-up" size={15} color="rgba(255,255,255,0.3)" />
+                  <AppIcon name="chevron-up" size={15} color="rgba(255,255,255,0.3)" />
                 </Pressable>
                 <Pressable onPress={() => moveExercise(index, index + 1)} hitSlop={8}>
-                  <Icon name="chevron-down" size={15} color="rgba(255,255,255,0.3)" />
+                  <AppIcon name="chevron-down" size={15} color="rgba(255,255,255,0.3)" />
                 </Pressable>
               </View>
               <View style={{ width: 1, height: 16, marginHorizontal: 8, backgroundColor: "rgba(255,255,255,0.1)" }} />
               <Pressable onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))} hitSlop={8}>
-                <Icon name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={17} color="rgba(255,255,255,0.6)" />
+                <AppIcon name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={17} color="rgba(255,255,255,0.6)" />
               </Pressable>
               <Pressable onPress={() => removeExercise(exercise.id)} hitSlop={8} style={{ marginLeft: 10 }}>
-                <Icon name="trash-2" size={15} color="rgba(239,68,68,0.6)" />
+                <AppIcon name="trash-2" size={15} color="rgba(239,68,68,0.6)" />
               </Pressable>
             </Animated.View>
           </View>
         ))}
 
         <Pressable onPress={() => setShowExercisePicker(true)}>
-          <View style={styles.dashedAddCard}>
-            <View style={[styles.addCircle, { backgroundColor: "rgba(255,90,54,0.12)" }]}>
-              <Icon name="plus" size={18} color={COLORS.teal} />
+          <View style={{ borderRadius: 24, borderWidth: 1, borderStyle: "dashed", borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.02)", paddingHorizontal: 16, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={[{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)" }, { backgroundColor: "rgba(255,90,54,0.12)" }]}>
+              <AppIcon name="plus" size={18} color={accent} />
             </View>
             <View>
-              <Text style={styles.cardTitle}>Add Exercise</Text>
-              <Text style={styles.detailLabel}>Search from exercise library</Text>
+              <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>Add Exercise</Text>
+              <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>Search from exercise library</Text>
             </View>
           </View>
         </Pressable>
 
         {exercises.length === 0 ? (
           <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
-            <Text style={{ color: COLORS.text, fontSize: 15, fontWeight: "700" }}>No exercises yet</Text>
-            <Text style={{ color: COLORS.muted, fontSize: 13, textAlign: "center" }}>Tap "Add Exercise" to build your template</Text>
+            <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No exercises yet</Text>
+            <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Tap "Add Exercise" to build your template</Text>
           </View>
         ) : null}
       </View>
@@ -565,27 +572,27 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
       />
 
       <Modal visible={showTimerModal} transparent animationType="slide" onRequestClose={() => setShowTimerModal(false)}>
-        <View style={styles.modalScrim}>
-          <Pressable style={styles.modalBackdrop} onPress={() => { setShowTimerModal(false); resetCustomTime(); }} />
-          <View style={styles.bottomSheet}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Rest Timer</Text>
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }}>
+          <Pressable style={{ flex: 1 }} onPress={() => { setShowTimerModal(false); resetCustomTime(); }} />
+          <View style={{ backgroundColor: "#111d1b", borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: "rgba(255,255,255,0.2)", marginBottom: 18 }} />
+            <Text style={{ color: textColor, fontSize: 22, fontWeight: "900", textAlign: "center" }}>Rest Timer</Text>
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 18, justifyContent: "center" }}>
               {REST_PRESETS.map((preset) => (
                 <Pressable
                   key={preset}
                   onPress={() => timerExerciseId && setRestTime(timerExerciseId, preset)}
-                  style={styles.chipButton}
+                  style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.04)" }}
                 >
-                  <Text style={styles.chipButtonText}>{preset}</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600" }}>{preset}</Text>
                 </Pressable>
               ))}
             </View>
             <View style={{ marginTop: 20, alignItems: "center" }}>
-              <Text style={[styles.fieldLabel, { marginBottom: 10 }]}>Custom</Text>
+              <Text style={[{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }, { marginBottom: 10 }]}>Custom</Text>
               <View style={{ flexDirection: "row", gap: 12, justifyContent: "center", alignItems: "flex-end" }}>
                 <PickerColumn values={MINUTES} selected={customMinutes} onSelect={setCustomMinutes} label="Min" />
-                <Text style={{ fontSize: 24, fontWeight: "900", color: COLORS.text, paddingBottom: 18 }}>:</Text>
+                <Text style={{ fontSize: 24, fontWeight: "900", color: textColor, paddingBottom: 18 }}>:</Text>
                 <PickerColumn values={SECONDS} selected={customSeconds} onSelect={setCustomSeconds} label="Sec" />
               </View>
               <PrimaryButton

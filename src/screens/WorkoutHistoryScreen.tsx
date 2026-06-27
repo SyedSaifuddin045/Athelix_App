@@ -5,15 +5,16 @@ import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
 import { useSessionsQuery } from "../api/queries";
 import type { WorkoutSessionResponse } from "../api/model";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card, LoadingCard, ErrorCard, EmptyCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
 import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { CompactStatCard, MetaInline } from "../components/ui/Stats";
-import { Icon, type IconName } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
+import type { IconName } from "../components/ui/Icon";
 import { workoutTitle } from "../utils/display";
 import { formatDateLabel, formatShortDate, formatTimeLabel } from "../utils/format";
 
@@ -29,6 +30,15 @@ const MOOD_ICONS: Record<string, IconName> = {
 
 export function WorkoutHistoryScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
+  const blueColor = theme.colorBlue?.toString() ?? "#3B82F6";
+  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
+  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
   const sessions = useSessionsQuery(isAuthenticated);
   const totalVolume = (sessions.data ?? []).reduce((sum, session) => sum + (session.total_volume ?? 0), 0);
   const grouped = useMemo(() => {
@@ -43,44 +53,44 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
     <Screen>
       <BackHeader title="Workout History" subtitle={`${sessions.data?.length ?? 0} sessions`} onBack={() => navigation.goBack()} />
 
-      <View style={[{ flexDirection: "row", gap: SPACING.lg, marginTop: SPACING.xl3 }]}>
-        <CompactStatCard icon="list-checks" label="Total Sessions" value={String(sessions.data?.length ?? 0)} color={COLORS.teal} />
-        <CompactStatCard icon="gauge" label="Total Volume" value={`${Math.round(totalVolume / 1000)}k kg`} color={COLORS.blue} />
-        <CompactStatCard icon="check-circle" label="Completed" value={String((sessions.data ?? []).filter((s) => s.is_completed).length)} color={COLORS.green} />
+      <View style={[{ flexDirection: "row", gap: spacing.lg, marginTop: spacing.xl3 }]}>
+        <CompactStatCard icon="list-checks" label="Total Sessions" value={String(sessions.data?.length ?? 0)} color={accent} />
+        <CompactStatCard icon="gauge" label="Total Volume" value={`${Math.round(totalVolume / 1000)}k kg`} color={blueColor} />
+        <CompactStatCard icon="check-circle" label="Completed" value={String((sessions.data ?? []).filter((s) => s.is_completed).length)} color={greenColor} />
       </View>
 
       {sessions.isPending ? <LoadingCard label="Loading history..." /> : null}
       {sessions.isError ? <ErrorCard error={sessions.error} onRetry={() => sessions.refetch()} /> : null}
 
-      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl3 }}>
+      <View style={{ marginTop: spacing.xl3, gap: spacing.xl3 }}>
         {Object.entries(grouped).map(([week, weekSessions]) => (
           <View key={week}>
             <SectionEyebrow>{week}</SectionEyebrow>
-            <View style={{ gap: SPACING.lg, marginTop: SPACING.xl }}>
+            <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
               {weekSessions.map((session) => {
                 const moodIcon = session.mood ? MOOD_ICONS[session.mood] : null;
                 return (
                   <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
-                    <Card elevated style={[styles.listRowCard, { flexDirection: "row", alignItems: "center", gap: SPACING.lg }]}>
-                      <View style={[styles.historyMoodWrap, { width: 44, height: 44, borderRadius: RADIUS.iconWrap, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
+                    <Card elevated style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg }}>
+                      <View style={{ width: 44, height: 44, borderRadius: radii.iconWrap, backgroundColor: surface2Color, alignItems: "center", justifyContent: "center" }}>
                         {moodIcon ? (
-                          <Icon name={moodIcon} size={20} color={COLORS.teal} />
+                          <AppIcon name={moodIcon} size={20} color={accent} />
                         ) : (
-                          <Icon name="check" size={20} color={COLORS.muted} />
+                          <AppIcon name="check" size={20} color={mutedColor} />
                         )}
                       </View>
-                      <View style={[styles.listRowBody, { flex: 1 }]}>
-                        <Text style={styles.listRowTitle}>{workoutTitle(session)}</Text>
-                        <Text style={styles.detailLabel}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{workoutTitle(session)}</Text>
+                        <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
                           {formatShortDate(session.started_at)} - {formatTimeLabel(session.started_at)}
                         </Text>
-                        <View style={[styles.rowGapLarge, { marginTop: SPACING.sm, gap: SPACING.lg }]}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: spacing.sm }}>
                           <MetaInline icon="clock" label={`${session.duration_minutes ?? 0}m`} />
                           <MetaInline icon="list-checks" label={`${session.total_sets ?? 0} sets`} />
-                          {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR`} color={COLORS.gold} /> : null}
+                          {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR`} color={goldColor} /> : null}
                         </View>
                       </View>
-                      <Icon name="chevron-right" size={14} color={COLORS.faint} />
+                      <AppIcon name="chevron-right" size={14} color={faintColor} />
                     </Card>
                   </Pressable>
                 );

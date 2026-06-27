@@ -3,16 +3,15 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
 import { useOverviewQuery } from "../api/queries";
-import { COLORS } from "../theme/colors";
-import { SPACING } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../design-system/tokens/spacing";
 import { Card } from "../components/ui/Card";
-import { Tag } from "../components/ui/Indicators";
+import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { Screen } from "../components/ui/Layout";
-import { SectionEyebrow } from "../components/ui/Indicators";
 import { CompactStatCard } from "../components/ui/Stats";
 import { PROGRESS_SECTIONS } from "../data";
-import { Icon, type IconName } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
+import type { IconName } from "../components/ui/Icon";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
 
@@ -25,37 +24,44 @@ const SECTION_ICONS: Record<string, IconName> = {
 
 export function ProgressHubScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
+  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
   const overview = useOverviewQuery(isAuthenticated);
 
   return (
     <Screen>
-      <View style={styles.tabIntro}>
+      <View style={{ paddingTop: 8 }}>
         <SectionEyebrow>Analytics</SectionEyebrow>
-        <Text style={styles.tabTitle}>Progress</Text>
+        <Text style={{ color: textColor, fontSize: 28, fontWeight: "900", marginTop: 4 }}>Progress</Text>
       </View>
 
-      <View style={[{ marginTop: SPACING.xl3, flexDirection: "row", gap: SPACING.lg }]}>
+      <View style={[{ marginTop: spacing.xl3, flexDirection: "row", gap: spacing.lg }]}>
         <CompactStatCard
           icon="award"
           label="PRs"
           value={String(overview.data?.stats.personal_record_count ?? 0)}
-          color={COLORS.gold}
+          color={goldColor}
         />
         <CompactStatCard
           icon="list-checks"
           label="Sessions"
           value={String(overview.data?.stats.completed_sessions ?? 0)}
-          color={COLORS.teal}
+          color={accent}
         />
         <CompactStatCard
           icon="flame"
           label="Streak"
           value={String(overview.data?.workout_streaks.current_daily_streak ?? 0)}
-          color={COLORS.green}
+          color={greenColor}
         />
       </View>
 
-      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl }}>
+      <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
         {PROGRESS_SECTIONS.map((section) => {
           let badgeLabel = "badge" in section ? section.badge : "";
           if ("badgeKey" in section) {
@@ -85,34 +91,33 @@ export function ProgressHubScreen({ navigation }: Props) {
                   borderColor: `${section.color}22`,
                 }}
               >
-                <View style={styles.rowBetween}>
-                  <View style={[styles.rowGap, { flex: 1 }]}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { flex: 1 }]}>
                     <View
-                      style={[
-                        styles.sectionIconWrap,
-                        {
-                          width: 52,
-                          height: 52,
-                          borderRadius: 18,
-                          backgroundColor: `${section.color}16`,
-                        },
-                      ]}
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: 18,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: `${section.color}16`,
+                      }}
                     >
-                      <Icon
+                      <AppIcon
                         name={SECTION_ICONS[section.path] ?? "circle"}
                         size={22}
                         color={section.color}
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.cardTitle}>{section.title}</Text>
-                      <Text style={[styles.detailLabel, { marginTop: SPACING.xxs }]}>
+                      <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>{section.title}</Text>
+                      <Text style={[{ color: mutedColor, fontSize: 11, lineHeight: 16 }, { marginTop: spacing.xxs }]}>
                         {section.desc}
                       </Text>
                       <Tag label={badgeLabel} color={section.color} />
                     </View>
                   </View>
-                  <Icon name="chevron-right" size={16} color={COLORS.faint} />
+                  <AppIcon name="chevron-right" size={16} color={faintColor} />
                 </View>
               </Card>
             </Pressable>
