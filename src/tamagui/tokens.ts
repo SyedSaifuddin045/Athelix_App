@@ -1,0 +1,75 @@
+import { createTokens } from "@tamagui/core";
+
+const rawSpacing = {
+  xxs: 2,
+  xs: 4,
+  sm: 6,
+  md: 8,
+  lg: 10,
+  xl: 12,
+  xl2: 14,
+  xl3: 16,
+  xl4: 20,
+  xl5: 24,
+  xl6: 28,
+  xl7: 32,
+  xl8: 40,
+  xl9: 48,
+  xl10: 56,
+};
+
+const rawRadii = {
+  button: 18,
+  card: 24,
+  cardSmall: 16,
+  input: 14,
+  chip: 999,
+  iconWrap: 14,
+  avatar: 999,
+  sheet: 28,
+  tag: 999,
+  round: 999,
+  stepper: 8,
+  modal: 20,
+};
+
+const rawColors = {
+  root: "#050505",
+  screen: "#0A0A0A",
+  text: "#FFFFFF",
+  muted: "rgba(255,255,255,0.45)",
+  faint: "rgba(255,255,255,0.25)",
+  border: "rgba(255,255,255,0.08)",
+  borderLight: "rgba(255,255,255,0.12)",
+  card: "rgba(255,255,255,0.04)",
+  cardSoft: "rgba(255,255,255,0.06)",
+  cardElevated: "rgba(255,255,255,0.07)",
+  accent: "#FF5A36",
+  coral: "#FF5A36",
+  teal: "#FF5A36",
+  green: "#22C55E",
+  greenDark: "rgba(34,197,94,0.12)",
+  gold: "#FBBF24",
+  orange: "#F59E0B",
+  red: "#EF4444",
+  redDark: "rgba(239,68,68,0.12)",
+  purple: "#8B5CF6",
+  purpleDark: "rgba(139,92,246,0.12)",
+  blue: "#3B82F6",
+  blueDark: "rgba(59,130,246,0.12)",
+  surface: "#0D0D0D",
+  surfaceLight: "#141414",
+  tabBar: "rgba(5,5,5,0.96)",
+};
+
+export const tokens = createTokens({
+  size: rawSpacing,
+  space: rawSpacing,
+  radius: rawRadii,
+  zIndex: { 0: 0, 1: 100, 2: 200, 3: 300 },
+  color: {
+    ...rawColors,
+    white: "#FFFFFF",
+    black: "#000000",
+  },
+});

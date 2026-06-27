@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { useTheme } from "@tamagui/core";
 
-import { COLORS } from "../../theme/colors";
-import { SPACING, RADIUS } from "../../theme/spacing";
-import { styles } from "../../theme/styles";
+import { radii } from "../../design-system/tokens/radii";
+import { spacing } from "../../design-system/tokens/spacing";
 
 export function LabeledInput({
   label,
@@ -20,17 +20,40 @@ export function LabeledInput({
   keyboardType?: "default" | "numeric" | "email-address";
   secureTextEntry?: boolean;
 }) {
+  const theme = useTheme();
+
   return (
     <View style={{ flex: 1 }}>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text
+        style={{
+          color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+          fontSize: 11,
+          fontWeight: "700",
+          marginBottom: spacing.sm,
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </Text>
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={COLORS.faint}
+        placeholderTextColor={theme.colorFaint?.toString()}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
-        style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+        style={{
+          width: "100%",
+          minHeight: 52,
+          borderRadius: radii.input,
+          backgroundColor: theme.surface2?.toString(),
+          borderWidth: 1,
+          borderColor: theme.borderColor?.toString(),
+          color: theme.color?.toString() ?? "#FFFFFF",
+          paddingHorizontal: spacing.xl3,
+          fontSize: 14,
+        }}
       />
     </View>
   );
@@ -53,26 +76,30 @@ export function MiniInput({
   keyboardType?: "default" | "decimal-pad";
   style?: Record<string, unknown>;
 }) {
+  const theme = useTheme();
+
   return (
     <TextInput
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder ?? ""}
-      placeholderTextColor={COLORS.faint}
+      placeholderTextColor={theme.colorFaint?.toString()}
       keyboardType={keyboardType ?? "decimal-pad"}
       style={[
-        styles.miniInput,
         {
+          flex: 1,
           minWidth: 0,
           minHeight: 38,
-          borderRadius: RADIUS.stepper,
-          backgroundColor: COLORS.cardSoft,
+          borderRadius: radii.stepper,
+          backgroundColor: theme.surface2?.toString(),
           borderWidth: 1,
-          borderColor: error ? COLORS.red : COLORS.border,
-          color: COLORS.text,
+          borderColor: error
+            ? (theme.colorRed?.toString() ?? "#EF4444")
+            : (theme.borderColor?.toString()),
+          color: theme.color?.toString() ?? "#FFFFFF",
           textAlign: "center",
           fontSize: 13,
-          paddingHorizontal: SPACING.xs,
+          paddingHorizontal: spacing.xs,
           textDecorationLine: strike ? "line-through" : "none",
           opacity: strike ? 0.5 : 1,
         },
@@ -86,7 +113,7 @@ export function ChipWrap({
   items,
   selected,
   onSelect,
-  activeColor = COLORS.teal,
+  activeColor = "#FF5A36",
   columns,
 }: {
   items: { value: string; label: string }[];
@@ -95,41 +122,39 @@ export function ChipWrap({
   activeColor?: string;
   columns?: number;
 }) {
+  const theme = useTheme();
+
   return (
     <View
-      style={[
-        styles.chipWrap,
-        {
-          flexDirection: "row",
-          flexWrap: "wrap",
-          gap: SPACING.md,
-          marginTop: SPACING.lg,
-        },
-      ]}
+      style={{
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: spacing.md,
+        marginTop: spacing.lg,
+      }}
     >
       {items.map((item) => (
         <Pressable
           key={item.value}
           onPress={() => onSelect(item.value)}
-          style={[
-            styles.optionChip,
-            {
-              paddingHorizontal: SPACING.xl2,
-              paddingVertical: SPACING.lg,
-              borderRadius: RADIUS.input,
-              borderWidth: 1,
-              borderColor: selected === item.value ? `${activeColor}50` : COLORS.border,
-              backgroundColor: selected === item.value ? `${activeColor}20` : COLORS.cardSoft,
-            },
-          ]}
+          style={{
+            paddingHorizontal: spacing.xl2,
+            paddingVertical: spacing.lg,
+            borderRadius: radii.input,
+            borderWidth: 1,
+            borderColor: selected === item.value ? `${activeColor}50` : theme.borderColor?.toString(),
+            backgroundColor: selected === item.value ? `${activeColor}20` : theme.surface2?.toString(),
+          }}
         >
           <Text
-            style={[
-              styles.optionChipText,
-              {
-                color: selected === item.value ? COLORS.text : COLORS.muted,
-              },
-            ]}
+            style={{
+              color: selected === item.value
+                ? (theme.color?.toString())
+                : (theme.colorMuted?.toString()),
+              fontSize: 12,
+              fontWeight: "700",
+              textAlign: "center",
+            }}
           >
             {item.label}
           </Text>
@@ -144,7 +169,7 @@ export function SelectableRow({
   onPress,
   label,
   sublabel,
-  color = COLORS.teal,
+  color = "#FF5A36",
 }: {
   selected: boolean;
   onPress: () => void;
@@ -152,27 +177,45 @@ export function SelectableRow({
   sublabel?: string;
   color?: string;
 }) {
+  const theme = useTheme();
+
   return (
     <Pressable
       onPress={onPress}
-      style={[
-        styles.selectableRow,
-        {
-          minHeight: 54,
-          borderRadius: RADIUS.input,
-          borderWidth: 1,
-          borderColor: selected ? `${color}50` : COLORS.border,
-          backgroundColor: selected ? `${color}12` : COLORS.card,
-          justifyContent: "center",
-          paddingHorizontal: SPACING.xl2,
-        },
-      ]}
+      style={{
+        minHeight: 54,
+        borderRadius: radii.input,
+        borderWidth: 1,
+        borderColor: selected ? `${color}50` : theme.borderColor?.toString(),
+        backgroundColor: selected ? `${color}12` : theme.surface1?.toString(),
+        justifyContent: "center",
+        paddingHorizontal: spacing.xl2,
+      }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.xl }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl }}>
         <Radio selected={selected} color={color} />
         <View style={{ flex: 1 }}>
-          <Text style={[styles.listRowTitle, selected ? { color: COLORS.text } : null]}>{label}</Text>
-          {sublabel ? <Text style={styles.listMeta}>{sublabel}</Text> : null}
+          <Text
+            style={{
+              color: selected
+                ? (theme.color?.toString() ?? "#FFFFFF")
+                : (theme.color?.toString() ?? "#FFFFFF"),
+              fontSize: 13,
+              fontWeight: "700",
+            }}
+          >
+            {label}
+          </Text>
+          {sublabel ? (
+            <Text
+              style={{
+                color: theme.colorFaint?.toString() ?? "rgba(255,255,255,0.34)",
+                fontSize: 10,
+              }}
+            >
+              {sublabel}
+            </Text>
+          ) : null}
         </View>
       </View>
     </Pressable>
@@ -181,37 +224,32 @@ export function SelectableRow({
 
 export function Radio({
   selected,
-  color = COLORS.teal,
+  color = "#FF5A36",
 }: {
   selected: boolean;
   color?: string;
 }) {
+  const theme = useTheme();
   return (
     <View
-      style={[
-        styles.radioOuter,
-        {
-          width: 20,
-          height: 20,
-          borderRadius: 10,
-          borderWidth: 2,
-          borderColor: selected ? color : COLORS.border,
-          alignItems: "center",
-          justifyContent: "center",
-        },
-      ]}
+      style={{
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        borderWidth: 2,
+        borderColor: selected ? color : theme.borderColor?.toString(),
+        alignItems: "center",
+        justifyContent: "center",
+      }}
     >
       {selected ? (
         <View
-          style={[
-            styles.radioInner,
-            {
-              width: 10,
-              height: 10,
-              borderRadius: 5,
-              backgroundColor: color,
-            },
-          ]}
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: color,
+          }}
         />
       ) : null}
     </View>
@@ -239,6 +277,7 @@ export function PickerColumn({
   selected?: number;
   onSelect?: (value: number) => void;
 }) {
+  const theme = useTheme();
   const items = explicitValues ?? Array.from({ length: Math.floor((max - min) / step) + 1 }, (_, i) => min + i * step);
   const currentVal = value ?? selected ?? items[0];
   const handleChange = onChange ?? onSelect ?? (() => {});
@@ -258,27 +297,30 @@ export function PickerColumn({
     <View>
       <Pressable
         onPress={() => setShowPicker((v) => !v)}
-        style={[
-          styles.restChip,
-          {
-            flexDirection: "row",
-            alignItems: "center",
-            gap: SPACING.sm,
-            paddingHorizontal: SPACING.xl,
-            paddingVertical: SPACING.md,
-            borderRadius: RADIUS.stepper,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            backgroundColor: COLORS.cardSoft,
-          },
-        ]}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: spacing.sm,
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.md,
+          borderRadius: radii.stepper,
+          borderWidth: 1,
+          borderColor: theme.borderColor?.toString(),
+          backgroundColor: theme.surface2?.toString(),
+        }}
       >
-        <Text style={[styles.restChipText, { color: COLORS.muted }]}>
+        <Text
+          style={{
+            color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+            fontSize: 13,
+            fontWeight: "600",
+          }}
+        >
           {currentVal} {label ?? ""}
         </Text>
       </Pressable>
       {showPicker ? (
-        <View style={{ height: 160, marginTop: SPACING.sm }}>
+        <View style={{ height: 160, marginTop: spacing.sm }}>
           <FlatList
             ref={flatRef}
             data={items}
@@ -295,13 +337,13 @@ export function PickerColumn({
                 style={{ height: 40, justifyContent: "center", alignItems: "center" }}
               >
                 <Text
-                  style={[
-                    {
-                      color: item === currentVal ? COLORS.teal : COLORS.muted,
-                      fontSize: item === currentVal ? 16 : 14,
-                      fontWeight: item === currentVal ? "700" : "400",
-                    },
-                  ]}
+                  style={{
+                    color: item === currentVal
+                      ? (theme.accent?.toString() ?? "#FF5A36")
+                      : (theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)"),
+                    fontSize: item === currentVal ? 16 : 14,
+                    fontWeight: item === currentVal ? "700" : "400",
+                  }}
                 >
                   {item}
                 </Text>

@@ -1,28 +1,31 @@
+import { type ReactNode } from "react";
 import { ScrollView, View } from "react-native";
 import { useTheme } from "@tamagui/core";
 
-export function Screen({
-  children,
-  scroll = true,
-  contentContainerStyle,
-}: {
-  children: React.ReactNode;
+interface AppScreenProps {
+  children: ReactNode;
   scroll?: boolean;
   contentContainerStyle?: object;
-}) {
+}
+
+export function AppScreen({ children, scroll = true, contentContainerStyle }: AppScreenProps) {
   const theme = useTheme();
-  const screenBg = theme.background?.toString() ?? "#050505";
+
+  const screenStyle = {
+    flex: 1,
+    backgroundColor: theme.background?.toString(),
+  };
 
   if (!scroll) {
     return (
-      <View style={{ flex: 1, backgroundColor: screenBg }}>
+      <View style={screenStyle}>
         <View style={[{ flex: 1 }, contentContainerStyle]}>{children}</View>
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: screenBg }}>
+    <View style={screenStyle}>
       <ScrollView
         contentContainerStyle={[{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"

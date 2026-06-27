@@ -4,11 +4,11 @@ import Animated, {
   withSpring,
   useAnimatedStyle,
 } from "react-native-reanimated";
+import { useTheme } from "@tamagui/core";
 
-import { COLORS } from "../../theme/colors";
-import { RADIUS, SPACING, SHADOWS } from "../../theme/spacing";
-import { styles } from "../../theme/styles";
-import { Icon, type IconName } from "./Icon";
+import { radii } from "../../design-system/tokens/radii";
+import { spacing } from "../../design-system/tokens/spacing";
+import { AppIcon, type IconName } from "../../design-system/icons/AppIcon";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -45,7 +45,17 @@ export function PrimaryButton({
   subtle?: boolean;
   loading?: boolean;
 }) {
+  const theme = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useScalePress();
+
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const bgSoft = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
+  const borderCol = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+
+  const bgColor = subtle ? bgSoft : accent;
+  const textColor = subtle
+    ? (theme.color?.toString() ?? "#FFFFFF")
+    : "#000000";
 
   return (
     <AnimatedPressable
@@ -54,30 +64,43 @@ export function PrimaryButton({
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       style={[
-        styles.primaryButton,
-        subtle
-          ? {
-              backgroundColor: COLORS.cardSoft,
-              borderWidth: 1,
-              borderColor: COLORS.border,
-              shadowOpacity: 0,
-            }
-          : SHADOWS.glow(COLORS.teal),
-        disabled || loading ? { opacity: 0.5 } : null,
+        {
+          minHeight: 56,
+          borderRadius: radii.button,
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "row",
+          gap: 10,
+          backgroundColor: bgColor,
+          borderWidth: subtle ? 1 : 0,
+          borderColor: subtle ? borderCol : "transparent",
+          opacity: disabled || loading ? 0.5 : 1,
+          ...(subtle
+            ? { shadowOpacity: 0, elevation: 0 }
+            : {
+                shadowColor: accent,
+                shadowOpacity: 0.28,
+                shadowRadius: 12,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 6,
+              }),
+        },
         animatedStyle,
         style,
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={subtle ? COLORS.muted : "#000000"} />
+        <ActivityIndicator size="small" color={subtle ? theme.colorMuted?.toString() : "#000000"} />
       ) : (
         icon
       )}
       <Text
-        style={[
-          styles.primaryButtonText,
-          subtle ? { color: COLORS.text, opacity: 0.7 } : null,
-        ]}
+        style={{
+          color: textColor,
+          fontSize: 15,
+          fontWeight: "800",
+          opacity: subtle ? 0.7 : 1,
+        }}
       >
         {label}
       </Text>
@@ -94,6 +117,7 @@ export function RoundButton({
   onPress?: () => void;
   accent?: boolean;
 }) {
+  const theme = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useScalePress();
 
   return (
@@ -102,14 +126,21 @@ export function RoundButton({
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       style={[
-        styles.roundButton,
+        {
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: accent
+            ? "rgba(255,90,54,0.16)"
+            : (theme.surface2?.toString() ?? "rgba(255,255,255,0.07)"),
+          borderWidth: 1,
+          borderColor: accent
+            ? "rgba(255,90,54,0.32)"
+            : (theme.borderColor?.toString() ?? "rgba(255,255,255,0.09)"),
+        },
         animatedStyle,
-        accent
-          ? {
-              backgroundColor: "rgba(255,90,54,0.16)",
-              borderColor: "rgba(255,90,54,0.32)",
-            }
-          : null,
       ]}
     >
       {children}
@@ -130,6 +161,7 @@ export function IconButton({
   color?: string;
   backgroundColor?: string;
 }) {
+  const theme = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useScalePress();
   const btnSize = size;
 
@@ -145,14 +177,14 @@ export function IconButton({
           borderRadius: btnSize / 2,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: backgroundColor ?? COLORS.cardSoft,
+          backgroundColor: backgroundColor ?? theme.surface2?.toString(),
           borderWidth: 1,
-          borderColor: COLORS.border,
+          borderColor: theme.borderColor?.toString(),
         },
         animatedStyle,
       ]}
     >
-      <Icon name={icon} size={btnSize * 0.45} color={color ?? COLORS.text} />
+      <AppIcon name={icon} size={btnSize * 0.45} color={color ?? theme.color?.toString()} />
     </AnimatedPressable>
   );
 }
@@ -168,17 +200,43 @@ export function BackHeader({
   onBack?: () => void;
   right?: React.ReactNode;
 }) {
+  const theme = useTheme();
+
   return (
-    <View style={styles.headerRow}>
-      <View style={styles.headerLeft}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}
+    >
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
         {onBack ? (
           <RoundButton onPress={onBack}>
-            <Icon name="arrow-left" size={16} color={COLORS.text} />
+            <AppIcon name="arrow-left" size={16} color={theme.color?.toString()} />
           </RoundButton>
         ) : null}
         <View>
-          <Text style={styles.headerTitle}>{title}</Text>
-          {subtitle ? <Text style={styles.headerSubtitle}>{subtitle}</Text> : null}
+          <Text
+            style={{
+              color: theme.color?.toString() ?? "#FFFFFF",
+              fontSize: 17,
+              fontWeight: "700",
+            }}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text
+              style={{
+                color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+                fontSize: 11,
+                marginTop: 2,
+              }}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
       </View>
       {right ? <View>{right}</View> : <View style={{ width: 36 }} />}

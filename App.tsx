@@ -15,6 +15,7 @@ import { queryClient } from "./src/api/queryClient";
 import { AppContent } from "./src/navigation/AppContent";
 import { ErrorBoundary } from "./src/components/ui/ErrorBoundary";
 import { getPostHogConfig } from "./src/analytics/posthog";
+import { TamaguiAppProvider } from "./src/tamagui/provider";
 
 const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, string>;
 
@@ -40,6 +41,7 @@ function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <TamaguiAppProvider>
         <QueryClientProvider client={queryClient}>
           <PostHogProvider
             apiKey={apiKey}
@@ -52,10 +54,11 @@ function App() {
             <ErrorBoundary>
               <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
                 <AppContent />
-              </ClerkProvider>
-            </ErrorBoundary>
-          </PostHogProvider>
-        </QueryClientProvider>
+          </ClerkProvider>
+          </ErrorBoundary>
+        </PostHogProvider>
+      </QueryClientProvider>
+      </TamaguiAppProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
