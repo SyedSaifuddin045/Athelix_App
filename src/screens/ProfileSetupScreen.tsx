@@ -8,15 +8,15 @@ import { useAuth } from "@clerk/expo";
 import { useProfileQuery } from "../api/queries";
 import { useSaveProfile } from "../api/mutations";
 import { GENDERS, FITNESS_LEVELS, GOALS, UNITS } from "../data";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput, ChipWrap, SelectableRow } from "../components/ui/Input";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { getApiErrorMessage } from "../api/client";
 import { numberOrNull } from "../utils/validation";
 import { Events } from "../analytics/events";
@@ -39,6 +39,15 @@ export function ProfileSetupScreen({ navigation }: Props) {
   });
   const [error, setError] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
+  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
 
   useEffect(() => {
     const profile = profileQuery.data;
@@ -97,7 +106,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
         onBack={() => navigation.goBack()}
         right={
           <Pressable
-            style={[styles.saveChip, { minHeight: 34, borderRadius: RADIUS.tag, backgroundColor: COLORS.teal, paddingHorizontal: SPACING.xl, flexDirection: "row", alignItems: "center", gap: SPACING.sm }]}
+            style={{ minHeight: 34, borderRadius: radii.tag, backgroundColor: accent, paddingHorizontal: spacing.xl, flexDirection: "row", alignItems: "center", gap: spacing.sm }}
             onPress={() =>
               saveProfile.mutate({
                 display_name: form.displayName || null,
@@ -112,28 +121,28 @@ export function ProfileSetupScreen({ navigation }: Props) {
             }
             disabled={saveProfile.isPending}
           >
-            <Icon name="check" size={13} color="#000000" />
-            <Text style={styles.saveChipText}>{saveProfile.isPending ? "Saving" : "Save"}</Text>
+            <AppIcon name="check" size={13} color="#000000" />
+            <Text style={{ color: "#000000", fontSize: 12, fontWeight: "800" }}>{saveProfile.isPending ? "Saving" : "Save"}</Text>
           </Pressable>
         }
       />
 
       {profileQuery.isPending ? <LoadingCard label="Loading profile..." /> : null}
       {error ? (
-        <View style={[styles.errorBox, { marginTop: SPACING.xl, backgroundColor: COLORS.redDark }]}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={{ borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: redDarkColor, borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", marginTop: spacing.xl }}>
+          <Text style={{ color: redColor, fontSize: 12 }}>{error}</Text>
         </View>
       ) : null}
 
-      <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl5 }}>
+      <View style={{ marginTop: spacing.xl3, gap: spacing.xl5 }}>
         <View>
           <SectionEyebrow>Basic Info</SectionEyebrow>
-          <View style={[styles.formStack, { gap: SPACING.xl2 }]}>
+          <View style={[{ gap: spacing.xl2 }]}>
             <LabeledInput label="Display Name" value={form.displayName} onChangeText={(v) => setForm((c) => ({ ...c, displayName: v }))} />
             <View>
-              <Text style={styles.fieldLabel}>Date of Birth</Text>
-              <Pressable onPress={() => setShowDatePicker(true)} style={[styles.input, { justifyContent: "center", backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, borderRadius: RADIUS.input }]}>
-                <Text style={{ color: form.dob ? COLORS.text : COLORS.faint, fontSize: 14 }}>
+              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Date of Birth</Text>
+              <Pressable onPress={() => setShowDatePicker(true)} style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, justifyContent: "center", paddingHorizontal: 16 }}>
+                <Text style={{ color: form.dob ? textColor : faintColor, fontSize: 14 }}>
                   {formattedDob}
                 </Text>
               </Pressable>
@@ -142,15 +151,15 @@ export function ProfileSetupScreen({ navigation }: Props) {
               )}
             </View>
             <View>
-              <Text style={styles.fieldLabel}>Gender</Text>
-              <ChipWrap items={GENDERS.map((g) => ({ value: g, label: g }))} selected={form.gender} onSelect={(v) => setForm((c) => ({ ...c, gender: v }))} activeColor={COLORS.teal} />
+              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Gender</Text>
+              <ChipWrap items={GENDERS.map((g) => ({ value: g, label: g }))} selected={form.gender} onSelect={(v) => setForm((c) => ({ ...c, gender: v }))} activeColor={accent} />
             </View>
           </View>
         </View>
 
         <View>
           <SectionEyebrow>Body Stats</SectionEyebrow>
-          <View style={[styles.twoUpGrid, { flexDirection: "row", gap: SPACING.xl }]}>
+          <View style={{ flexDirection: "row", gap: spacing.xl }}>
             <View style={{ flex: 1 }}>
               <LabeledInput label={`Height (${form.unit === "metric" ? "cm" : "ft"})`} value={form.height} onChangeText={(v) => setForm((c) => ({ ...c, height: v }))} keyboardType="numeric" />
             </View>
@@ -162,12 +171,12 @@ export function ProfileSetupScreen({ navigation }: Props) {
 
         <View>
           <SectionEyebrow>Fitness Level</SectionEyebrow>
-          <ChipWrap items={FITNESS_LEVELS.map((f) => ({ value: f, label: f }))} selected={form.fitnessLevel} onSelect={(v) => setForm((c) => ({ ...c, fitnessLevel: v }))} activeColor={COLORS.teal} columns={2} />
+          <ChipWrap items={FITNESS_LEVELS.map((f) => ({ value: f, label: f }))} selected={form.fitnessLevel} onSelect={(v) => setForm((c) => ({ ...c, fitnessLevel: v }))} activeColor={accent} columns={2} />
         </View>
 
         <View>
           <SectionEyebrow>Primary Goal</SectionEyebrow>
-          <View style={{ gap: SPACING.lg, marginTop: SPACING.lg }}>
+          <View style={{ gap: spacing.lg, marginTop: spacing.lg }}>
             {GOALS.map((goal) => (
               <SelectableRow key={goal} selected={form.goal === goal} onPress={() => setForm((c) => ({ ...c, goal }))} label={goal} />
             ))}
@@ -176,7 +185,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
 
         <View>
           <SectionEyebrow>Preferred Units</SectionEyebrow>
-          <View style={{ gap: SPACING.lg, marginTop: SPACING.lg }}>
+          <View style={{ gap: spacing.lg, marginTop: spacing.lg }}>
             {UNITS.map((unit) => (
               <SelectableRow key={unit.value} selected={form.unit === unit.value} onPress={() => setForm((c) => ({ ...c, unit: unit.value }))} label={unit.label} />
             ))}
@@ -198,7 +207,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
             })
           }
           disabled={saveProfile.isPending}
-          style={{ marginTop: SPACING.sm }}
+          style={{ marginTop: spacing.sm }}
         />
       </View>
     </Screen>

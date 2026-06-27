@@ -5,12 +5,12 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { getApiErrorMessage, updateClerkToken } from "../api/client";
 import { CLERK_SSO_REDIRECT_URL } from "../auth/clerk";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Screen } from "../components/ui/Layout";
 import { PrimaryButton, RoundButton } from "../components/ui/Button";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
 
 const OAUTH_PROVIDERS = [
   { strategy: "oauth_google" as const, label: "Google", icon: "chrome" as const },
@@ -30,6 +30,15 @@ export function RegisterScreen({ navigation }: Props) {
   const [oauthProvider, setOauthProvider] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pendingVerification, setPendingVerification] = useState(false);
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
+  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
   const [code, setCode] = useState("");
 
   const checks = [
@@ -161,37 +170,37 @@ export function RegisterScreen({ navigation }: Props) {
 
   if (pendingVerification) {
     return (
-      <Screen contentContainerStyle={{ paddingHorizontal: SPACING.xl5, paddingBottom: SPACING.xl7 }}>
-        <View style={[styles.headerRow, { paddingTop: SPACING.lg }]}>
-          <View style={styles.headerLeft}>
+      <Screen contentContainerStyle={{ paddingHorizontal: spacing.xl5, paddingBottom: spacing.xl7 }}>
+        <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, { paddingTop: spacing.lg }]}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
             <RoundButton onPress={() => { setPendingVerification(false); setCode(""); }}>
-              <Icon name="arrow-left" size={16} color={COLORS.text} />
+              <AppIcon name="arrow-left" size={16} color={textColor} />
             </RoundButton>
             <View>
-              <Text style={styles.headerTitle}>Verify Email</Text>
-              <Text style={styles.headerSubtitle}>Check your inbox for a code</Text>
+              <Text style={{ color: textColor, fontSize: 17, fontWeight: "700" }}>Verify Email</Text>
+              <Text style={{ color: mutedColor, fontSize: 11, marginTop: 2 }}>Check your inbox for a code</Text>
             </View>
           </View>
         </View>
-        <View style={[styles.formStack, { gap: SPACING.xl2, marginTop: SPACING.xl5 }]}>
+        <View style={[{ gap: spacing.xl2, marginTop: spacing.xl5 }]}>
           <TextInput
             value={code}
             onChangeText={setCode}
             placeholder="Verification code"
-            placeholderTextColor={COLORS.faint}
-            style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+            placeholderTextColor={faintColor}
+            style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, color: textColor, paddingHorizontal: 16, fontSize: 14 }}
             keyboardType="number-pad"
           />
           {error ? (
-            <View style={[styles.errorBox, { backgroundColor: COLORS.redDark, borderColor: "rgba(239,68,68,0.25)" }]}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View style={{ borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: redDarkColor, borderWidth: 1, borderColor: "rgba(239,68,68,0.25)" }}>
+              <Text style={{ color: redColor, fontSize: 12 }}>{error}</Text>
             </View>
           ) : null}
           <PrimaryButton
             label={loading ? "Verifying..." : "Verify"}
             onPress={handleVerify}
             disabled={loading || !code}
-            icon={loading ? <ActivityIndicator color="#000000" /> : <Icon name="check" size={16} color="#000000" />}
+            icon={loading ? <ActivityIndicator color="#000000" /> : <AppIcon name="check" size={16} color="#000000" />}
           />
         </View>
       </Screen>
@@ -199,104 +208,104 @@ export function RegisterScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen contentContainerStyle={{ paddingHorizontal: SPACING.xl5, paddingBottom: SPACING.xl7 }}>
-      <View style={[styles.headerRow, { paddingTop: SPACING.lg }]}>
-        <View style={styles.headerLeft}>
+    <Screen contentContainerStyle={{ paddingHorizontal: spacing.xl5, paddingBottom: spacing.xl7 }}>
+      <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, { paddingTop: spacing.lg }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
           <RoundButton onPress={() => navigation.replace("Login")}>
-            <Icon name="arrow-left" size={16} color={COLORS.text} />
+            <AppIcon name="arrow-left" size={16} color={textColor} />
           </RoundButton>
           <View>
-            <Text style={styles.headerTitle}>Create Account</Text>
-            <Text style={styles.headerSubtitle}>Start your fitness journey</Text>
+            <Text style={{ color: textColor, fontSize: 17, fontWeight: "700" }}>Create Account</Text>
+            <Text style={{ color: mutedColor, fontSize: 11, marginTop: 2 }}>Start your fitness journey</Text>
           </View>
         </View>
       </View>
 
-      <View style={[styles.formStack, { gap: SPACING.xl2, marginTop: SPACING.xl4 }]}>
+      <View style={[{ gap: spacing.xl2, marginTop: spacing.xl4 }]}>
         <View>
-          <Text style={styles.fieldLabel}>Username</Text>
+          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Username</Text>
           <TextInput
             value={form.username}
             onChangeText={(v) => setForm((c) => ({ ...c, username: v }))}
             placeholder="jordan_lifts"
-            placeholderTextColor={COLORS.faint}
-            style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+            placeholderTextColor={faintColor}
+            style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, color: textColor, paddingHorizontal: 16, fontSize: 14 }}
           />
         </View>
         <View>
-          <Text style={styles.fieldLabel}>Email</Text>
+          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Email</Text>
           <TextInput
             value={form.email}
             onChangeText={(v) => setForm((c) => ({ ...c, email: v }))}
             placeholder="jordan@example.com"
-            placeholderTextColor={COLORS.faint}
-            style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+            placeholderTextColor={faintColor}
+            style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, color: textColor, paddingHorizontal: 16, fontSize: 14 }}
             keyboardType="email-address"
             autoCapitalize="none"
           />
         </View>
         <View>
-          <Text style={styles.fieldLabel}>Password</Text>
-          <View style={[styles.inputWrap, { position: "relative" }]}>
+          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Password</Text>
+          <View style={{ position: "relative" }}>
             <TextInput
               value={form.password}
               onChangeText={(v) => setForm((c) => ({ ...c, password: v }))}
               placeholder="Create a strong password"
-              placeholderTextColor={COLORS.faint}
-              style={[styles.input, styles.inputWithRight, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+              placeholderTextColor={faintColor}
+              style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, color: textColor, paddingHorizontal: 16, fontSize: 14, paddingRight: 46 }}
               secureTextEntry={!showPassword}
             />
-            <Pressable style={[styles.inputRightIcon, { position: "absolute", right: SPACING.xl2, top: SPACING.xl3 }]} onPress={() => setShowPassword((v) => !v)}>
-              <Icon name={showPassword ? "eye-off" : "eye"} size={16} color={COLORS.muted} />
+            <Pressable style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3 }} onPress={() => setShowPassword((v) => !v)}>
+              <AppIcon name={showPassword ? "eye-off" : "eye"} size={16} color={mutedColor} />
             </Pressable>
           </View>
           {form.password.length > 0 ? (
-            <View style={[styles.passwordChecks, { flexDirection: "row", flexWrap: "wrap", gap: SPACING.lg, marginTop: SPACING.xl }]}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.lg, marginTop: spacing.xl }}>
               {checks.map((check) => (
-                <View key={check.label} style={[styles.passwordCheck, { flexDirection: "row", alignItems: "center", gap: SPACING.sm }]}>
-                  <View style={[styles.checkBubble, { width: 14, height: 14, borderRadius: 7, backgroundColor: check.ok ? COLORS.teal : COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-                    {check.ok ? <Icon name="check" size={8} color="#000000" /> : null}
+                <View key={check.label} style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
+                  <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: check.ok ? accent : surfaceHover, alignItems: "center", justifyContent: "center" }}>
+                    {check.ok ? <AppIcon name="check" size={8} color="#000000" /> : null}
                   </View>
-                  <Text style={[styles.passwordCheckText, check.ok ? { color: COLORS.teal } : { color: COLORS.muted }]}>{check.label}</Text>
+                  <Text style={[check.ok ? { color: accent } : { color: mutedColor }, { fontSize: 10 }]}>{check.label}</Text>
                 </View>
               ))}
             </View>
           ) : null}
         </View>
-        <Text style={styles.legalText}>
-          By creating an account, you agree to our <Text style={styles.linkTextInline}>Terms of Service</Text> and{" "}
-          <Text style={styles.linkTextInline}>Privacy Policy</Text>.
+        <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, lineHeight: 16 }}>
+          By creating an account, you agree to our <Text style={{ color: accent, fontWeight: "700" }}>Terms of Service</Text> and{" "}
+          <Text style={{ color: accent, fontWeight: "700" }}>Privacy Policy</Text>.
         </Text>
         {error ? (
-          <View style={[styles.errorBox, { backgroundColor: COLORS.redDark, borderColor: "rgba(239,68,68,0.25)" }]}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={{ borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: redDarkColor, borderWidth: 1, borderColor: "rgba(239,68,68,0.25)" }}>
+            <Text style={{ color: redColor, fontSize: 12 }}>{error}</Text>
           </View>
         ) : null}
         <PrimaryButton
           label={loading ? "Creating Account..." : "Create Account"}
           onPress={handleRegister}
           disabled={loading || fetchStatus === "fetching"}
-          icon={loading ? <ActivityIndicator color="#000000" /> : <Icon name="arrow-right" size={16} color="#000000" />}
+          icon={loading ? <ActivityIndicator color="#000000" /> : <AppIcon name="arrow-right" size={16} color="#000000" />}
         />
-        <View style={[styles.authDividerRow, { flexDirection: "row", alignItems: "center", gap: SPACING.lg, marginVertical: SPACING.xl4 }]}>
-          <View style={[styles.divider, { flex: 1, height: 1, backgroundColor: COLORS.border }]} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={[styles.divider, { flex: 1, height: 1, backgroundColor: COLORS.border }]} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg, marginVertical: spacing.xl4 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: borderColor }} />
+          <Text style={{ color: mutedColor, fontSize: 11 }}>or</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: borderColor }} />
         </View>
-        <View style={{ gap: SPACING.lg }}>
+        <View style={{ gap: spacing.lg }}>
           {OAUTH_PROVIDERS.map((provider) => (
             <Pressable
               key={provider.strategy}
-              style={[styles.oauthButton, { minHeight: 52, borderRadius: RADIUS.input, backgroundColor: COLORS.cardSoft, borderWidth: 1, borderColor: COLORS.border, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: SPACING.lg }]}
+              style={{ minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: spacing.lg }}
               onPress={() => handleOAuth(provider.strategy)}
               disabled={oauthProvider !== null}
             >
               {oauthProvider === provider.strategy ? (
-                <ActivityIndicator color={COLORS.text} />
+                <ActivityIndicator color={textColor} />
               ) : (
-                <Icon name={provider.icon} size={18} color={COLORS.text} />
+                <AppIcon name={provider.icon} size={18} color={textColor} />
               )}
-              <Text style={[styles.oauthButtonText, { color: COLORS.text }]}>
+              <Text style={{ color: textColor, fontSize: 14, fontWeight: "600" }}>
                 {oauthProvider === provider.strategy ? `Connecting to ${provider.label}...` : `Continue with ${provider.label}`}
               </Text>
             </Pressable>
@@ -305,9 +314,9 @@ export function RegisterScreen({ navigation }: Props) {
         <View nativeID="clerk-captcha" />
       </View>
 
-      <Text style={[styles.authBottomText, { color: COLORS.muted, marginTop: SPACING.xl5 }]}>
+      <Text style={[{ color: mutedColor, fontSize: 13, textAlign: "center" }, { marginTop: spacing.xl5 }]}>
         Already have an account?{" "}
-        <Text style={[styles.linkTextInline, { fontWeight: "700" }]} onPress={() => navigation.replace("Login")}>
+        <Text style={[{ color: accent, fontWeight: "700" }]} onPress={() => navigation.replace("Login")}>
           Sign In
         </Text>
       </Text>

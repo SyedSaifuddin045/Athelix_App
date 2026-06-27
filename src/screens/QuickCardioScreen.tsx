@@ -8,9 +8,9 @@ import { getCardioActivity } from "../utils/cardio";
 import { iconForActivity } from "../utils/cardio";
 import { createWorkoutSessionWorkoutSessionsPost } from "../api/endpoints/workout-sessions/workout-sessions";
 import { createExerciseSetWorkoutSessionsSessionIdSetsPost } from "../api/endpoints/workout-sessions/workout-sessions";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { RpeStepper } from "../components/ui/RpeStepper";
@@ -42,6 +42,13 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
@@ -124,53 +131,53 @@ export function QuickCardioScreen({ navigation, route }: Props) {
     return (
       <Screen>
         <BackHeader title="Finish" onBack={() => setPhase("paused")} />
-        <View style={{ flex: 1, paddingTop: SPACING.xl3, gap: SPACING.xl2 }}>
+        <View style={{ flex: 1, paddingTop: spacing.xl3, gap: spacing.xl2 }}>
           <View style={{ alignItems: "center" }}>
-            <Text style={{ fontSize: 20, color: COLORS.text, fontWeight: "700" }}>{activity.label}</Text>
-            <Text style={{ fontSize: 14, color: COLORS.muted, marginTop: SPACING.xs }}>Duration: {formatTimer(elapsedSec)}</Text>
+            <Text style={{ fontSize: 20, color: textColor, fontWeight: "700" }}>{activity.label}</Text>
+            <Text style={{ fontSize: 14, color: mutedColor, marginTop: spacing.xs }}>Duration: {formatTimer(elapsedSec)}</Text>
           </View>
 
           <View>
-            <Text style={[styles.detailLabel, { marginBottom: SPACING.sm }]}>Distance (km)</Text>
+            <Text style={[{ color: mutedColor, fontSize: 11, lineHeight: 16 }, { marginBottom: spacing.sm }]}>Distance (km)</Text>
             <TextInput
               value={distanceKm}
               onChangeText={setDistanceKm}
               keyboardType="decimal-pad"
               placeholder="0.0"
-              placeholderTextColor={COLORS.faint}
+              placeholderTextColor={faintColor}
               style={{
-                backgroundColor: COLORS.cardSoft,
-                color: COLORS.text,
+                backgroundColor: surfaceHover,
+                color: textColor,
                 fontSize: 20,
                 fontWeight: "600",
-                padding: SPACING.md,
-                borderRadius: RADIUS.card,
+                padding: spacing.md,
+                borderRadius: radii.card,
                 borderWidth: 1,
-                borderColor: COLORS.border,
+                borderColor: borderColor,
               }}
             />
           </View>
 
           <View>
-            <Text style={[styles.detailLabel, { marginBottom: SPACING.sm }]}>RPE (1-10)</Text>
+            <Text style={[{ color: mutedColor, fontSize: 11, lineHeight: 16 }, { marginBottom: spacing.sm }]}>RPE (1-10)</Text>
             <RpeStepper value={rpe} onChange={setRpe} />
           </View>
 
           <View>
-            <Text style={[styles.detailLabel, { marginBottom: SPACING.sm }]}>Notes (optional)</Text>
+            <Text style={[{ color: mutedColor, fontSize: 11, lineHeight: 16 }, { marginBottom: spacing.sm }]}>Notes (optional)</Text>
             <TextInput
               value={notes}
               onChangeText={setNotes}
               placeholder="How did it feel?"
-              placeholderTextColor={COLORS.faint}
+              placeholderTextColor={faintColor}
               style={{
-                backgroundColor: COLORS.cardSoft,
-                color: COLORS.text,
+                backgroundColor: surfaceHover,
+                color: textColor,
                 fontSize: 16,
-                padding: SPACING.md,
-                borderRadius: RADIUS.card,
+                padding: spacing.md,
+                borderRadius: radii.card,
                 borderWidth: 1,
-                borderColor: COLORS.border,
+                borderColor: borderColor,
                 minHeight: 60,
                 textAlignVertical: "top",
               }}
@@ -179,9 +186,9 @@ export function QuickCardioScreen({ navigation, route }: Props) {
           </View>
 
           {estimatedCalories ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.sm }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
               <Text style={{ fontSize: 16 }}>🔥</Text>
-              <Text style={{ fontSize: 16, color: COLORS.text, fontWeight: "600" }}>
+              <Text style={{ fontSize: 16, color: textColor, fontWeight: "600" }}>
                 ~{estimatedCalories} kcal estimated
               </Text>
             </View>
@@ -191,13 +198,13 @@ export function QuickCardioScreen({ navigation, route }: Props) {
             <View
               style={{
                 backgroundColor: "rgba(239,68,68,0.12)",
-                borderRadius: RADIUS.card,
-                padding: SPACING.md,
+                borderRadius: radii.card,
+                padding: spacing.md,
                 borderWidth: 1,
                 borderColor: "rgba(239,68,68,0.25)",
               }}
             >
-              <Text style={{ color: COLORS.red, fontSize: 13 }}>{error}</Text>
+              <Text style={{ color: redColor, fontSize: 13 }}>{error}</Text>
             </View>
           ) : null}
 
@@ -217,7 +224,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   return (
     <Screen>
       <BackHeader title={activity.label} onBack={() => navigation.goBack()} />
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: SPACING.xl4 }}>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xl4 }}>
         <View
           style={{
             width: 80,
@@ -230,19 +237,19 @@ export function QuickCardioScreen({ navigation, route }: Props) {
         >
           <Text style={{ fontSize: 36 }}>{iconForActivity(route.params.activityType)}</Text>
         </View>
-        <Text style={{ fontSize: 22, color: COLORS.text, fontWeight: "700" }}>{activity.label}</Text>
-        <Text style={{ fontSize: 48, color: COLORS.text, fontWeight: "200", fontVariant: ["tabular-nums"] }}>
+        <Text style={{ fontSize: 22, color: textColor, fontWeight: "700" }}>{activity.label}</Text>
+        <Text style={{ fontSize: 48, color: textColor, fontWeight: "200", fontVariant: ["tabular-nums"] }}>
           {formatTimer(elapsedSec)}
         </Text>
         {isRunning ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.xs }}>
-            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.red }} />
-            <Text style={{ color: COLORS.red, fontSize: 12, fontWeight: "600" }}>REC</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: redColor }} />
+            <Text style={{ color: redColor, fontSize: 12, fontWeight: "600" }}>REC</Text>
           </View>
         ) : (
           <View style={{ height: 20 }} />
         )}
-        <View style={{ flexDirection: "row", gap: SPACING.xl2 }}>
+        <View style={{ flexDirection: "row", gap: spacing.xl2 }}>
           {phase === "idle" ? (
             <PrimaryButton label="Start" onPress={startTimer} />
           ) : (

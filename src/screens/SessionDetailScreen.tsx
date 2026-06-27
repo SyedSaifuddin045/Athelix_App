@@ -5,20 +5,21 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
+import { useTheme } from "@tamagui/core";
 import { useSessionDetailQuery, useExercisesQuery } from "../api/queries";
 import { updateWorkoutSessionWorkoutSessionsSessionIdPatch, deleteWorkoutSessionWorkoutSessionsSessionIdDelete } from "../api/endpoints/workout-sessions/workout-sessions";
 import { getApiErrorMessage } from "../api/client";
 import { queryKeys } from "../api/queryKeys";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton, RoundButton, IconButton } from "../components/ui/Button";
 import { Tag } from "../components/ui/Indicators";
 import { DetailStat } from "../components/ui/Stats";
 import { ConfirmDialog } from "../components/ui/Modal";
-import { Icon, type IconName } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
+import type { IconName } from "../components/ui/Icon";
 import { exerciseLookup, groupSetsByExercise } from "../utils/mapping";
 import { workoutTitle, muscleAccentColor } from "../utils/display";
 import { formatDateLabel, formatVolume, formatKg, formatCalories, formatDurationSec, formatDistanceM } from "../utils/format";
@@ -51,6 +52,17 @@ export function SessionDetailScreen({ navigation, route }: Props) {
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
   const exerciseGroups = useMemo(() => groupSetsByExercise(detail.data?.sets ?? [], lookup), [detail.data?.sets, lookup]);
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const orangeColor = theme.colorOrange?.toString() ?? "#F59E0B";
+  const surfaceColor = theme.surface?.toString() ?? "#0D0D0D";
+  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
 
   const confirmDelete = async () => {
     if (!sessionId) return;
@@ -124,85 +136,85 @@ export function SessionDetailScreen({ navigation, route }: Props) {
         onBack={() => navigation.goBack()}
         right={
           <RoundButton onPress={() => setShowMenu((v) => !v)}>
-            <View style={{ opacity: 0.7 }}><Icon name="more-horizontal" size={16} color={COLORS.text} /></View>
+            <View style={{ opacity: 0.7 }}><AppIcon name="more-horizontal" size={16} color={textColor} /></View>
           </RoundButton>
         }
       />
 
-      <View style={{ marginTop: SPACING.xl3 }}>
-        <View style={styles.rowBetween}>
-          <View style={styles.rowGap}>
+      <View style={{ marginTop: spacing.xl3 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             {moodIcon ? (
-              <View style={{ width: 44, height: 44, borderRadius: RADIUS.iconWrap, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }}>
-                <Icon name={moodIcon} size={22} color={COLORS.teal} />
+              <View style={{ width: 44, height: 44, borderRadius: radii.iconWrap, backgroundColor: surfaceHover, alignItems: "center", justifyContent: "center" }}>
+                <AppIcon name={moodIcon} size={22} color={accent} />
               </View>
             ) : (
-              <View style={{ width: 44, height: 44, borderRadius: RADIUS.iconWrap, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }}>
-                <Icon name="check" size={22} color={COLORS.teal} />
+              <View style={{ width: 44, height: 44, borderRadius: radii.iconWrap, backgroundColor: surfaceHover, alignItems: "center", justifyContent: "center" }}>
+                <AppIcon name="check" size={22} color={accent} />
               </View>
             )}
             <View>
-              <Text style={styles.heroTitle}>{workoutTitle(session)}</Text>
-              <Text style={styles.detailLabel}>{formatDateLabel(session.started_at)}</Text>
+              <Text style={{ color: textColor, fontSize: 21, fontWeight: "900" }}>{workoutTitle(session)}</Text>
+              <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>{formatDateLabel(session.started_at)}</Text>
             </View>
           </View>
-          {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR!`} color={COLORS.gold} /> : null}
+          {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR!`} color={goldColor} /> : null}
         </View>
-        <View style={[{ flexDirection: "row", gap: SPACING.xl, marginTop: SPACING.xl2 }]}>
-          <DetailStat icon="clock" value={`${session.duration_minutes ?? 0}m`} label="Duration" color={COLORS.teal} />
-          <DetailStat icon="list-checks" value={String(session.total_sets ?? session.sets.length)} label="Sets" color={COLORS.teal} />
-          <DetailStat icon="gauge" value={formatVolume(session.total_volume)} label="Volume" color={COLORS.teal} />
+        <View style={[{ flexDirection: "row", gap: spacing.xl, marginTop: spacing.xl2 }]}>
+          <DetailStat icon="clock" value={`${session.duration_minutes ?? 0}m`} label="Duration" color={accent} />
+          <DetailStat icon="list-checks" value={String(session.total_sets ?? session.sets.length)} label="Sets" color={accent} />
+          <DetailStat icon="gauge" value={formatVolume(session.total_volume)} label="Volume" color={accent} />
           {(session.calories_burned ?? 0) > 0 ? (
             <DetailStat icon="flame" value={formatCalories(session.calories_burned)} label="Calories" color="#FF5A36" />
           ) : null}
         </View>
       </View>
 
-      <View style={{ gap: SPACING.xl, marginTop: SPACING.xl3 }}>
+      <View style={{ gap: spacing.xl, marginTop: spacing.xl3 }}>
         {exerciseGroups.map((exercise) => {
           const isCardioEx = lookup.get(exercise.exerciseId)?.exercise_category === "cardio";
           const exCalories = exercise.sets.reduce((sum, s) => sum + (s.calories_burned ?? 0), 0);
           return (
-          <Card key={exercise.name} elevated style={{ paddingHorizontal: SPACING.xl3, paddingVertical: 0 }}>
-            <View style={[styles.exerciseHeader, { flexDirection: "row", alignItems: "center", gap: SPACING.xl, paddingVertical: SPACING.xl2, borderBottomWidth: 1, borderBottomColor: COLORS.border }]}>
-              <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? COLORS.teal }} />
-              <Text style={[styles.listRowTitle, { flex: 1, fontSize: 14 }]}>{exercise.name}</Text>
+          <Card key={exercise.name} elevated style={{ paddingHorizontal: spacing.xl3, paddingVertical: 0 }}>
+            <View style={[{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" }, { flexDirection: "row", alignItems: "center", gap: spacing.xl, paddingVertical: spacing.xl2, borderBottomWidth: 1, borderBottomColor: borderColor }]}>
+              <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(lookup.get(exercise.exerciseId)?.target ?? lookup.get(exercise.exerciseId)?.body_part) ?? accent }} />
+              <Text style={[{ color: textColor, fontSize: 13, fontWeight: "700" }, { flex: 1, fontSize: 14 }]}>{exercise.name}</Text>
               {exCalories > 0 ? <Tag label={`${formatCalories(exCalories)} kcal`} color="#FF5A36" /> : null}
-              {exercise.sets.some((set) => set.is_pr) ? <Tag label="PR" color={COLORS.gold} /> : null}
+              {exercise.sets.some((set) => set.is_pr) ? <Tag label="PR" color={goldColor} /> : null}
             </View>
-            <View style={{ paddingVertical: SPACING.xl2 }}>
-              <View style={[styles.sessionGridHeader, { flexDirection: "row", alignItems: "center", gap: SPACING.md, marginBottom: SPACING.lg }]}>
+            <View style={{ paddingVertical: spacing.xl2 }}>
+              <View style={[{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }, { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.lg }]}>
                 {(isCardioEx ? ["Set", "Time", "km", "RPE", "kcal"] : ["Set", "kg", "Reps", "RPE"]).map((label) => (
-                  <Text key={label} style={[styles.gridHeaderText, { flex: 1, color: COLORS.faint, fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center" }]}>
+                  <Text key={label} style={[{ flex: 1, color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1, color: faintColor, fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center" }]}>
                     {label}
                   </Text>
                 ))}
               </View>
-              <View style={{ gap: SPACING.md }}>
+              <View style={{ gap: spacing.md }}>
                 {exercise.sets.map((set) => (
-                  <View key={set.id} style={[styles.sessionGridRow, { flexDirection: "row", alignItems: "center", gap: SPACING.md }]}>
-                    <Text style={[styles.smallStrongText, { width: 28, textAlign: "center", color: set.set_type === "warmup" ? COLORS.orange : COLORS.muted }]}>
+                  <View key={set.id} style={[{ flexDirection: "row", alignItems: "center", gap: 8 }, { flexDirection: "row", alignItems: "center", gap: spacing.md }]}>
+                    <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { width: 28, textAlign: "center", color: set.set_type === "warmup" ? orangeColor : mutedColor }]}>
                       {set.set_type === "warmup" ? "W" : set.set_number}
                     </Text>
                     {isCardioEx ? (
                       <>
-                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{formatDurationSec(set.duration_sec)}</Text>
+                        <View style={[{ flex: 1, minHeight: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }, { flex: 1, minHeight: 34, borderRadius: radii.stepper, backgroundColor: surfaceHover, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }]}>{formatDurationSec(set.duration_sec)}</Text>
                         </View>
-                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{formatDistanceM(set.distance_m)}</Text>
+                        <View style={[{ flex: 1, minHeight: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }, { flex: 1, minHeight: 34, borderRadius: radii.stepper, backgroundColor: surfaceHover, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }]}>{formatDistanceM(set.distance_m)}</Text>
                         </View>
-                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{set.rpe ?? "-"}</Text>
+                        <View style={[{ flex: 1, minHeight: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }, { flex: 1, minHeight: 34, borderRadius: radii.stepper, backgroundColor: surfaceHover, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }]}>{set.rpe ?? "-"}</Text>
                         </View>
-                        <View style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: "rgba(255,90,54,0.1)", alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={[styles.sessionCellText, { color: "#FF5A36", fontSize: 11, fontWeight: "700" }]}>{formatCalories(set.calories_burned)}</Text>
+                        <View style={[{ flex: 1, minHeight: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }, { flex: 1, minHeight: 34, borderRadius: radii.stepper, backgroundColor: "rgba(255,90,54,0.1)", alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }, { color: "#FF5A36", fontSize: 11, fontWeight: "700" }]}>{formatCalories(set.calories_burned)}</Text>
                         </View>
                       </>
                     ) : (
                       [formatKg(set.weight_kg, ""), set.reps ?? "-", set.rpe ?? "-"].map((value, index) => (
-                        <View key={`${set.id}-${index}`} style={[styles.sessionCell, { flex: 1, minHeight: 34, borderRadius: RADIUS.stepper, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={[styles.sessionCellText, { color: COLORS.text, fontSize: 12, fontWeight: "700" }]}>{value}</Text>
+                        <View key={`${set.id}-${index}`} style={[{ flex: 1, minHeight: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }, { flex: 1, minHeight: 34, borderRadius: radii.stepper, backgroundColor: surfaceHover, alignItems: "center", justifyContent: "center" }]}>
+                          <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }]}>{value}</Text>
                         </View>
                       ))
                     )}
@@ -215,66 +227,66 @@ export function SessionDetailScreen({ navigation, route }: Props) {
         })}
       </View>
 
-      <View style={{ marginTop: SPACING.xl5, marginBottom: SPACING.xl7 }}>
-        <PrimaryButton label="Done" onPress={() => navigation.goBack()} icon={<Icon name="check" size={18} color="#000000" />} />
+      <View style={{ marginTop: spacing.xl5, marginBottom: spacing.xl7 }}>
+        <PrimaryButton label="Done" onPress={() => navigation.goBack()} icon={<AppIcon name="check" size={18} color="#000000" />} />
       </View>
 
       <Modal visible={showEdit} transparent animationType="slide" onRequestClose={() => setShowEdit(false)}>
-        <View style={[styles.modalScrim, { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }]}>
+        <View style={[{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }]}>
           <Pressable style={{ flex: 1 }} onPress={() => setShowEdit(false)} />
-          <View style={[styles.bottomSheet, { backgroundColor: COLORS.surface, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: SPACING.xl5, paddingTop: SPACING.xl2, paddingBottom: SPACING.xl6 }]}>
-            <View style={{ width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: COLORS.faint, marginBottom: SPACING.xl3 }} />
-            <Text style={styles.sheetTitle}>Edit Session</Text>
-            <View style={{ marginTop: SPACING.xl3, gap: SPACING.xl2 }}>
+          <View style={[{ backgroundColor: "#111d1b", borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingHorizontal: 24, paddingTop: 14, paddingBottom: 26 }, { backgroundColor: surfaceColor, borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, borderWidth: 1, borderColor: borderColor, paddingHorizontal: spacing.xl5, paddingTop: spacing.xl2, paddingBottom: spacing.xl6 }]}>
+            <View style={{ width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: faintColor, marginBottom: spacing.xl3 }} />
+            <Text style={{ color: textColor, fontSize: 22, fontWeight: "900", textAlign: "center" }}>Edit Session</Text>
+            <View style={{ marginTop: spacing.xl3, gap: spacing.xl2 }}>
               <View>
-                <Text style={styles.inputLabel}>Workout Name</Text>
+                <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginBottom: 6 }}>Workout Name</Text>
                 <TextInput
-                  style={[styles.textArea, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+                  style={[{ width: "100%", minHeight: 80, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: textColor, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, textAlignVertical: "top" }, { backgroundColor: surfaceHover, borderColor: borderColor, color: textColor, borderRadius: radii.input }]}
                   value={editName}
                   onChangeText={setEditName}
                   placeholder="Workout name"
-                  placeholderTextColor={COLORS.faint}
+                  placeholderTextColor={faintColor}
                   multiline
                 />
               </View>
               <View>
-                <Text style={styles.inputLabel}>Mood</Text>
+                <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginBottom: 6 }}>Mood</Text>
                 <TextInput
-                  style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+                  style={[{ width: "100%", minHeight: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: textColor, paddingHorizontal: 16, fontSize: 14 }, { backgroundColor: surfaceHover, borderColor: borderColor, color: textColor, borderRadius: radii.input }]}
                   value={editMood}
                   onChangeText={setEditMood}
                   placeholder="Tired, Okay, Good, Strong, Beast"
-                  placeholderTextColor={COLORS.faint}
+                  placeholderTextColor={faintColor}
                 />
               </View>
               <View>
-                <Text style={styles.inputLabel}>Notes</Text>
+                <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontWeight: "600", marginBottom: 6 }}>Notes</Text>
                 <TextInput
-                  style={[styles.textArea, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+                  style={[{ width: "100%", minHeight: 80, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: textColor, paddingHorizontal: 16, paddingVertical: 12, fontSize: 14, textAlignVertical: "top" }, { backgroundColor: surfaceHover, borderColor: borderColor, color: textColor, borderRadius: radii.input }]}
                   value={editNotes}
                   onChangeText={setEditNotes}
                   placeholder="Add notes..."
-                  placeholderTextColor={COLORS.faint}
+                  placeholderTextColor={faintColor}
                   multiline
                 />
               </View>
             </View>
-            <PrimaryButton label="Save Changes" onPress={() => void saveEdit()} icon={<Icon name="check" size={16} color="#000000" />} style={{ marginTop: SPACING.xl3 }} />
-            <PrimaryButton label="Cancel" onPress={() => setShowEdit(false)} subtle style={{ marginTop: SPACING.lg }} />
+            <PrimaryButton label="Save Changes" onPress={() => void saveEdit()} icon={<AppIcon name="check" size={16} color="#000000" />} style={{ marginTop: spacing.xl3 }} />
+            <PrimaryButton label="Cancel" onPress={() => setShowEdit(false)} subtle style={{ marginTop: spacing.lg }} />
           </View>
         </View>
       </Modal>
 
       <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
-        <Pressable style={[styles.menuModalBackdrop, { flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 60, paddingRight: SPACING.xl4 }]} onPress={() => setShowMenu(false)}>
-          <View style={[styles.menuModalContent, { width: 170, borderRadius: RADIUS.cardSmall, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, paddingVertical: SPACING.sm }]}>
-            <Pressable style={[styles.menuItem, { flexDirection: "row", alignItems: "center", gap: SPACING.lg, paddingHorizontal: SPACING.xl2, paddingVertical: SPACING.xl }]} onPress={handleEdit} hitSlop={12}>
-              <Icon name="pencil" size={14} color={COLORS.muted} />
-              <Text style={styles.menuItemText}>Edit session</Text>
+        <Pressable style={[{ flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 60, paddingRight: 20 }, { flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 60, paddingRight: spacing.xl4 }]} onPress={() => setShowMenu(false)}>
+          <View style={[{ width: 170, borderRadius: 18, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 6 }, { width: 170, borderRadius: radii.cardSmall, backgroundColor: surfaceColor, borderWidth: 1, borderColor: borderColor, paddingVertical: spacing.sm }]}>
+            <Pressable style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 }, { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl }]} onPress={handleEdit} hitSlop={12}>
+              <AppIcon name="pencil" size={14} color={mutedColor} />
+              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Edit session</Text>
             </Pressable>
-            <Pressable style={[styles.menuItem, { flexDirection: "row", alignItems: "center", gap: SPACING.lg, paddingHorizontal: SPACING.xl2, paddingVertical: SPACING.xl }]} onPress={handleDelete} hitSlop={12}>
-              <Icon name="trash-2" size={14} color={COLORS.red} />
-              <Text style={[styles.menuItemText, { color: COLORS.red }]}>Delete session</Text>
+            <Pressable style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 }, { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl }]} onPress={handleDelete} hitSlop={12}>
+              <AppIcon name="trash-2" size={14} color={redColor} />
+              <Text style={[{ color: "rgba(255,255,255,0.75)", fontSize: 13 }, { color: redColor }]}>Delete session</Text>
             </Pressable>
           </View>
         </Pressable>

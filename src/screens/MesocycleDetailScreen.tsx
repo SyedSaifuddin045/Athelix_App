@@ -3,18 +3,18 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
+import { useTheme } from "@tamagui/core";
 import { useMesocycleDetailQuery, useMesocycleAnalyticsQuery } from "../api/queries";
 import { useDeleteMesocycle } from "../api/mutations";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader, RoundButton } from "../components/ui/Button";
 import { ProgressBar } from "../components/ui/Indicators";
 import { MetaInline, AnalyticsCard } from "../components/ui/Stats";
 import { SectionEyebrow } from "../components/ui/Indicators";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { workoutTitle } from "../utils/display";
 import { formatShortDate, formatVolume } from "../utils/format";
 import { toNumberId } from "../utils/helpers";
@@ -30,6 +30,15 @@ export function MesocycleDetailScreen({ navigation, route }: Props) {
   const detail = useMesocycleDetailQuery(mesocycleId, isAuthenticated);
   const analytics = useMesocycleAnalyticsQuery(mesocycleId, undefined, isAuthenticated);
   const deleteMeso = useDeleteMesocycle({ onSuccess: () => navigation.replace("MesocycleList") });
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const purpleColor = theme.colorPurple?.toString() ?? "#8B5CF6";
+  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
 
   if (detail.isPending) {
     return (
@@ -63,74 +72,74 @@ export function MesocycleDetailScreen({ navigation, route }: Props) {
         onBack={() => navigation.goBack()}
         right={
           <RoundButton onPress={() => mesocycleId && deleteMeso.mutate(mesocycleId)} accent>
-            <Icon name="trash-2" size={15} color={COLORS.red} />
+            <AppIcon name="trash-2" size={15} color={redColor} />
           </RoundButton>
         }
       />
 
-      <Card elevated accent="purple" style={{ marginTop: SPACING.xl3 }}>
-        <View style={styles.rowGap}>
-          <View style={[styles.statusDot, { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.teal }]} />
-          <Text style={[styles.smallStrongText, { color: COLORS.teal }]}>{meso.ended_on ? "COMPLETE" : "ACTIVE"}</Text>
+      <Card elevated accent="purple" style={{ marginTop: spacing.xl3 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={[{ width: 8, height: 8, borderRadius: 4, backgroundColor: accent }]} />
+          <Text style={[{ color: accent, fontSize: 11, fontWeight: "700" }]}>{meso.ended_on ? "COMPLETE" : "ACTIVE"}</Text>
         </View>
-        <Text style={[styles.heroTitle, { marginTop: SPACING.lg }]}>{meso.name}</Text>
-        <Text style={[styles.detailLabel, { marginTop: SPACING.xxs }]}>{meso.goal ?? "Training block"}</Text>
-        <View style={[styles.rowBetween, { marginTop: SPACING.xl3 }]}>
-          <Text style={styles.detailLabel}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
-          <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>{Math.round(progress)}%</Text>
+        <Text style={[{ color: textColor, fontSize: 21, fontWeight: "900" }, { marginTop: spacing.lg }]}>{meso.name}</Text>
+        <Text style={[{ color: mutedColor, fontSize: 11, lineHeight: 16 }, { marginTop: spacing.xxs }]}>{meso.goal ?? "Training block"}</Text>
+        <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, { marginTop: spacing.xl3 }]}>
+          <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
+          <Text style={[{ color: purpleColor, fontSize: 11, fontWeight: "700" }]}>{Math.round(progress)}%</Text>
         </View>
-        <View style={{ marginTop: SPACING.md }}>
-          <ProgressBar value={progress} color={COLORS.purple} />
+        <View style={{ marginTop: spacing.md }}>
+          <ProgressBar value={progress} color={purpleColor} />
         </View>
-        <View style={[styles.rowGapLarge, { marginTop: SPACING.xl3, flexWrap: "wrap", gap: SPACING.xl }]}>
+        <View style={[{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap" }, { marginTop: spacing.xl3, flexWrap: "wrap", gap: spacing.xl }]}>
           <MetaInline icon="calendar" label={`${formatShortDate(meso.started_on)} -> ${formatShortDate(meso.ended_on)}`} />
           <MetaInline icon="list-checks" label={`${meso.sessions.length} sessions logged`} />
         </View>
       </Card>
 
-      <Card elevated accent="purple" style={{ marginTop: SPACING.xl2 }}>
-        <View style={styles.rowGap}>
-          <Icon name="lock" size={13} color={COLORS.purple} />
-          <Text style={[styles.listRowTitle, { color: COLORS.purple }]}>Block Analytics</Text>
+      <Card elevated accent="purple" style={{ marginTop: spacing.xl2 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <AppIcon name="lock" size={13} color={purpleColor} />
+          <Text style={[{ color: textColor, fontSize: 13, fontWeight: "700" }, { color: purpleColor }]}>Block Analytics</Text>
         </View>
-        <View style={[{ flexDirection: "row", flexWrap: "wrap", gap: SPACING.lg, marginTop: SPACING.xl2 }]}>
-          <AnalyticsCard label="vs. Previous Block" value={delta ? formatVolume(delta.total_volume_load_delta) : "-"} sub="volume delta" color={COLORS.green} />
-          <AnalyticsCard label="Deload Suggestion" value={analytics.data?.deload_suggestion.is_recommended ? "Yes" : "No"} sub="based on high RPE weeks" color={COLORS.text} />
-          <AnalyticsCard label="Total Sets" value={String(summary?.total_sets ?? 0)} sub="current block" color={COLORS.green} />
-          <AnalyticsCard label="Avg Session RPE" value={summary?.average_session_rpe?.toFixed(1) ?? "-"} sub="current block" color={COLORS.green} />
+        <View style={[{ flexDirection: "row", flexWrap: "wrap", gap: spacing.lg, marginTop: spacing.xl2 }]}>
+          <AnalyticsCard label="vs. Previous Block" value={delta ? formatVolume(delta.total_volume_load_delta) : "-"} sub="volume delta" color={greenColor} />
+          <AnalyticsCard label="Deload Suggestion" value={analytics.data?.deload_suggestion.is_recommended ? "Yes" : "No"} sub="based on high RPE weeks" color={textColor} />
+          <AnalyticsCard label="Total Sets" value={String(summary?.total_sets ?? 0)} sub="current block" color={greenColor} />
+          <AnalyticsCard label="Avg Session RPE" value={summary?.average_session_rpe?.toFixed(1) ?? "-"} sub="current block" color={greenColor} />
         </View>
         <Pressable
           onPress={() => navigation.navigate({ name: "MuscleBalance", params: { mesocycleId: mesocycleId ?? undefined } })}
-          style={[styles.analyticsLink, { marginTop: SPACING.xl2, borderRadius: RADIUS.input, backgroundColor: "rgba(139,92,246,0.12)", paddingHorizontal: SPACING.xl2, paddingVertical: SPACING.xl2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+          style={[{ marginTop: spacing.xl2, borderRadius: radii.input, backgroundColor: "rgba(139,92,246,0.12)", paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
         >
-          <View style={styles.rowGap}>
-            <Icon name="bar-chart-2" size={14} color={COLORS.purple} />
-            <Text style={[styles.smallStrongText, { color: COLORS.purple }]}>Muscle Balance Analysis</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <AppIcon name="bar-chart-2" size={14} color={purpleColor} />
+            <Text style={[{ color: purpleColor, fontSize: 11, fontWeight: "700" }]}>Muscle Balance Analysis</Text>
           </View>
-          <Icon name="chevron-right" size={13} color={COLORS.purple} />
+          <AppIcon name="chevron-right" size={13} color={purpleColor} />
         </Pressable>
       </Card>
 
-      <View style={{ marginTop: SPACING.xl3 }}>
+      <View style={{ marginTop: spacing.xl3 }}>
         <SectionEyebrow>Linked Sessions</SectionEyebrow>
-        <View style={{ gap: SPACING.lg, marginTop: SPACING.xl }}>
+        <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
           {meso.sessions.map((session) => (
             <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
-              <Card elevated style={[styles.listRowCard, { flexDirection: "row", alignItems: "center", gap: SPACING.lg }]}>
-                <View style={[styles.softIconWrap, { width: 40, height: 40, borderRadius: RADIUS.iconWrap, backgroundColor: COLORS.cardSoft, alignItems: "center", justifyContent: "center" }]}>
-                  <Icon name="list-checks" size={16} color={COLORS.purple} />
+              <Card elevated style={[{ flexDirection: "row", alignItems: "center", gap: spacing.lg }]}>
+                <View style={[{ width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" }, { width: 40, height: 40, borderRadius: radii.iconWrap, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }]}>
+                  <AppIcon name="list-checks" size={16} color={purpleColor} />
                 </View>
-                <View style={[styles.listRowBody, { flex: 1 }]}>
-                  <Text style={styles.listRowTitle}>{workoutTitle(session)}</Text>
-                  <Text style={styles.detailLabel}>
+                <View style={[{ flex: 1 }]}>
+                  <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{workoutTitle(session)}</Text>
+                  <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
                     {formatShortDate(session.started_at)} - {session.total_sets ?? 0} sets - {formatVolume(session.total_volume)}
                   </Text>
                 </View>
-                <Icon name="chevron-right" size={13} color={COLORS.faint} />
+                <AppIcon name="chevron-right" size={13} color={faintColor} />
               </Card>
             </Pressable>
           ))}
-          {meso.sessions.length === 0 ? <Text style={styles.detailLabel}>No sessions linked to this mesocycle yet.</Text> : null}
+          {meso.sessions.length === 0 ? <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>No sessions linked to this mesocycle yet.</Text> : null}
         </View>
       </View>
     </Screen>
