@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { createWrapper, createMockNavigation } from "../../test/test-utils";
 import { queryKeys } from "../../api/queryKeys";
 import type { PersonalRecordResponse, UserOverviewResponse } from "../../api/model";
+import { TamaguiAppProvider } from "../../tamagui/provider";
 import { LoginScreen } from "../../screens/LoginScreen";
 import { HomeScreen } from "../../screens/HomeScreen";
 import { ProgressHubScreen } from "../../screens/ProgressHubScreen";
@@ -57,7 +58,9 @@ describe("LoginScreen", () => {
 
   it("renders login form", () => {
     const { getByText, getByPlaceholderText } = render(
-      <LoginScreen navigation={mockNavigation} />,
+      <TamaguiAppProvider>
+        <LoginScreen navigation={mockNavigation} />
+      </TamaguiAppProvider>,
     );
     expect(getByText("Welcome back")).toBeTruthy();
     expect(getByPlaceholderText("jordan@example.com")).toBeTruthy();
@@ -66,7 +69,7 @@ describe("LoginScreen", () => {
   });
 
   it("shows validation error on empty submit", () => {
-    const { getByText } = render(<LoginScreen navigation={mockNavigation} />);
+    const { getByText } = render(<TamaguiAppProvider><LoginScreen navigation={mockNavigation} /></TamaguiAppProvider>);
     fireEvent.press(getByText("Sign In"));
     expect(getByText("Please fill in all fields.")).toBeTruthy();
   });
@@ -80,7 +83,9 @@ describe("LoginScreen", () => {
     });
 
     const { getByPlaceholderText, getByText } = render(
-      <LoginScreen navigation={mockNavigation} />,
+      <TamaguiAppProvider>
+        <LoginScreen navigation={mockNavigation} />
+      </TamaguiAppProvider>,
     );
 
     fireEvent.changeText(getByPlaceholderText("jordan@example.com"), "test@test.com");
@@ -102,7 +107,9 @@ describe("LoginScreen", () => {
     });
 
     const { getByPlaceholderText, getByText } = render(
-      <LoginScreen navigation={mockNavigation} />,
+      <TamaguiAppProvider>
+        <LoginScreen navigation={mockNavigation} />
+      </TamaguiAppProvider>,
     );
 
     fireEvent.changeText(getByPlaceholderText("jordan@example.com"), "test@test.com");
@@ -116,14 +123,16 @@ describe("LoginScreen", () => {
 
   it("toggles password visibility", () => {
     const { getByPlaceholderText } = render(
-      <LoginScreen navigation={mockNavigation} />,
+      <TamaguiAppProvider>
+        <LoginScreen navigation={mockNavigation} />
+      </TamaguiAppProvider>,
     );
     const input = getByPlaceholderText("••••••••");
     expect(input.props?.secureTextEntry).toBe(true);
   });
 
   it("navigates to register screen", () => {
-    const { getByText } = render(<LoginScreen navigation={mockNavigation} />);
+    const { getByText } = render(<TamaguiAppProvider><LoginScreen navigation={mockNavigation} /></TamaguiAppProvider>);
     fireEvent.press(getByText("Sign Up"));
     expect(mockNavigation.navigate).toHaveBeenCalledWith("Register");
   });

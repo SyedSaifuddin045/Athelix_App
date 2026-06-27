@@ -5,9 +5,10 @@ import * as Updates from "expo-updates";
 import { useAuth } from "@clerk/expo";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
-import { Icon } from "../components/ui/Icon";
+import { useTheme } from "@tamagui/core";
+import { radii } from "../design-system/tokens/radii";
+import { shadows } from "../design-system/tokens/shadows";
+import { AppIcon } from "../design-system/icons/AppIcon";
 
 const CLERK_CACHE_KEYS = [
   "__clerk_client_jwt",
@@ -44,6 +45,7 @@ import { getTokenWithTimeout, setRefreshTokenHandler, updateClerkToken } from ".
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 function AuthGate({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const [isLoadedTimedOut, setIsLoadedTimedOut] = useState(false);
 
@@ -86,11 +88,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (isLoadedTimedOut) {
     return (
-      <View style={{ flex: 1, backgroundColor: COLORS.root, alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <Text style={{ color: COLORS.text, fontSize: 18, textAlign: "center", marginBottom: 8 }}>
+      <View style={{ flex: 1, backgroundColor: theme.background?.toString(), alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <Text style={{ color: theme.color?.toString(), fontSize: 18, textAlign: "center", marginBottom: 8 }}>
           Could not restore session
         </Text>
-        <Text style={{ color: COLORS.muted, fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+        <Text style={{ color: theme.colorMuted?.toString(), fontSize: 14, textAlign: "center", marginBottom: 24 }}>
           We had trouble loading your account. Please try again.
         </Text>
         <TouchableOpacity
@@ -102,7 +104,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
             await Updates.reloadAsync();
           }}
           style={{
-            backgroundColor: COLORS.accent,
+            backgroundColor: theme.accent?.toString(),
             paddingHorizontal: 24,
             paddingVertical: 12,
             borderRadius: 8,
@@ -118,26 +120,26 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!isLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: COLORS.root, alignItems: "center", justifyContent: "center" }}>
+      <View style={{ flex: 1, backgroundColor: theme.background?.toString(), alignItems: "center", justifyContent: "center" }}>
         <View
           style={{
             width: 96,
             height: 96,
-            borderRadius: RADIUS.card,
-            backgroundColor: COLORS.teal,
+            borderRadius: radii.card,
+            backgroundColor: theme.accent?.toString(),
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 24,
-            ...SHADOWS.glow(COLORS.teal),
+            ...shadows.glow(theme.accent?.toString() ?? "#FF5A36"),
           }}
         >
-          <Icon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
+          <AppIcon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
         </View>
-        <Text style={{ color: COLORS.text, fontSize: 24, fontWeight: "700", marginBottom: 32 }}>
+        <Text style={{ color: theme.color?.toString(), fontSize: 24, fontWeight: "700", marginBottom: 32 }}>
           Athelix
         </Text>
-        <ActivityIndicator size="small" color={COLORS.accent} />
-        <Text style={{ color: COLORS.muted, fontSize: 12, marginTop: 16 }}>
+        <ActivityIndicator size="small" color={theme.accent?.toString()} />
+        <Text style={{ color: theme.colorMuted?.toString(), fontSize: 12, marginTop: 16 }}>
           Restoring session...
         </Text>
       </View>

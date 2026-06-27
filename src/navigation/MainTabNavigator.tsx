@@ -3,9 +3,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { View } from "react-native";
 
 import type { TabParamList } from "../types/navigation";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
-import { Icon, type IconName } from "../components/ui/Icon";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../design-system/tokens/spacing";
+import { AppIcon, type IconName } from "../design-system/icons/AppIcon";
 
 import { HomeScreen } from "../screens/HomeScreen";
 import { ExploreScreen } from "../screens/ExploreScreen";
@@ -26,12 +26,13 @@ const TABS: { name: keyof TabParamList; icon: IconName; label: string }[] = [
 function TabIcon({ icon, color, focused }: { icon: IconName; color: string; focused: boolean }) {
   return (
     <View style={{ alignItems: "center", justifyContent: "center" }}>
-      <Icon name={icon} size={focused ? 22 : 20} color={color} strokeWidth={focused ? 2.5 : 2} />
+      <AppIcon name={icon} size={focused ? 22 : 20} color={color} strokeWidth={focused ? 2.5 : 2} />
     </View>
   );
 }
 
 export function MainTabNavigator() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -39,19 +40,19 @@ export function MainTabNavigator() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.tabBar,
-          borderTopColor: COLORS.border,
+          backgroundColor: "rgba(5,5,5,0.96)",
+          borderTopColor: theme.borderColor?.toString(),
           borderTopWidth: 1,
-          paddingTop: SPACING.md,
-          paddingBottom: SPACING.lg + Math.max(insets.bottom, SPACING.sm),
-          height: 70 + Math.max(insets.bottom, SPACING.sm),
+          paddingTop: spacing.md,
+          paddingBottom: spacing.lg + Math.max(insets.bottom, spacing.sm),
+          height: 70 + Math.max(insets.bottom, spacing.sm),
         },
-        tabBarActiveTintColor: COLORS.teal,
-        tabBarInactiveTintColor: COLORS.faint,
+        tabBarActiveTintColor: theme.accent?.toString(),
+        tabBarInactiveTintColor: theme.colorFaint?.toString(),
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "600",
-          marginTop: SPACING.xxs,
+          marginTop: spacing.xxs,
         },
       }}
     >

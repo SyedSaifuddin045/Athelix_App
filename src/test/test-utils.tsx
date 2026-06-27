@@ -2,6 +2,7 @@ import { act } from "react";
 import type { ReactElement } from "react";
 import { render, type RenderOptions } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TamaguiAppProvider } from "../tamagui/provider";
 
 function createTestQueryClient() {
   return new QueryClient({
@@ -20,7 +21,11 @@ export function createWrapper(options?: WrapperOptions) {
   const qc = options?.queryClient ?? createTestQueryClient();
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
-    return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+    return (
+      <TamaguiAppProvider>
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      </TamaguiAppProvider>
+    );
   };
 }
 

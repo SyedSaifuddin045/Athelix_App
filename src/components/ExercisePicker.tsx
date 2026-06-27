@@ -5,14 +5,13 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
-import { COLORS } from "../theme/colors";
-import { Icon } from "../components/ui/Icon";
+import { useTheme } from "@tamagui/core";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { Card } from "../components/ui/Card";
 import { useAllExercisesQuery, useExerciseFiltersQuery, useExercisesQuery } from "../api/queries";
 import type { ExerciseResponse } from "../api/model";
@@ -79,6 +78,13 @@ export function ExercisePicker({
   trackedOnly,
 }: ExercisePickerProps) {
   const screenHeight = useWindowDimensions().height;
+  const theme = useTheme();
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -181,23 +187,23 @@ export function ExercisePicker({
         }
       }}
     >
-      <Card elevated accentColor={muscleAccentColor(exercise.target)} style={styles.exerciseCard}>
-        <View style={styles.exerciseBody}>
+      <Card elevated accentColor={muscleAccentColor(exercise.target)} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 14, marginBottom: 10 }}>
+        <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Text style={styles.exerciseName} numberOfLines={1}>
+            <Text style={{ color: textColor, fontSize: 14, fontWeight: "700" }} numberOfLines={1}>
               {exercise.name}
             </Text>
             {isQuickStart ? (
-              <View style={styles.quickStartBadge}>
-                <Text style={styles.quickStartBadgeText}>QS</Text>
+              <View style={{ backgroundColor: accent + "20", borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+                <Text style={{ color: accent, fontSize: 9, fontWeight: "800", letterSpacing: 0.5 }}>QS</Text>
               </View>
             ) : null}
           </View>
-          <Text style={styles.exerciseDetail} numberOfLines={1}>
+          <Text style={{ color: mutedColor, fontSize: 11, marginTop: 2 }} numberOfLines={1}>
             {exercise.target ?? exercise.body_part ?? "Unknown"} · {exercise.equipment ?? "Unknown"}
           </Text>
         </View>
-        <Icon name={variant === "browse" ? "chevron-right" : "plus"} size={14} color="rgba(255,255,255,0.22)" />
+        <AppIcon name={variant === "browse" ? "chevron-right" : "plus"} size={14} color="rgba(255,255,255,0.22)" />
       </Card>
     </Pressable>
     );
@@ -208,11 +214,11 @@ export function ExercisePicker({
     const accent = muscleAccentColor(item) ?? "rgba(255,255,255,0.2)";
     return (
       <Pressable onPress={() => handleGroupSelect(item)} style={{ flex: 1, maxWidth: "50%" }}>
-        <Card elevated accentColor={accent} style={styles.gridCard}>
-          <Text style={styles.gridCardName} numberOfLines={1}>
+        <Card elevated accentColor={accent} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48, paddingHorizontal: 14, paddingVertical: 10 }}>
+          <Text style={{ color: textColor, fontSize: 14, fontWeight: "700", flex: 1 }} numberOfLines={1}>
             {item}
           </Text>
-          <Text style={styles.gridCardCount}>{count}</Text>
+          <Text style={{ color: mutedColor, fontSize: 12, marginLeft: 8 }}>{count}</Text>
         </Card>
       </Pressable>
     );
@@ -223,13 +229,13 @@ export function ExercisePicker({
     if (selectedGroup) {
       const accent = muscleAccentColor(selectedGroup) ?? "rgba(255,255,255,0.2)";
       return (
-        <View style={styles.listHeader}>
-          <Pressable onPress={handleBack} hitSlop={8} style={styles.backButton}>
-            <Icon name="arrow-left" size={18} color="rgba(255,255,255,0.5)" />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10 }}>
+          <Pressable onPress={handleBack} hitSlop={8} style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)" }}>
+            <AppIcon name="arrow-left" size={18} color="rgba(255,255,255,0.5)" />
           </Pressable>
-          <View style={[styles.listHeaderAccent, { backgroundColor: accent }]} />
-          <Text style={styles.listHeaderTitle}>{selectedGroup}</Text>
-          <Text style={styles.listHeaderCount}>{groupCounts[selectedGroup] ?? 0}</Text>
+          <View style={[{ width: 3, height: 18, borderRadius: 2 }, { backgroundColor: accent }]} />
+          <Text style={{ color: textColor, fontSize: 18, fontWeight: "700" }}>{selectedGroup}</Text>
+          <Text style={{ color: mutedColor, fontSize: 12 }}>{groupCounts[selectedGroup] ?? 0}</Text>
         </View>
       );
     }
@@ -239,25 +245,25 @@ export function ExercisePicker({
   const renderEmpty = () => {
     if (isPending) {
       return (
-        <View style={styles.centerState}>
-          <ActivityIndicator size="small" color={COLORS.teal} />
-          <Text style={styles.stateText}>Loading exercises...</Text>
+        <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
+          <ActivityIndicator size="small" color={accent} />
+          <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center" }}>Loading exercises...</Text>
         </View>
       );
     }
     if (isError) {
       return (
-        <View style={styles.centerState}>
-          <Text style={styles.errorText}>{getApiErrorMessage(error)}</Text>
+        <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
+          <Text style={{ color: redColor, fontSize: 12, flex: 1 }}>{getApiErrorMessage(error)}</Text>
           <Pressable onPress={() => activeQuery.refetch()}>
-            <Text style={styles.retryText}>Retry</Text>
+            <Text style={{ color: accent, fontSize: 12, fontWeight: "700", marginLeft: 12 }}>Retry</Text>
           </Pressable>
         </View>
       );
     }
     return (
-      <View style={styles.centerState}>
-        <Text style={styles.stateText}>No exercises match your search</Text>
+      <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
+        <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center" }}>No exercises match your search</Text>
       </View>
     );
   };
@@ -272,23 +278,23 @@ export function ExercisePicker({
   const showCategoryGrid = (selectedCategory === null || selectedCategory === "strength") && !isSearching && !selectedGroup;
 
   const content = (
-    <View style={variant === "browse" ? styles.browseContainer : styles.pickContainer}>
+    <View style={variant === "browse" ? { flex: 1, paddingHorizontal: 20 } : { flex: 1 }}>
       {variant === "browse" && title ? (
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <View style={{ paddingTop: 12, paddingBottom: 2 }}>
+          <Text style={{ color: textColor, fontSize: 28, fontWeight: "900" }}>{title}</Text>
+          {subtitle ? <Text style={{ color: mutedColor, fontSize: 12, marginTop: 4 }}>{subtitle}</Text> : null}
         </View>
       ) : null}
 
-      <View style={styles.searchRow}>
-        <View style={styles.searchWrap}>
-          <Icon name="search" size={15} color="rgba(255,255,255,0.4)" />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, marginBottom: 14 }}>
+        <View style={{ flex: 1, minHeight: 32, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)", paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <AppIcon name="search" size={15} color="rgba(255,255,255,0.4)" />
           <TextInput
             value={query}
             onChangeText={handleQueryChange}
             placeholder="Search exercises..."
             placeholderTextColor="rgba(255,255,255,0.32)"
-            style={styles.searchInput}
+            style={{ flex: 1, color: textColor, fontSize: 12, paddingVertical: 0 }}
           />
           {query ? (
             <Pressable
@@ -299,7 +305,7 @@ export function ExercisePicker({
               }}
               hitSlop={8}
             >
-              <Icon name="x" size={14} color="rgba(255,255,255,0.42)" />
+              <AppIcon name="x" size={14} color="rgba(255,255,255,0.42)" />
             </Pressable>
           ) : null}
         </View>
@@ -309,35 +315,35 @@ export function ExercisePicker({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.categoryTabScroller}
-        contentContainerStyle={styles.categoryTabRow}
+        style={{ flexGrow: 0, flexShrink: 0, marginBottom: 14 }}
+        contentContainerStyle={{ flexDirection: "row", gap: 20, paddingHorizontal: 2 }}
       >
         {CATEGORIES.map((cat) => (
           <Pressable
             key={cat.label}
             onPress={() => handleCategorySelect(cat.key)}
-            style={[styles.categoryTab, selectedCategory === cat.key ? styles.categoryTabActive : null]}
+            style={[{ paddingVertical: 2 }]}
           >
-            <Text style={[styles.categoryTabText, selectedCategory === cat.key ? styles.categoryTabTextActive : null]}>{cat.label}</Text>
+            <Text style={[{ color: "rgba(255,255,255,0.35)", fontSize: 14, fontWeight: "600" }, selectedCategory === cat.key ? { color: accent, fontWeight: "800" } : null]}>{cat.label}</Text>
           </Pressable>
         ))}
       </ScrollView>
 
       {showFilters ? (
-        <View style={styles.equipChipBar}>
+        <View style={{ marginBottom: 10 }}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={styles.equipChipScroller}
-            contentContainerStyle={styles.equipChipRow}
+            style={{ flexGrow: 0, flexShrink: 0 }}
+            contentContainerStyle={{ gap: 12, paddingHorizontal: 2, alignItems: "center" }}
           >
             {equipmentOptions.map((item) => (
               <Pressable
                 key={item}
                 onPress={() => setEquipment(item)}
-                style={[styles.equipChip, equipment === item ? styles.equipChipActive : null]}
+                style={[{ alignItems: "center", justifyContent: "center", paddingVertical: 8 }]}
               >
-                <Text style={[styles.equipChipText, equipment === item ? styles.equipChipTextActive : null]}>{item}</Text>
+                <Text style={[{ color: "rgba(255,255,255,0.35)", fontSize: 13, fontWeight: "500" }, equipment === item ? { color: accent, fontWeight: "700" } : null]}>{item}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -350,16 +356,16 @@ export function ExercisePicker({
           data={MUSCLE_GROUPS}
           keyExtractor={(item) => item}
           numColumns={2}
-          columnWrapperStyle={styles.gridRow}
+          columnWrapperStyle={{ gap: 8, marginBottom: 8 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          style={styles.flatList}
+          contentContainerStyle={{ paddingBottom: 60, paddingTop: 4 }}
+          style={{ flex: 1 }}
           ListFooterComponent={
             isError ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>{getApiErrorMessage(error)}</Text>
+              <View style={{ borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <Text style={{ color: redColor, fontSize: 12, flex: 1 }}>{getApiErrorMessage(error)}</Text>
                 <Pressable onPress={() => activeQuery.refetch()}>
-                  <Text style={styles.retryText}>Retry</Text>
+                  <Text style={{ color: accent, fontSize: 12, fontWeight: "700", marginLeft: 12 }}>Retry</Text>
                 </Pressable>
               </View>
             ) : null
@@ -369,13 +375,13 @@ export function ExercisePicker({
       ) : (
         <View style={{ flex: 1 }}>
           {!isSearching && selectedGroup ? (
-            <View style={styles.listHeader}>
-              <Pressable onPress={handleBack} hitSlop={8} style={styles.backButton}>
-                <Icon name="arrow-left" size={16} color="rgba(255,255,255,0.5)" />
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10 }}>
+              <Pressable onPress={handleBack} hitSlop={8} style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)" }}>
+                <AppIcon name="arrow-left" size={16} color="rgba(255,255,255,0.5)" />
               </Pressable>
-              <View style={[styles.listHeaderAccent, { backgroundColor: muscleAccentColor(selectedGroup) ?? "rgba(255,255,255,0.2)" }]} />
-              <Text style={styles.listHeaderTitle}>{selectedGroup}</Text>
-              <Text style={styles.listHeaderCount}>{groupCounts[selectedGroup] ?? 0}</Text>
+              <View style={[{ width: 3, height: 18, borderRadius: 2 }, { backgroundColor: muscleAccentColor(selectedGroup) ?? "rgba(255,255,255,0.2)" }]} />
+              <Text style={{ color: textColor, fontSize: 18, fontWeight: "700" }}>{selectedGroup}</Text>
+              <Text style={{ color: mutedColor, fontSize: 12 }}>{groupCounts[selectedGroup] ?? 0}</Text>
             </View>
           ) : null}
           <FlatList
@@ -383,8 +389,8 @@ export function ExercisePicker({
             data={gridExercises}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            style={styles.flatList}
+            contentContainerStyle={{ paddingBottom: 60, paddingTop: 4 }}
+            style={{ flex: 1 }}
             ListEmptyComponent={renderEmpty}
             renderItem={({ item }) => renderExerciseItem(item)}
           />
@@ -396,13 +402,13 @@ export function ExercisePicker({
   if (variant === "pick") {
     return (
       <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-        <View style={styles.modalScrim}>
-          <Pressable style={styles.modalBackdrop} onPress={onClose} />
-          <View style={[styles.bottomSheet, { height: screenHeight * 0.78 }]}>
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>{title}</Text>
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }}>
+          <Pressable style={{ flex: 1 }} onPress={onClose} />
+          <View style={[{ backgroundColor: "#111d1b", borderTopLeftRadius: 28, borderTopRightRadius: 28, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", overflow: "hidden", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 20 }, { height: screenHeight * 0.78 }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ color: textColor, fontSize: 22, fontWeight: "900" }}>{title}</Text>
               <Pressable onPress={onClose} hitSlop={8}>
-                <Icon name="x" size={18} color="rgba(255,255,255,0.5)" />
+                <AppIcon name="x" size={18} color="rgba(255,255,255,0.5)" />
               </Pressable>
             </View>
             <View style={{ flex: 1, marginTop: 10 }}>{content}</View>
@@ -414,256 +420,3 @@ export function ExercisePicker({
 
   return content;
 }
-
-const styles = StyleSheet.create({
-  browseContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  pickContainer: {
-    flex: 1,
-  },
-  headerRow: {
-    paddingTop: 12,
-    paddingBottom: 2,
-  },
-  title: {
-    color: COLORS.text,
-    fontSize: 28,
-    fontWeight: "900",
-  },
-  subtitle: {
-    color: COLORS.muted,
-    fontSize: 12,
-    marginTop: 4,
-  },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-    marginBottom: 14,
-  },
-  searchWrap: {
-    flex: 1,
-    minHeight: 32,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
-    paddingHorizontal: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.text,
-    fontSize: 12,
-    paddingVertical: 0,
-  },
-  categoryTabScroller: {
-    flexGrow: 0,
-    flexShrink: 0,
-    marginBottom: 14,
-  },
-  equipChipBar: {
-    marginBottom: 10,
-  },
-  equipChipScroller: {
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  equipChipRow: {
-    gap: 12,
-    paddingHorizontal: 2,
-    alignItems: "center",
-  },
-  equipChip: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  equipChipActive: {},
-  equipChipText: {
-    color: "rgba(255,255,255,0.35)",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  equipChipTextActive: {
-    color: COLORS.teal,
-    fontWeight: "700",
-  },
-  categoryTabRow: {
-    flexDirection: "row",
-    gap: 20,
-    paddingHorizontal: 2,
-  },
-  categoryTab: {
-    paddingVertical: 2,
-  },
-  categoryTabActive: {},
-  categoryTabText: {
-    color: "rgba(255,255,255,0.35)",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  categoryTabTextActive: {
-    color: COLORS.teal,
-    fontWeight: "800",
-  },
-  gridRow: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  gridCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: 48,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  gridCardName: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: "700",
-    flex: 1,
-  },
-  gridCardCount: {
-    color: COLORS.muted,
-    fontSize: 12,
-    marginLeft: 8,
-  },
-  listHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingBottom: 10,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.09)",
-  },
-  listHeaderAccent: {
-    width: 3,
-    height: 18,
-    borderRadius: 2,
-  },
-  listHeaderTitle: {
-    color: COLORS.text,
-    fontSize: 18,
-    fontWeight: "700",
-  },
-  listHeaderCount: {
-    color: COLORS.muted,
-    fontSize: 12,
-  },
-  flatList: {
-    flex: 1,
-  },
-  exerciseCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    marginBottom: 10,
-  },
-  exerciseBody: {
-    flex: 1,
-  },
-  exerciseName: {
-    color: COLORS.text,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  quickStartBadge: {
-    backgroundColor: COLORS.teal + "20",
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  quickStartBadgeText: {
-    color: COLORS.teal,
-    fontSize: 9,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  exerciseDetail: {
-    color: COLORS.muted,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  listContent: {
-    paddingBottom: 60,
-    paddingTop: 4,
-  },
-  centerState: {
-    alignItems: "center",
-    paddingVertical: 40,
-    gap: 8,
-  },
-  stateText: {
-    color: COLORS.muted,
-    fontSize: 14,
-    textAlign: "center",
-  },
-  errorBox: {
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: "rgba(239,68,68,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.25)",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  errorText: {
-    color: COLORS.red,
-    fontSize: 12,
-    flex: 1,
-  },
-  retryText: {
-    color: COLORS.teal,
-    fontSize: 12,
-    fontWeight: "700",
-    marginLeft: 12,
-  },
-  modalScrim: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.72)",
-  },
-  modalBackdrop: {
-    flex: 1,
-  },
-  bottomSheet: {
-    backgroundColor: "#111d1b",
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    overflow: "hidden",
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 20,
-  },
-  sheetHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  sheetTitle: {
-    color: COLORS.text,
-    fontSize: 22,
-    fontWeight: "900",
-  },
-});

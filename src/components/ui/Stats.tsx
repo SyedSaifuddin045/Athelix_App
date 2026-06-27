@@ -1,9 +1,9 @@
 import { Text, View } from "react-native";
 
-import { COLORS } from "../../theme/colors";
-import { SPACING, RADIUS } from "../../theme/spacing";
-import { styles } from "../../theme/styles";
-import { Icon, type IconName } from "./Icon";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../../design-system/tokens/spacing";
+import { radii } from "../../design-system/tokens/radii";
+import { AppIcon, type IconName } from "../../design-system/icons/AppIcon";
 import { Card } from "./Card";
 
 export function StatPill({
@@ -17,13 +17,14 @@ export function StatPill({
   label: string;
   color?: string;
 }) {
+  const theme = useTheme();
   return (
-    <View style={[styles.statPill, { gap: SPACING.xxs }]}>
+    <View style={{ flex: 1, alignItems: "center", gap: spacing.xxs }}>
       {icon ? (
-        <Icon name={icon} size={16} color={color ?? COLORS.muted} />
+        <AppIcon name={icon} size={16} color={color ?? theme.colorMuted?.toString()} />
       ) : null}
-      <Text style={[styles.statPillValue, color ? { color } : null]}>{value}</Text>
-      <Text style={styles.statPillLabel}>{label}</Text>
+      <Text style={[{ color: theme.color?.toString(), fontSize: 15, fontWeight: "800" }, color ? { color } : null]}>{value}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.38)", fontSize: 10 }}>{label}</Text>
     </View>
   );
 }
@@ -39,24 +40,25 @@ export function CompactStatCard({
   label: string;
   color?: string;
 }) {
+  const theme = useTheme();
   return (
-    <Card elevated style={[styles.compactStatCard, { gap: SPACING.xs }]}>
+    <Card elevated style={[{ flex: 1, alignItems: "center", justifyContent: "center", minHeight: 82 }, { gap: spacing.xs }]}>
       {icon ? (
         <View
           style={{
             width: 32,
             height: 32,
-            borderRadius: RADIUS.iconWrap,
-            backgroundColor: color ? `${color}18` : COLORS.cardSoft,
+            borderRadius: radii.iconWrap,
+            backgroundColor: color ? `${color}18` : theme.surface2?.toString(),
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Icon name={icon} size={14} color={color ?? COLORS.muted} />
+          <AppIcon name={icon} size={14} color={color ?? theme.colorMuted?.toString()} />
         </View>
       ) : null}
-      <Text style={[styles.compactStatValue, color ? { color } : null]}>{value}</Text>
-      <Text style={styles.compactStatLabel}>{label}</Text>
+      <Text style={[{ color: theme.color?.toString(), fontSize: 18, fontWeight: "900" }, color ? { color } : null]}>{value}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 9, textAlign: "center", marginTop: spacing.sm }}>{label}</Text>
     </Card>
   );
 }
@@ -72,13 +74,14 @@ export function MetricBlock({
   label: string;
   color?: string;
 }) {
+  const theme = useTheme();
   return (
-    <View style={{ alignItems: "center", gap: SPACING.xs }}>
+    <View style={{ alignItems: "center", gap: spacing.xs }}>
       {icon ? (
-        <Icon name={icon} size={14} color={color ?? COLORS.muted} />
+        <AppIcon name={icon} size={14} color={color ?? theme.colorMuted?.toString()} />
       ) : null}
-      <Text style={[styles.metricBlockValue, color ? { color } : null]}>{value}</Text>
-      <Text style={styles.metricBlockLabel}>{label}</Text>
+      <Text style={[{ color: theme.color?.toString(), fontSize: 14, fontWeight: "800" }, color ? { color } : null]}>{value}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 9, marginTop: 3 }}>{label}</Text>
     </View>
   );
 }
@@ -94,25 +97,26 @@ export function DetailStat({
   label: string;
   color?: string;
 }) {
+  const theme = useTheme();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.lg }}>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg }}>
       {icon ? (
         <View
           style={{
             width: 36,
             height: 36,
-            borderRadius: RADIUS.iconWrap,
-            backgroundColor: COLORS.cardSoft,
+            borderRadius: radii.iconWrap,
+            backgroundColor: theme.surface2?.toString(),
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <Icon name={icon} size={16} color={color ?? COLORS.muted} />
+          <AppIcon name={icon} size={16} color={color ?? theme.colorMuted?.toString()} />
         </View>
       ) : null}
       <View>
-        <Text style={[styles.heroMetric, color ? { color } : null]}>{value}</Text>
-        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={[{ color: theme.color?.toString(), fontSize: 20, fontWeight: "800" }, color ? { color } : null]}>{value}</Text>
+        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>{label}</Text>
       </View>
     </View>
   );
@@ -122,27 +126,29 @@ export function AnalyticsCard({
   value,
   label,
   sub,
-  color = COLORS.purple,
+  color: colorProp,
 }: {
   value: string;
   label: string;
   sub?: string;
   color?: string;
 }) {
+  const theme = useTheme();
+  const color = colorProp ?? theme.colorPurple?.toString();
   return (
     <Card
       elevated
       accent="purple"
       style={{
         width: "48%",
-        paddingHorizontal: SPACING.xl2,
-        paddingVertical: SPACING.xl2,
-        gap: SPACING.xxs,
+        paddingHorizontal: spacing.xl2,
+        paddingVertical: spacing.xl2,
+        gap: spacing.xxs,
       }}
     >
-      <Text style={[styles.analyticsValue, { color }]}>{value}</Text>
-      <Text style={styles.analyticsLabel}>{label}</Text>
-      {sub ? <Text style={styles.analyticsSub}>{sub}</Text> : null}
+      <Text style={[{ fontSize: 16, fontWeight: "800" }, { color }]}>{value}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, marginBottom: 6 }}>{label}</Text>
+      {sub ? <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 4 }}>{sub}</Text> : null}
     </Card>
   );
 }
@@ -154,14 +160,15 @@ export function MetaInline({
   icon?: IconName;
   label: string;
 }) {
+  const theme = useTheme();
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: SPACING.xs }}>
-      {icon ? <Icon name={icon} size={12} color={COLORS.faint} /> : null}
-      <Text style={styles.listMeta}>{label}</Text>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+      {icon ? <AppIcon name={icon} size={12} color={theme.colorFaint?.toString()} /> : null}
+      <Text style={{ color: "rgba(255,255,255,0.34)", fontSize: 10 }}>{label}</Text>
     </View>
   );
 }
 
 export function DividerVertical() {
-  return <View style={styles.verticalDivider} />;
+  return <View style={{ width: 1, backgroundColor: "rgba(255,255,255,0.07)", marginHorizontal: 8 }} />;
 }

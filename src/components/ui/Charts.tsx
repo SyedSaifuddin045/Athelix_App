@@ -2,14 +2,14 @@ import { Text, View } from "react-native";
 import { useState } from "react";
 import Svg, { Circle, Line, Polyline, Text as SvgText } from "react-native-svg";
 
-import { COLORS } from "../../theme/colors";
-import { SPACING, RADIUS } from "../../theme/spacing";
-import { styles } from "../../theme/styles";
+import { useTheme } from "@tamagui/core";
+import { spacing } from "../../design-system/tokens/spacing";
+import { radii } from "../../design-system/tokens/radii";
 
 export function VerticalBars({
   data,
   height = 120,
-  barColor = COLORS.teal,
+  barColor: barColorProp,
   maxValue,
 }: {
   data: { label: string; value: number }[];
@@ -17,28 +17,29 @@ export function VerticalBars({
   barColor?: string;
   maxValue?: number;
 }) {
+  const theme = useTheme();
+  const barColor = barColorProp ?? theme.accent?.toString() ?? "#FF5A36";
   const max = maxValue ?? Math.max(...data.map((d) => d.value), 1);
 
   return (
-    <View style={[styles.barRow, { gap: SPACING.xs }]}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: spacing.xs }}>
       {data.map((item, i) => {
         const barHeight = Math.max((item.value / max) * height, 4);
         return (
-          <View key={i} style={[styles.barColumn, { gap: SPACING.xxs }]}>
-            <View style={[styles.barTrackShell, { height }]}>
+          <View key={i} style={{ flex: 1, alignItems: "center", gap: spacing.xxs }}>
+            <View style={{ justifyContent: "flex-end", width: 26, height }}>
               <View
-                style={[
-                  styles.bar,
-                  {
-                    height: barHeight,
-                    backgroundColor: barColor,
-                    opacity: 0.4 + (item.value / max) * 0.6,
-                    borderRadius: RADIUS.stepper,
-                  },
-                ]}
+                style={{
+                  width: 22,
+                  borderRadius: radii.stepper,
+                  alignSelf: "center",
+                  height: barHeight,
+                  backgroundColor: barColor,
+                  opacity: 0.4 + (item.value / max) * 0.6,
+                }}
               />
             </View>
-            <Text style={styles.barLabel}>{item.label}</Text>
+            <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 8 }}>{item.label}</Text>
           </View>
         );
       })}
@@ -49,12 +50,14 @@ export function VerticalBars({
 export function TrendChart({
   segments,
   height = 100,
-  color = COLORS.teal,
+  color: colorProp,
 }: {
   segments: { value: number; label?: string }[][];
   height?: number;
   color?: string;
 }) {
+  const theme = useTheme();
+  const color = colorProp ?? theme.accent?.toString() ?? "#FF5A36";
   if (!segments.length) return null;
   const [chartWidth, setChartWidth] = useState(0);
 
@@ -82,7 +85,7 @@ export function TrendChart({
 
   return (
     <View>
-      <View style={[styles.chartArea, { height: svgHeight }]} onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}>
+      <View style={[{ position: "relative" }, { height: svgHeight }]} onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}>
         {chartWidth > 0 && (
           <Svg width="100%" height={svgHeight} viewBox={`0 0 ${chartWidth} ${svgHeight}`}>
             {[0.25, 0.5, 0.75].map((f, i) => (
@@ -111,7 +114,7 @@ export function TrendChart({
                 cy={yPos(point.value)}
                 r={4}
                 fill={color}
-                stroke={COLORS.screen}
+                stroke={theme.backgroundFocus?.toString()}
                 strokeWidth={2}
               />
             ))}

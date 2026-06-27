@@ -1,22 +1,23 @@
 import { useRef } from "react";
 import { View, StatusBar } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@tamagui/core";
 import { NavigationContainer } from "@react-navigation/native";
 import type { NavigationContainerRef } from "@react-navigation/native";
 
 import { AppNavigator } from "./AppNavigator";
-import { COLORS } from "../theme/colors";
 import { useScreenTracking } from "../analytics/useScreenTracking";
 import type { RootStackParamList } from "../types/navigation";
 
 export function AppContent() {
+  const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   const { onReady, onStateChange } = useScreenTracking(navigationRef);
 
   return (
-    <View style={{ flex: 1, backgroundColor: COLORS.root, paddingTop: insets.top }}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.root} translucent={false} />
+    <View style={{ flex: 1, backgroundColor: theme.background?.toString(), paddingTop: insets.top }}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.background?.toString()} translucent={false} />
       <NavigationContainer
         ref={navigationRef}
         onReady={onReady}
@@ -24,12 +25,12 @@ export function AppContent() {
         theme={{
           dark: true,
           colors: {
-            primary: COLORS.accent,
-            background: COLORS.root,
-            card: COLORS.screen,
-            text: COLORS.text,
-            border: COLORS.border,
-            notification: COLORS.accent,
+            primary: theme.accent?.toString() ?? "#FF5A36",
+            background: theme.background?.toString() ?? "#050505",
+            card: theme.backgroundFocus?.toString() ?? "#0A0A0A",
+            text: theme.color?.toString() ?? "#FFFFFF",
+            border: theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)",
+            notification: theme.accent?.toString() ?? "#FF5A36",
           },
           fonts: {
             regular: { fontFamily: "System", fontWeight: "400" as const },

@@ -1,5 +1,3 @@
-import { COLORS } from "../theme/colors";
-
 export function shadow(color: string) {
   return {
     shadowColor: color,
@@ -12,9 +10,9 @@ export function shadow(color: string) {
 
 export function getMuscleStatus(sets: number, target: number) {
   const ratio = sets / target;
-  if (ratio >= 1.1) return { label: "Over", color: COLORS.green };
-  if (ratio >= 0.85) return { label: "On track", color: COLORS.teal };
-  if (ratio >= 0.6) return { label: "Under", color: COLORS.orange };
+  if (ratio >= 1.1) return { label: "Over", color: "#22C55E" };
+  if (ratio >= 0.85) return { label: "On track", color: "#FF5A36" };
+  if (ratio >= 0.6) return { label: "Under", color: "#F59E0B" };
   return { label: "Low", color: "#ef4444" };
 }
 

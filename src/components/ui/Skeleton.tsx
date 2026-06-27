@@ -8,13 +8,13 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 
-import { COLORS } from "../../theme/colors";
-import { RADIUS } from "../../theme/spacing";
+import { useTheme } from "@tamagui/core";
+import { radii } from "../../design-system/tokens/radii";
 
 export function Skeleton({
   width,
   height,
-  radius = RADIUS.cardSmall,
+  radius = radii.cardSmall,
   style,
 }: {
   width?: number | string;
@@ -22,6 +22,7 @@ export function Skeleton({
   radius?: number;
   style?: object;
 }) {
+  const theme = useTheme();
   const opacity = useSharedValue(0.3);
 
   useEffect(() => {
@@ -39,7 +40,7 @@ export function Skeleton({
           width: width ?? "100%",
           height: height ?? 20,
           borderRadius: radius,
-          backgroundColor: COLORS.cardSoft,
+          backgroundColor: theme.surface2?.toString(),
         },
         animatedStyle,
         style,
