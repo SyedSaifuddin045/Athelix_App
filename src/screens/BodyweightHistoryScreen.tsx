@@ -3,23 +3,24 @@ import { Modal, Pressable, Text, TextInput, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
+import { useTheme } from "@tamagui/core";
 import { useBodyWeightLogsQuery } from "../api/queries";
 import { useCreateBodyWeightLog, useDeleteBodyWeightLog } from "../api/mutations";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { spacing } from "../design-system/tokens/spacing";
+import { radii } from "../design-system/tokens/radii";
 import { Card, EmptyCard, ErrorCard, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
-import { BackHeader, PrimaryButton, RoundButton, IconButton } from "../components/ui/Button";
+import { BackHeader, PrimaryButton, IconButton } from "../components/ui/Button";
 import { SectionEyebrow, Tag } from "../components/ui/Indicators";
 import { TrendChart } from "../components/ui/Charts";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { formatDateLabel, formatKg, formatShortDate } from "../utils/format";
 import { getApiErrorMessage } from "../api/client";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "BodyweightHistory"> };
 
 export function BodyweightHistoryScreen({ navigation }: Props) {
+  const theme = useTheme();
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const logs = useBodyWeightLogsQuery(isAuthenticated);
   const [showAdd, setShowAdd] = useState(false);
@@ -63,38 +64,44 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
     });
   };
 
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+
   return (
     <Screen>
       <BackHeader
         title="Bodyweight"
         onBack={() => navigation.goBack()}
         right={
-          <IconButton icon="plus" onPress={() => setShowAdd(true)} color={COLORS.teal} />
+          <IconButton icon="plus" onPress={() => setShowAdd(true)} color={accent} />
         }
       />
 
-      <View style={{ marginTop: SPACING.xl3 }}>
-        <View style={styles.rowGap}>
-          <Text style={styles.bigMetric}>{latest ? latest.toFixed(1) : "-"}</Text>
-          <Text style={styles.metricSuffix}>kg</Text>
+      <View style={{ marginTop: spacing.xl3 }}>
+        <View style={{ flexDirection: "row", alignItems: "baseline", gap: spacing.sm }}>
+          <Text style={{ color: textColor, fontSize: 40, fontWeight: "900" }}>
+            {latest ? latest.toFixed(1) : "-"}
+          </Text>
+          <Text style={{ color: mutedColor, fontSize: 13 }}>kg</Text>
           {entries.length > 1 ? (
-            <Text style={[styles.metricChange, { color: change < 0 ? COLORS.green : COLORS.red }]}>
-              <Icon name={change < 0 ? "trending-down" : "trending-up"} size={12} color={change < 0 ? COLORS.green : COLORS.red} />
+            <Text style={{ color: change < 0 ? theme.colorGreen?.toString() : theme.colorRed?.toString(), fontSize: 11, fontWeight: "700" }}>
+              <AppIcon name={change < 0 ? "trending-down" : "trending-up"} size={12} color={change < 0 ? (theme.colorGreen?.toString() ?? "#22C55E") : (theme.colorRed?.toString() ?? "#EF4444")} />
               {" "}{Math.abs(change).toFixed(1)} kg
             </Text>
           ) : null}
         </View>
-        <Text style={styles.detailLabel}>
+        <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
           {entries.length > 1 ? `vs. oldest entry (${previous} kg)` : "Add entries to track change"}
         </Text>
       </View>
 
       {chartData.length > 0 ? (
-        <Card elevated style={{ marginTop: SPACING.xl3 }}>
+        <Card elevated style={{ marginTop: spacing.xl3 }}>
           <TrendChart
             segments={[chartData]}
             height={128}
-            color={COLORS.teal}
+            color={accent}
           />
         </Card>
       ) : null}
@@ -102,31 +109,31 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
       {logs.isPending ? <LoadingCard label="Loading bodyweight logs..." /> : null}
       {logs.isError ? <ErrorCard error={logs.error} onRetry={() => logs.refetch()} /> : null}
 
-      <View style={{ marginTop: SPACING.xl3 }}>
+      <View style={{ marginTop: spacing.xl3 }}>
         <SectionEyebrow>All Entries</SectionEyebrow>
-        <View style={{ gap: SPACING.lg, marginTop: SPACING.xl }}>
+        <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
           {entries.map((entry, index) => (
-            <Card key={entry.id} elevated style={[styles.listRowCard, { flexDirection: "row", alignItems: "center", gap: SPACING.lg }]}>
-              <View style={[styles.listRowBody, { flex: 1 }]}>
-                <View style={styles.rowGap}>
-                  <Text style={[styles.cardTitle, index === 0 ? { color: COLORS.teal } : null]}>
+            <Card key={entry.id} elevated style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg }}>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+                  <Text style={{ color: index === 0 ? accent : textColor, fontSize: 15, fontWeight: "800" }}>
                     {formatKg(entry.weight_kg)}
                   </Text>
-                  {index === 0 ? <Tag label="Latest" color={COLORS.teal} /> : null}
+                  {index === 0 ? <Tag label="Latest" color={accent} /> : null}
                   {index > 0 ? (
-                    <Text style={[styles.smallStrongText, { color: entry.weight_kg < entries[index - 1].weight_kg ? COLORS.green : COLORS.red }]}>
-                      <Icon name={entry.weight_kg < entries[index - 1].weight_kg ? "trending-down" : "trending-up"} size={10} color={entry.weight_kg < entries[index - 1].weight_kg ? COLORS.green : COLORS.red} />
+                    <Text style={{ color: entry.weight_kg < entries[index - 1].weight_kg ? (theme.colorGreen?.toString() ?? "#22C55E") : (theme.colorRed?.toString() ?? "#EF4444"), fontSize: 11, fontWeight: "700" }}>
+                      <AppIcon name={entry.weight_kg < entries[index - 1].weight_kg ? "trending-down" : "trending-up"} size={10} color={entry.weight_kg < entries[index - 1].weight_kg ? (theme.colorGreen?.toString() ?? "#22C55E") : (theme.colorRed?.toString() ?? "#EF4444")} />
                       {" "}{Math.abs(entry.weight_kg - entries[index - 1].weight_kg).toFixed(1)}
                     </Text>
                   ) : null}
                 </View>
-                <Text style={styles.detailLabel}>
+                <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
                   {formatDateLabel(entry.logged_at)}
                   {entry.notes ? ` - ${entry.notes}` : ""}
                 </Text>
               </View>
-              <Pressable onPress={() => deleteLog.mutate(entry.id)} style={[styles.deleteWrap, { width: 32, height: 32, borderRadius: RADIUS.stepper, backgroundColor: COLORS.redDark, alignItems: "center", justifyContent: "center" }]}>
-                <Icon name="trash-2" size={13} color={COLORS.red} />
+              <Pressable onPress={() => deleteLog.mutate(entry.id)} style={{ width: 32, height: 32, borderRadius: radii.stepper, backgroundColor: theme.colorRedDark?.toString(), alignItems: "center", justifyContent: "center" }}>
+                <AppIcon name="trash-2" size={13} color={theme.colorRed?.toString() ?? "#EF4444"} />
               </Pressable>
             </Card>
           ))}
@@ -137,47 +144,68 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
       </View>
 
       <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
-        <View style={[styles.modalScrim, { flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }]}>
+        <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }}>
           <Pressable style={{ flex: 1 }} onPress={() => setShowAdd(false)} />
-          <View style={[styles.bottomSheet, { backgroundColor: COLORS.surface, borderTopLeftRadius: RADIUS.sheet, borderTopRightRadius: RADIUS.sheet, borderWidth: 1, borderColor: COLORS.border, paddingHorizontal: SPACING.xl5, paddingTop: SPACING.xl2, paddingBottom: SPACING.xl6 }]}>
-            <View style={{ width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: COLORS.faint, marginBottom: SPACING.xl3 }} />
-            <View style={styles.rowBetween}>
-              <Text style={styles.sheetTitle}>Log Bodyweight</Text>
+          <View style={{ backgroundColor: theme.surface?.toString(), borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, borderWidth: 1, borderColor: theme.borderColor?.toString(), paddingHorizontal: spacing.xl5, paddingTop: spacing.xl2, paddingBottom: spacing.xl6 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: theme.colorFaint?.toString(), marginBottom: spacing.xl3 }} />
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ color: textColor, fontSize: 22, fontWeight: "900", textAlign: "center" }}>Log Bodyweight</Text>
               <Pressable onPress={() => setShowAdd(false)}>
-                <Icon name="x" size={18} color={COLORS.muted} />
+                <AppIcon name="x" size={18} color={mutedColor} />
               </Pressable>
             </View>
-            <View style={{ marginTop: SPACING.xl3 }}>
-              <Text style={styles.fieldLabel}>Weight (kg)</Text>
+            <View style={{ marginTop: spacing.xl3 }}>
+              <Text style={{ color: mutedColor, fontSize: 11, fontWeight: "700", marginBottom: spacing.sm, letterSpacing: 0.4, textTransform: "uppercase" }}>Weight (kg)</Text>
               <TextInput
                 value={newWeight}
                 onChangeText={setNewWeight}
                 placeholder="e.g. 82.5"
-                placeholderTextColor={COLORS.faint}
-                style={[styles.modalMetricInput, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+                placeholderTextColor={theme.colorFaint?.toString()}
+                style={{
+                  width: "100%",
+                  minHeight: 70,
+                  borderRadius: radii.input,
+                  backgroundColor: theme.surface2?.toString(),
+                  borderWidth: 1,
+                  borderColor: theme.borderColor?.toString(),
+                  color: textColor,
+                  fontSize: 28,
+                  fontWeight: "900",
+                  textAlign: "center",
+                }}
                 keyboardType="decimal-pad"
                 contextMenuHidden
               />
             </View>
-            <View style={{ marginTop: SPACING.xl3 }}>
-              <Text style={styles.fieldLabel}>Note (optional)</Text>
+            <View style={{ marginTop: spacing.xl3 }}>
+              <Text style={{ color: mutedColor, fontSize: 11, fontWeight: "700", marginBottom: spacing.sm, letterSpacing: 0.4, textTransform: "uppercase" }}>Note (optional)</Text>
               <TextInput
                 value={newNote}
                 onChangeText={setNewNote}
                 placeholder="e.g. Morning, fasted"
-                placeholderTextColor={COLORS.faint}
-                style={[styles.input, { backgroundColor: COLORS.cardSoft, borderColor: COLORS.border, color: COLORS.text, borderRadius: RADIUS.input }]}
+                placeholderTextColor={theme.colorFaint?.toString()}
+                style={{
+                  width: "100%",
+                  minHeight: 52,
+                  borderRadius: radii.input,
+                  backgroundColor: theme.surface2?.toString(),
+                  borderWidth: 1,
+                  borderColor: theme.borderColor?.toString(),
+                  color: textColor,
+                  paddingHorizontal: spacing.xl3,
+                  fontSize: 14,
+                }}
               />
             </View>
             <PrimaryButton
               label={createLog.isPending ? "Saving..." : "Save Entry"}
               onPress={addEntry}
               disabled={createLog.isPending}
-              icon={<Icon name="check" size={16} color="#000000" />}
-              style={{ marginTop: SPACING.xl4 }}
+              icon={<AppIcon name="check" size={16} color="#000000" />}
+              style={{ marginTop: spacing.xl4 }}
             />
             {createLog.isError ? (
-              <Text style={[styles.errorText, { marginTop: SPACING.lg }]}>{getApiErrorMessage(createLog.error)}</Text>
+              <Text style={{ color: theme.colorRed?.toString() ?? "#EF4444", fontSize: 12, marginTop: spacing.lg }}>{getApiErrorMessage(createLog.error)}</Text>
             ) : null}
           </View>
         </View>

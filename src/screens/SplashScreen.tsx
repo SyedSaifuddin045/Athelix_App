@@ -2,19 +2,20 @@ import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTheme } from "@tamagui/core";
 import type { RootStackParamList } from "../types/navigation";
 import { useAppConfigQuery } from "../api/queries";
 import { getApiErrorMessage } from "../api/client";
-import { COLORS } from "../theme/colors";
-import { SPACING, RADIUS, SHADOWS } from "../theme/spacing";
-import { styles } from "../theme/styles";
+import { radii } from "../design-system/tokens/radii";
+import { spacing } from "../design-system/tokens/spacing";
 import { Screen } from "../components/ui/Layout";
 import { ProgressBar } from "../components/ui/Indicators";
-import { Icon } from "../components/ui/Icon";
+import { AppIcon } from "../design-system/icons/AppIcon";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Splash"> };
 
 export function SplashScreen({ navigation }: Props) {
+  const theme = useTheme();
   const { isLoaded, isSignedIn = false } = useAuth();
   const appConfig = useAppConfigQuery();
   const [fetchTimedOut, setFetchTimedOut] = useState(false);
@@ -46,65 +47,98 @@ export function SplashScreen({ navigation }: Props) {
     return () => clearTimeout(timer);
   }, [ready, isSignedIn, navigation]);
 
+  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.toString() ?? "#FFFFFF";
+
   return (
-    <Screen scroll={false} contentContainerStyle={styles.centeredContent}>
+    <Screen scroll={false} contentContainerStyle={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24, paddingBottom: 20 }}>
       <View
-        style={[
-          styles.splashLogo,
-          SHADOWS.glow(COLORS.teal),
-          {
-            width: 96,
-            height: 96,
-            borderRadius: RADIUS.card,
-            backgroundColor: COLORS.teal,
-            alignItems: "center",
-            justifyContent: "center",
-          },
-        ]}
+        style={{
+          width: 96,
+          height: 96,
+          borderRadius: radii.card,
+          backgroundColor: accent,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: accent,
+          shadowOpacity: 0.28,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 8 },
+          elevation: 8,
+        }}
       >
-        <Icon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
+        <AppIcon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
       </View>
-      <Text style={styles.splashTitle}>
+      <Text
+        style={{
+          color: textColor,
+          fontSize: 32,
+          fontWeight: "900",
+          marginTop: 28,
+        }}
+      >
         {appConfig.data?.app_name.replace(/_API$/, "") ?? "Athelix"}
       </Text>
-      <Text style={styles.splashSubtitle}>Your training, elevated.</Text>
-      <View
-        style={[
-          styles.splashProgressCard,
-          {
-            width: "100%",
-            marginTop: SPACING.xl6,
-            backgroundColor: COLORS.card,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            borderRadius: RADIUS.card,
-            paddingHorizontal: SPACING.xl3,
-            paddingVertical: SPACING.xl4,
-            gap: SPACING.xl,
-          },
-        ]}
+      <Text
+        style={{
+          color: theme.colorFaint?.toString() ?? "rgba(255,255,255,0.35)",
+          fontSize: 13,
+          marginTop: 6,
+        }}
       >
-        <Text style={[styles.splashProgressValue, { color: COLORS.teal }]}>
+        Your training, elevated.
+      </Text>
+      <View
+        style={{
+          width: "100%",
+          marginTop: spacing.xl6,
+          backgroundColor: theme.surface1?.toString(),
+          borderWidth: 1,
+          borderColor: theme.borderColor?.toString(),
+          borderRadius: radii.card,
+          paddingHorizontal: spacing.xl3,
+          paddingVertical: spacing.xl4,
+          gap: spacing.xl,
+        }}
+      >
+        <Text
+          style={{
+            color: accent,
+            fontSize: 24,
+            fontWeight: "800",
+            textAlign: "center",
+          }}
+        >
           {progress}%
         </Text>
-        <ProgressBar value={progress} color={COLORS.teal} height={8} />
-        <Text style={[styles.splashStatus, { color: COLORS.muted }]}>{status}</Text>
+        <ProgressBar value={progress} color={accent} height={8} />
+        <Text
+          style={{
+            color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.35)",
+            fontSize: 12,
+            textAlign: "center",
+          }}
+        >
+          {status}
+        </Text>
         {appConfig.isError ? (
-          <Text style={[styles.errorText, { color: COLORS.red }]}>
+          <Text
+            style={{
+              color: theme.colorRed?.toString() ?? "#EF4444",
+              fontSize: 12,
+            }}
+          >
             {getApiErrorMessage(appConfig.error)}
           </Text>
         ) : null}
       </View>
       <Text
-        style={[
-          styles.splashFooter,
-          {
-            position: "absolute",
-            bottom: SPACING.xl6,
-            color: COLORS.faint,
-            fontSize: 11,
-          },
-        ]}
+        style={{
+          position: "absolute",
+          bottom: spacing.xl6,
+          color: theme.colorFaint?.toString() ?? "rgba(255,255,255,0.2)",
+          fontSize: 11,
+        }}
       >
         {appConfig.data
           ? `${appConfig.data.app_name.replace(/_API$/, "")} v${appConfig.data.version}`
