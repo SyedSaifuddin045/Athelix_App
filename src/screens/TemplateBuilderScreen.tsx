@@ -33,7 +33,8 @@ import { exerciseLookup, templateDraftFromDetail, successData } from "../utils/m
 import { nameForExercise, muscleAccentColor } from "../utils/display";
 import type { TemplateDraftExercise } from "../utils/mapping";
 import { rpeError, numberOrNull, parseRestSeconds } from "../utils/validation";
-import { toNumberId, shadow } from "../utils/helpers";
+import { toNumberId } from "../utils/helpers";
+import { shadows } from "../design-system/tokens/shadows";
 import { Events } from "../analytics/events";
 
 const MINUTES = [0, 1, 2, 3, 4, 5];
@@ -49,19 +50,23 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const id = route.params?.id;
   const templateId = toNumberId(id);
   const isEdit = !!templateId;
+  const initialExerciseId = route.params?.initialExerciseId;
   const [name, setName] = useState("");
   const [exercises, setExercises] = useState<TemplateDraftExercise[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [saveError, setSaveError] = useState("");
+  const [rpePicker, setRpePicker] = useState<string | null>(null);
   const detail = useTemplateDetailQuery(templateId, isAuthenticated && isEdit);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
@@ -86,6 +91,16 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
     setExercises(templateDraftFromDetail(detail.data, lookup));
     setExpanded(detail.data.exercises[0] ? String(detail.data.exercises[0].id) : null);
   }, [detail.data, lookup]);
+
+  useEffect(() => {
+    if (isEdit) return;
+    if (initialized.current) return;
+    if (!initialExerciseId || lookup.size === 0) return;
+    if (exercises.length > 0) return;
+    const exercise = lookup.get(initialExerciseId);
+    if (!exercise) return;
+    addExercise(exercise);
+  }, [lookup, initialExerciseId, isEdit]);
 
   const saveTemplate = useMutation({
     mutationFn: async () => {
@@ -407,7 +422,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                   borderColor: accent,
                   borderWidth: 1.5,
                   backgroundColor: "rgba(255,90,54,0.06)",
-                  ...shadow(accent),
+                  ...shadows.glow(accent),
                 } : null]}>
                   <PanGestureHandler
                     onGestureEvent={(e) => handleDragMove(e.nativeEvent.translationY, exercise.id)}
@@ -468,20 +483,15 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                       <View style={{ flexDirection: "row", gap: 12 }}>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>RPE</Text>
-                          <MiniInput
-                            value={exercise.sets[0]?.rpe ?? "7"}
-                            onChangeText={(value) => updateSingleConfig(exercise.id, "rpe", value)}
-                            error={(() => {
-                              const n = Number(exercise.sets[0]?.rpe);
-                              return exercise.sets[0]?.rpe !== "" && (isNaN(n) || n < 1 || n > 10);
-                            })()}
-                            keyboardType="decimal-pad"
-                          />
-                          {(() => {
-                            const n = Number(exercise.sets[0]?.rpe);
-                            const invalid = exercise.sets[0]?.rpe !== "" && (isNaN(n) || n < 1 || n > 10);
-                            return invalid ? <Text style={{ color: redColor, fontSize: 9, marginTop: 4, textAlign: "center" }}>1–10</Text> : null;
-                          })()}
+                          <Pressable
+                            onPress={() => setRpePicker(exercise.id)}
+                            style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.04)" }}
+                          >
+                            <Text style={{ color: textColor, fontSize: 13, fontWeight: "700", flex: 1 }}>
+                              {exercise.sets[0]?.rpe ?? "7"}
+                            </Text>
+                            <AppIcon name="chevron-down" size={13} color="rgba(255,255,255,0.4)" />
+                          </Pressable>
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
@@ -605,6 +615,60 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
             <PrimaryButton label="Done" onPress={() => { setShowTimerModal(false); resetCustomTime(); }} style={{ marginTop: 12 }} />
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={!!rpePicker} transparent animationType="fade" onRequestClose={() => setRpePicker(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }} onPress={() => setRpePicker(null)}>
+          <Pressable
+            onPress={() => {}}
+            style={{
+              backgroundColor: theme.surface?.get(),
+              borderRadius: radii.card,
+              padding: spacing.xl3,
+              width: 260,
+              borderWidth: 1,
+              borderColor,
+            }}
+          >
+            <Text style={{ color: textColor, fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: spacing.xl }}>
+              Rate of Perceived Exertion
+            </Text>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+              {[1,2,3,4,5,6,7,8,9,10].map((val) => {
+                const current = rpePicker
+                  ? exercises.find((e) => e.id === rpePicker)?.sets[0]?.rpe
+                  : "";
+                const isSelected = String(val) === current;
+                return (
+                  <Pressable
+                    key={val}
+                    onPress={() => {
+                      if (rpePicker) {
+                        updateSingleConfig(rpePicker, "rpe", String(val));
+                        setRpePicker(null);
+                      }
+                    }}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: isSelected ? accent : surface2Color,
+                      borderWidth: 1,
+                      borderColor: isSelected ? accent : borderColor,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: isSelected ? "#000" : textColor, fontSize: 15, fontWeight: "700" }}>{val}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Pressable onPress={() => setRpePicker(null)} style={{ marginTop: spacing.xl, alignItems: "center" }}>
+              <Text style={{ color: mutedColor, fontSize: 13 }}>Clear</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       </Modal>
     </Screen>
   );
