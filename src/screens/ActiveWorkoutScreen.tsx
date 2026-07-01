@@ -142,7 +142,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
           duration_sec: s.duration_sec != null ? String(s.duration_sec) : "",
           distance_m: s.distance_m != null ? String(s.distance_m) : "",
           rpe: s.rpe != null ? String(s.rpe) : "",
-          done: true,
+          done: false,
           warmup: false,
           serverId: s.id,
         })),

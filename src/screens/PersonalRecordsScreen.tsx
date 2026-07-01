@@ -33,13 +33,13 @@ export function PersonalRecordsScreen({ navigation }: Props) {
   const exercises = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(exercises.data?.items), [exercises.data?.items]);
 
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const goldColor = theme.colorGold?.get() ?? "#FBBF24";
 
   const grouped = useMemo(() => {
     const normalized = search.toLowerCase();
@@ -75,18 +75,18 @@ export function PersonalRecordsScreen({ navigation }: Props) {
         />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md, marginTop: spacing.xl2 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: spacing.xl }}>
         {recordTypes.map((type) => (
           <Pressable
             key={type}
             onPress={() => setFilter(type)}
             style={{
-              borderRadius: radii.tag,
+              borderRadius: 8,
               borderWidth: 1,
               borderColor: filter === type ? "rgba(251,191,36,0.4)" : borderColor,
               backgroundColor: filter === type ? "rgba(251,191,36,0.2)" : surface2Color,
-              paddingHorizontal: spacing.xl3,
-              paddingVertical: spacing.sm,
+              paddingHorizontal: 8,
+              paddingVertical: 2,
             }}
           >
             <Text style={{ color: filter === type ? goldColor : mutedColor, fontSize: 11, fontWeight: "700" }}>
@@ -94,7 +94,7 @@ export function PersonalRecordsScreen({ navigation }: Props) {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
 
       {records.isPending ? <LoadingCard label="Loading personal records..." /> : null}
       {records.isError ? <ErrorCard error={records.error} onRetry={() => records.refetch()} /> : null}
