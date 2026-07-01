@@ -12,6 +12,7 @@ import { CompactStatCard } from "../components/ui/Stats";
 import { PROGRESS_SECTIONS } from "../data";
 import { AppIcon } from "../design-system/icons/AppIcon";
 import type { IconName } from "../components/ui/Icon";
+import { formatShortDate } from "../utils/format";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
 
@@ -60,6 +61,41 @@ export function ProgressHubScreen({ navigation }: Props) {
           color={greenColor}
         />
       </View>
+
+      {overview.data?.recent_personal_records && overview.data.recent_personal_records.length > 0 ? (
+        <Pressable style={{ marginTop: spacing.xl3, marginBottom: spacing.xl2 }}>
+          <Card elevated accent="gold">
+            <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl }}>
+              <View
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  backgroundColor: `${goldColor}20`,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <AppIcon name="trophy" size={24} color={goldColor} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: goldColor, fontSize: 11, lineHeight: 16, marginBottom: spacing.xxs }}>
+                  Latest Achievement
+                </Text>
+                <Text style={{ color: goldColor, fontSize: 15, fontWeight: "800" }}>
+                  New {overview.data.recent_personal_records[0].record_type.replace(/_/g, " ")} PR
+                </Text>
+                <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16, marginTop: spacing.xxs }}>
+                  {overview.data.recent_personal_records[0].exercise_id} • {overview.data.recent_personal_records[0].value}
+                </Text>
+                <Text style={{ color: faintColor, fontSize: 11, lineHeight: 16, marginTop: spacing.xxs }}>
+                  {formatShortDate(overview.data.recent_personal_records[0].achieved_on)}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        </Pressable>
+      ) : null}
 
       <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
         {PROGRESS_SECTIONS.map((section) => {

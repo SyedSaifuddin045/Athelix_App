@@ -304,6 +304,26 @@ export function HomeScreen({ navigation }: Props) {
         </Pressable>
       </View>
 
+      {data?.recent_personal_records && data.recent_personal_records.length > 0 ? (
+        <View style={{ marginBottom: spacing.xl2 }}>
+          <Text style={{ color: textColor, fontSize: 13, fontWeight: "700", marginBottom: spacing.lg }}>
+            Recent PRs
+          </Text>
+          {data.recent_personal_records.map((pr) => (
+            <View key={pr.id} style={{ marginBottom: spacing.md }}>
+              <Card elevated>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <Text style={{ color: textColor, fontSize: 14, fontWeight: "700" }}>{pr.exercise_id}</Text>
+                  <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>
+                    {pr.record_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} +{pr.value}
+                  </Text>
+                </View>
+              </Card>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <PrimaryButton
         label="Start Workout"
         onPress={() => navigation.navigate({ name: "StartWorkout", params: {} })}

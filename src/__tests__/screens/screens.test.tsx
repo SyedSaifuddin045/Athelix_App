@@ -342,11 +342,11 @@ describe("ProgressHubScreen", () => {
     data.stats.personal_record_count = 7;
     data.stats.tracked_exercises_count = 15;
     const qc = setupQC(data);
-    const { getByText } = render(
+    const { getByText, getAllByText } = render(
       <ProgressHubScreen navigation={mockNavigation} />,
       { wrapper: createWrapper({ queryClient: qc }) },
     );
-    expect(getByText("7 PRs total")).toBeTruthy();
+    expect(getAllByText("7 PRs total").length).toBe(2);
     expect(getByText("15 exercises tracked")).toBeTruthy();
     expect(getByText("Updated today")).toBeTruthy();
   });
@@ -384,11 +384,11 @@ describe("ProgressHubScreen", () => {
 
   it("shows defaults for zero counts", () => {
     const qc = setupQC();
-    const { getByText } = render(
+    const { getByText, getAllByText } = render(
       <ProgressHubScreen navigation={mockNavigation} />,
       { wrapper: createWrapper({ queryClient: qc }) },
     );
-    expect(getByText("0 PRs total")).toBeTruthy();
+    expect(getAllByText("0 PRs total").length).toBe(2);
     expect(getByText("0 exercises tracked")).toBeTruthy();
   });
 
@@ -396,10 +396,10 @@ describe("ProgressHubScreen", () => {
     const emptyQC = new QueryClient({
       defaultOptions: { queries: { retry: false, gcTime: 0 } },
     });
-    const { getByText } = render(
+    const { getAllByText } = render(
       <ProgressHubScreen navigation={mockNavigation} />,
       { wrapper: createWrapper({ queryClient: emptyQC }) },
     );
-    expect(getByText("0 PRs total")).toBeTruthy();
+    expect(getAllByText("0 PRs total").length).toBe(2);
   });
 });
