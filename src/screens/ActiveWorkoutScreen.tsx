@@ -8,7 +8,7 @@ import { usePostHog } from "posthog-react-native";
 import { useAuth } from "@clerk/expo";
 import { useTheme } from "@tamagui/core";
 
-import { useTemplateDetailQuery, useExercisesQuery } from "../api/queries";
+import { useTemplateDetailQuery, useExercisesQuery, useSessionDetailQuery } from "../api/queries";
 import type { ExerciseResponse } from "../api/model";
 import {
   deleteExerciseSetWorkoutSessionsSessionIdSetsSetIdDelete,
@@ -61,14 +61,14 @@ type Props = {
 export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const surface3Color = theme.surface3?.toString() ?? "rgba(255,255,255,0.07)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const surface3Color = theme.surface3?.get() ?? "rgba(255,255,255,0.07)";
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const sessionId = route?.params?.sessionId;
@@ -84,6 +84,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const [error, setError] = useState("");
   const [rpePicker, setRpePicker] = useState<{ exerciseId: string; setId: string } | null>(null);
   const template = useTemplateDetailQuery(templateId, isAuthenticated && !!templateId);
+  const sessionDetail = useSessionDetailQuery(templateId ? undefined : sessionId, isAuthenticated && !!sessionId && !templateId);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
 
@@ -112,6 +113,44 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     setExercises(draft);
     setExpanded(draft[0]?.id ?? null);
   }, [lookup, template.data]);
+
+  useEffect(() => {
+    if (template.data) return;
+    if (!sessionDetail.data || lookup.size === 0) return;
+    if (exercises.length > 0) return;
+    const sets = sessionDetail.data.sets ?? [];
+    if (sets.length === 0) return;
+    const exerciseMap = new Map<string, typeof sets>();
+    for (const set of sets) {
+      const arr = exerciseMap.get(set.exercise_id) ?? [];
+      arr.push(set);
+      exerciseMap.set(set.exercise_id, arr);
+    }
+    const draft: WorkoutDraftExercise[] = [];
+    for (const [exerciseId, exSets] of exerciseMap) {
+      exSets.sort((a, b) => a.set_number - b.set_number);
+      draft.push({
+        id: exerciseId,
+        exerciseId,
+        name: nameForExercise(exerciseId, lookup) ?? exerciseId,
+        notes: "",
+        exerciseCategory: lookup.get(exerciseId)?.exercise_category ?? null,
+        sets: exSets.map((s) => ({
+          id: `${exerciseId}-${s.set_number}`,
+          weight: s.weight_kg != null ? String(s.weight_kg) : "",
+          reps: s.reps != null ? String(s.reps) : "",
+          duration_sec: s.duration_sec != null ? String(s.duration_sec) : "",
+          distance_m: s.distance_m != null ? String(s.distance_m) : "",
+          rpe: s.rpe != null ? String(s.rpe) : "",
+          done: true,
+          warmup: false,
+          serverId: s.id,
+        })),
+      });
+    }
+    setExercises(draft);
+    setExpanded(draft[0]?.id ?? null);
+  }, [lookup, sessionDetail.data, template.data]);
 
   const completedSets = exercises.flatMap((ex) => ex.sets.filter((s) => s.done && !s.warmup)).length;
   const totalSets = exercises.flatMap((ex) => ex.sets.filter((s) => !s.warmup)).length;
@@ -321,14 +360,14 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                   paddingHorizontal: spacing.xl2,
                   paddingVertical: spacing.md,
                   borderRadius: radii.input,
-                  backgroundColor: theme.colorRedDark?.toString(),
+                  backgroundColor: theme.colorRedDark?.get(),
                   borderColor: "rgba(239,68,68,0.25)",
                   borderWidth: 1,
                 }}
               onPress={discardWorkout}
             >
-              <AppIcon name="x" size={13} color={theme.colorRed?.toString()} />
-              <Text style={{ color: theme.colorRed?.toString(), fontSize: 12, fontWeight: "600" }}>Discard</Text>
+              <AppIcon name="x" size={13} color={theme.colorRed?.get()} />
+              <Text style={{ color: theme.colorRed?.get(), fontSize: 12, fontWeight: "600" }}>Discard</Text>
             </Pressable>
             <View style={{ alignItems: "center" }}>
               <Text style={{ color: textColor, fontSize: 18, fontWeight: "900" }}>{formatTime(elapsed)}</Text>
@@ -360,7 +399,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
         {template.isPending && templateId ? <LoadingCard label="Loading template workout..." /> : null}
         {error ? (
           <View style={{ borderRadius: spacing.xl, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl, backgroundColor: "rgba(239,68,68,0.12)", borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", marginTop: spacing.xl }}>
-            <Text style={{ color: theme.colorRed?.toString(), fontSize: 12 }}>{error}</Text>
+            <Text style={{ color: theme.colorRed?.get(), fontSize: 12 }}>{error}</Text>
           </View>
         ) : null}
 
@@ -393,10 +432,10 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                   <View style={{ marginTop: spacing.xl2 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginBottom: 10 }}>
                       <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.index }]}>Set</Text>
-                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.input }]}>
+                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1 }]}>
                         {isCardio(exercise.exerciseId) ? "Time" : "kg"}
                       </Text>
-                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.input }]}>
+                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1 }]}>
                         {isCardio(exercise.exerciseId) ? "km" : "Reps"}
                       </Text>
                       <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.rpe }]}>RPE</Text>
@@ -406,7 +445,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                       {exercise.sets.map((set) => (
                         <View key={set.id} style={[{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 }, set.done ? { opacity: 0.5 } : null]}>
                           <View style={{ width: GRID_COL_WIDTHS.index, alignItems: "center", justifyContent: "center" }}>
-                            <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: set.warmup ? theme.colorOrange?.toString() : "rgba(255,255,255,0.55)" }]}>
+                            <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: set.warmup ? theme.colorOrange?.get() : "rgba(255,255,255,0.55)" }]}>
                               {set.warmup ? "W" : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
                             </Text>
                           </View>
@@ -596,7 +635,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
             <Pressable style={{ flex: 1 }} onPress={() => setShowFinish(false)} />
             <View
               style={{
-                  backgroundColor: theme.surface?.toString(),
+                  backgroundColor: theme.surface?.get(),
                   borderTopLeftRadius: radii.sheet,
                   borderTopRightRadius: radii.sheet,
                   borderWidth: 1,
@@ -680,7 +719,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
             <Pressable
               onPress={() => {}}
               style={{
-                backgroundColor: theme.surface?.toString(),
+                backgroundColor: theme.surface?.get(),
                 borderRadius: radii.card,
                 padding: spacing.xl3,
                 width: 260,
