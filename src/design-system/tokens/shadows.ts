@@ -22,7 +22,7 @@ export const shadows = {
   },
   glow: (color: string) => ({
     shadowColor: color,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
