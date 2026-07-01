@@ -8,7 +8,7 @@ export type RootStackParamList = {
   MainTabs: undefined;
   ExerciseDetail: { id: string };
   TemplateList: undefined;
-  TemplateBuilder: { id?: string };
+  TemplateBuilder: { id?: string; initialExerciseId?: string };
   StartWorkout: { id?: string };
   ActiveWorkout: { sessionId?: number; templateId?: string; mesocycleId?: string | null } | undefined;
   WorkoutHistory: undefined;

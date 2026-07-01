@@ -12,6 +12,15 @@ export function rpeError(value: string): string | null {
   return null;
 }
 
+export function validateUsername(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.length < 3) return "Username must be at least 3 characters";
+  if (trimmed.length > 50) return "Username must be 50 characters or less";
+  if (!/^[A-Za-z0-9_.-]+$/.test(trimmed)) return "Username can only contain letters, numbers, underscores, hyphens, and dots";
+  return null;
+}
+
 export function parseRestSeconds(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return null;
