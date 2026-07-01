@@ -25,13 +25,13 @@ const SECTION_ICONS: Record<string, IconName> = {
 export function TrainHubScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
-  const blueColor = theme.colorBlue?.toString() ?? "#3B82F6";
-  const purpleColor = theme.colorPurple?.toString() ?? "#A855F7";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const goldColor = theme.colorGold?.get() ?? "#FBBF24";
+  const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
+  const purpleColor = theme.colorPurple?.get() ?? "#A855F7";
   const overview = useOverviewQuery(isAuthenticated);
   return (
     <Screen>

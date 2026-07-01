@@ -15,6 +15,7 @@ export interface ExerciseSetCreate {
   duration_sec?: number | null;
   distance_m?: number | null;
   rpe?: number | null;
+  calories_burned?: number | null;
   is_pr?: boolean;
   notes?: string | null;
   logged_at?: string | null;

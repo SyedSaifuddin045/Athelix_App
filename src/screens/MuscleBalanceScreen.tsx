@@ -151,15 +151,15 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
   const report = useMuscleBalanceQuery({ weeks, mesocycle_id: mesocycleId }, isAuthenticated);
   const items = report.data?.items ?? [];
 
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const borderLight = "rgba(255,255,255,0.12)";
-  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
-  const blueColor = theme.colorBlue?.toString() ?? "#3B82F6";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const greenColor = theme.colorGreen?.get() ?? "#22C55E";
+  const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
 
   const STATUS_COLORS: Record<string, string> = {
     Strong: greenColor,
@@ -215,6 +215,7 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
         {items.map((item: MuscleGroupBalanceItemResponse) => {
           const isExpanded = expanded === item.muscle_group;
           const accent = muscleAccentColor(item.muscle_group) ?? "rgba(255,255,255,0.2)";
+          const exercises = item.exercises ?? [];
           return (
             <Card key={item.muscle_group} elevated accentColor={accent}>
               <Pressable onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
@@ -248,9 +249,9 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
                 />
               </Pressable>
 
-              {isExpanded && item.exercises.length > 0 ? (
+              {isExpanded && exercises.length > 0 ? (
                 <View style={{ marginTop: spacing.xl2, gap: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" }}>
-                  {item.exercises.map((ex: MuscleGroupExerciseItemResponse) => (
+                  {exercises.map((ex: MuscleGroupExerciseItemResponse) => (
                     <ExerciseRow key={ex.exercise_name} exercise={ex} color={accent} />
                   ))}
                 </View>

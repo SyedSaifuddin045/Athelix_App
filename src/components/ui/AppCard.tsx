@@ -2,6 +2,7 @@ import { View, type ViewStyle } from "react-native";
 import { useTheme } from "@tamagui/core";
 import { radii } from "../../design-system/tokens/radii";
 import { spacing } from "../../design-system/tokens/spacing";
+import { AnimatedEnter } from "../../design-system/layout/AnimatedEnter";
 
 const ACCENT_BORDER: Record<string, string> = {
   none: "transparent",
@@ -27,26 +28,28 @@ interface AppCardProps {
   elevated?: boolean;
   accent?: keyof typeof ACCENT_BORDER | "none";
   accentColor?: string;
+  animate?: boolean;
+  animationDelay?: number;
 }
 
-export function AppCard({ children, style, elevated, accent, accentColor }: AppCardProps) {
+export function AppCard({ children, style, elevated, accent, accentColor, animate, animationDelay }: AppCardProps) {
   const theme = useTheme();
 
   const borderColor =
     accent && accent in ACCENT_BORDER
-      ? theme[ACCENT_BORDER[accent] as keyof typeof theme]?.toString() ?? theme.borderColor?.toString()
-      : theme.borderColor?.toString();
+      ? theme[ACCENT_BORDER[accent] as keyof typeof theme]?.toString() ?? theme.borderColor?.get()
+      : theme.borderColor?.get();
 
   const bgColor =
     accent && accent in ACCENT_BG
-      ? theme[ACCENT_BG[accent] as keyof typeof theme]?.toString() ?? theme.surface3?.toString()
-      : theme.surface1?.toString();
+      ? theme[ACCENT_BG[accent] as keyof typeof theme]?.toString() ?? theme.surface3?.get()
+      : theme.surface1?.get();
 
   const leftAccentStyle: ViewStyle | null = accentColor
     ? { borderLeftWidth: 3, borderLeftColor: accentColor }
     : null;
 
-  return (
+  const card = (
     <View
       style={[
         {
@@ -73,4 +76,10 @@ export function AppCard({ children, style, elevated, accent, accentColor }: AppC
       {children}
     </View>
   );
+
+  if (animate) {
+    return <AnimatedEnter type="fadeUp" delay={animationDelay ?? 0}>{card}</AnimatedEnter>;
+  }
+
+  return card;
 }

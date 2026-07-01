@@ -12,7 +12,7 @@ interface AppBadgeProps {
 
 export function AppBadge({ label, color, variant = "subtle" }: AppBadgeProps) {
   const theme = useTheme();
-  const resolvedColor = color ?? theme.accent?.toString() ?? "#FF5A36";
+  const resolvedColor = color ?? theme.accent?.get() ?? "#FF5A36";
 
   const bgColor =
     variant === "filled"

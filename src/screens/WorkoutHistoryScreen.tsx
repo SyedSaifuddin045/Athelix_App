@@ -31,14 +31,14 @@ const MOOD_ICONS: Record<string, IconName> = {
 export function WorkoutHistoryScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
-  const blueColor = theme.colorBlue?.toString() ?? "#3B82F6";
-  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const goldColor = theme.colorGold?.get() ?? "#FBBF24";
+  const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
+  const greenColor = theme.colorGreen?.get() ?? "#22C55E";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const sessions = useSessionsQuery(isAuthenticated);
   const totalVolume = (sessions.data ?? []).reduce((sum, session) => sum + (session.total_volume ?? 0), 0);
   const grouped = useMemo(() => {

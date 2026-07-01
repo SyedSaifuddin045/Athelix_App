@@ -47,8 +47,8 @@ export function SplashScreen({ navigation }: Props) {
     return () => clearTimeout(timer);
   }, [ready, isSignedIn, navigation]);
 
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
 
   return (
     <Screen scroll={false} contentContainerStyle={{ flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 24, paddingBottom: 20 }}>
@@ -63,7 +63,7 @@ export function SplashScreen({ navigation }: Props) {
           shadowColor: accent,
           shadowOpacity: 0.28,
           shadowRadius: 16,
-          shadowOffset: { width: 0, height: 8 },
+          shadowOffset: { width: 0, height: 0 },
           elevation: 8,
         }}
       >
@@ -81,7 +81,7 @@ export function SplashScreen({ navigation }: Props) {
       </Text>
       <Text
         style={{
-          color: theme.colorFaint?.toString() ?? "rgba(255,255,255,0.35)",
+          color: theme.colorFaint?.get() ?? "rgba(255,255,255,0.35)",
           fontSize: 13,
           marginTop: 6,
         }}
@@ -92,9 +92,9 @@ export function SplashScreen({ navigation }: Props) {
         style={{
           width: "100%",
           marginTop: spacing.xl6,
-          backgroundColor: theme.surface1?.toString(),
+          backgroundColor: theme.surface1?.get(),
           borderWidth: 1,
-          borderColor: theme.borderColor?.toString(),
+          borderColor: theme.borderColor?.get(),
           borderRadius: radii.card,
           paddingHorizontal: spacing.xl3,
           paddingVertical: spacing.xl4,
@@ -114,7 +114,7 @@ export function SplashScreen({ navigation }: Props) {
         <ProgressBar value={progress} color={accent} height={8} />
         <Text
           style={{
-            color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.35)",
+            color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.35)",
             fontSize: 12,
             textAlign: "center",
           }}
@@ -124,7 +124,7 @@ export function SplashScreen({ navigation }: Props) {
         {appConfig.isError ? (
           <Text
             style={{
-              color: theme.colorRed?.toString() ?? "#EF4444",
+              color: theme.colorRed?.get() ?? "#EF4444",
               fontSize: 12,
             }}
           >
@@ -136,7 +136,7 @@ export function SplashScreen({ navigation }: Props) {
         style={{
           position: "absolute",
           bottom: spacing.xl6,
-          color: theme.colorFaint?.toString() ?? "rgba(255,255,255,0.2)",
+          color: theme.colorFaint?.get() ?? "rgba(255,255,255,0.2)",
           fontSize: 11,
         }}
       >

@@ -31,14 +31,14 @@ type Props = {
 export function HomeScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const surface3Color = theme.surface3?.toString() ?? "rgba(255,255,255,0.07)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const surface3Color = theme.surface3?.get() ?? "rgba(255,255,255,0.07)";
   const overview = useOverviewQuery(isAuthenticated);
   const data = overview.data;
   const name = displayName(data?.user, data?.profile);
@@ -49,7 +49,10 @@ export function HomeScreen({ navigation }: Props) {
   const todayGetDay = new Date().getDay();
   const todayDataIndex = todayGetDay === 0 ? 6 : todayGetDay - 1;
   const startIndex = Math.max(0, todayDataIndex - 4);
-  const daysToShow = weeklyData.slice(startIndex, todayDataIndex + 1);
+  const daysToShow = weeklyData.slice(startIndex, todayDataIndex + 1).map((day) => ({
+    label: day.day.slice(0, 3),
+    value: day.value,
+  }));
   const daysCount = daysToShow.length;
   const workoutDaysCount = daysToShow.reduce((sum, d) => sum + d.value, 0);
 
@@ -77,7 +80,7 @@ export function HomeScreen({ navigation }: Props) {
     <Screen>
       <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 8 }, { paddingBottom: spacing.xl }]}>
         <Pressable style={{ flexDirection: "row", alignItems: "center", gap: 12 }} onPress={() => navigation.navigate("Profile")}>
-          <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: accent, shadowColor: accent, shadowOpacity: 0.28, shadowRadius: 16, shadowOffset: { width: 0, height: 8 }, elevation: 8 }}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: accent, shadowColor: accent, shadowOpacity: 0.28, shadowRadius: 16,               shadowOffset: { width: 0, height: 0 }, elevation: 8 }}>
             <Text style={{ color: "#000000", fontSize: 14, fontWeight: "800" }}>{initialsFor(name)}</Text>
           </View>
           <View>
@@ -98,7 +101,7 @@ export function HomeScreen({ navigation }: Props) {
         }
         style={{ marginBottom: spacing.xl2 }}
       >
-        <Card elevated accent="coral">
+        <Card elevated accent="coral" animate>
           <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, { gap: spacing.xl }]}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View
@@ -129,7 +132,7 @@ export function HomeScreen({ navigation }: Props) {
         </Card>
       </Pressable>
 
-      <Card elevated style={{ marginBottom: spacing.xl2 }}>
+      <Card elevated style={{ marginBottom: spacing.xl2 }} animate animationDelay={100}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>This Week</Text>
           <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: accent }]}>
@@ -141,16 +144,16 @@ export function HomeScreen({ navigation }: Props) {
         </View>
         <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: spacing.xl3 }} />
         <View style={{ flexDirection: "row", alignItems: "stretch", justifyContent: "space-between" }}>
-          <StatPill icon="flame" label="Day Streak" value={String(data?.workout_streaks.current_daily_streak ?? 0)} color={theme.colorOrange?.toString()} />
+          <StatPill icon="flame" label="Day Streak" value={String(data?.workout_streaks.current_daily_streak ?? 0)} color={theme.colorOrange?.get()} />
           <DividerVertical />
           <StatPill icon="dumbbell" label="Workouts" value={String(data?.stats.completed_sessions ?? 0)} color={accent} />
           <DividerVertical />
-          <StatPill icon="trending-up" label="Templates" value={String(data?.stats.total_workout_templates ?? 0)} color={theme.colorGreen?.toString()} />
+          <StatPill icon="trending-up" label="Templates" value={String(data?.stats.total_workout_templates ?? 0)} color={theme.colorGreen?.get()} />
         </View>
       </Card>
 
       <Pressable onPress={() => navigation.navigate("BodyweightHistory")} style={{ marginBottom: spacing.xl2 }}>
-        <Card elevated>
+        <Card elevated animate animationDelay={300}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <View style={{ width: 34, height: 34, borderRadius: radii.iconWrap, alignItems: "center", justifyContent: "center", backgroundColor: surface2Color }}>
@@ -164,7 +167,7 @@ export function HomeScreen({ navigation }: Props) {
                   </Text>
                   <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 13 }}>kg</Text>
                   {latestWeight ? (
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.colorGreen?.toString() }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: theme.colorGreen?.get() }}>
                       {formatShortDate(latestWeight.logged_at)}
                     </Text>
                   ) : null}
@@ -248,7 +251,7 @@ export function HomeScreen({ navigation }: Props) {
             navigation.navigate("SessionDetail", { id: String(latestSession.id) })
           }
         >
-          <Card elevated>
+          <Card elevated animate animationDelay={200}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flex: 1 }}>
                 <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>

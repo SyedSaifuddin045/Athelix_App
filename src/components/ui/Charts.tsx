@@ -18,7 +18,7 @@ export function VerticalBars({
   maxValue?: number;
 }) {
   const theme = useTheme();
-  const barColor = barColorProp ?? theme.accent?.toString() ?? "#FF5A36";
+  const barColor = barColorProp ?? theme.accent?.get() ?? "#FF5A36";
   const max = maxValue ?? Math.max(...data.map((d) => d.value), 1);
 
   return (
@@ -57,7 +57,7 @@ export function TrendChart({
   color?: string;
 }) {
   const theme = useTheme();
-  const color = colorProp ?? theme.accent?.toString() ?? "#FF5A36";
+  const color = colorProp ?? theme.accent?.get() ?? "#FF5A36";
   if (!segments.length) return null;
   const [chartWidth, setChartWidth] = useState(0);
 
@@ -114,7 +114,7 @@ export function TrendChart({
                 cy={yPos(point.value)}
                 r={4}
                 fill={color}
-                stroke={theme.backgroundFocus?.toString()}
+                stroke={theme.backgroundFocus?.get()}
                 strokeWidth={2}
               />
             ))}

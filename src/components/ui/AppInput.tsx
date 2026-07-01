@@ -29,19 +29,19 @@ export function AppInput({
   style,
 }: AppInputProps) {
   const theme = useTheme();
-  const bgColor = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
+  const bgColor = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const border = error
-    ? (theme.colorRed?.toString() ?? "#EF4444")
-    : (theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)");
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const placeholderColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
+    ? (theme.colorRed?.get() ?? "#EF4444")
+    : (theme.borderColor?.get() ?? "rgba(255,255,255,0.08)");
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const placeholderColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
 
   return (
     <View style={{ flex: 1 }}>
       {label ? (
         <Text
           style={{
-            color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+            color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
             fontSize: 11,
             fontWeight: "700",
             marginBottom: spacing.sm,
@@ -80,7 +80,7 @@ export function AppInput({
       {error && errorMessage ? (
         <Text
           style={{
-            color: theme.colorRed?.toString() ?? "#EF4444",
+            color: theme.colorRed?.get() ?? "#EF4444",
             fontSize: 10,
             marginTop: spacing.sm,
             marginLeft: spacing.xxs,

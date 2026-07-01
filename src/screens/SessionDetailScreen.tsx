@@ -30,6 +30,13 @@ type Props = {
   route: RouteProp<RootStackParamList, "SessionDetail">;
 };
 
+function setCalories(set: { calories_burned?: number | null; duration_sec?: number | null; distance_m?: number | null }): number {
+  if (set.calories_burned) return set.calories_burned;
+  if (set.duration_sec) return Math.round(5 * 80 * (set.duration_sec / 3600));
+  if (set.distance_m) return Math.round(1.036 * 80 * (set.distance_m / 1000));
+  return 0;
+}
+
 const MOOD_ICONS: Record<string, IconName> = {
   Tired: "sleep",
   Okay: "meh",
@@ -53,16 +60,16 @@ export function SessionDetailScreen({ navigation, route }: Props) {
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
   const exerciseGroups = useMemo(() => groupSetsByExercise(detail.data?.sets ?? [], lookup), [detail.data?.sets, lookup]);
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const orangeColor = theme.colorOrange?.toString() ?? "#F59E0B";
-  const surfaceColor = theme.surface?.toString() ?? "#0D0D0D";
-  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const goldColor = theme.colorGold?.get() ?? "#FBBF24";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const orangeColor = theme.colorOrange?.get() ?? "#F59E0B";
+  const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
+  const surfaceHover = theme.surfaceHover?.get() ?? "rgba(255,255,255,0.06)";
 
   const confirmDelete = async () => {
     if (!sessionId) return;
@@ -164,16 +171,18 @@ export function SessionDetailScreen({ navigation, route }: Props) {
           <DetailStat icon="clock" value={`${session.duration_minutes ?? 0}m`} label="Duration" color={accent} />
           <DetailStat icon="list-checks" value={String(session.total_sets ?? session.sets.length)} label="Sets" color={accent} />
           <DetailStat icon="gauge" value={formatVolume(session.total_volume)} label="Volume" color={accent} />
-          {(session.calories_burned ?? 0) > 0 ? (
-            <DetailStat icon="flame" value={formatCalories(session.calories_burned)} label="Calories" color="#FF5A36" />
-          ) : null}
+          {(() => {
+            const fromSets = session.sets.reduce((s, set) => s + setCalories(set), 0);
+            const totalCal = fromSets || (session.calories_burned ?? 0);
+            return totalCal > 0 ? <DetailStat icon="flame" value={formatCalories(totalCal)} label="Calories" color="#FF5A36" /> : null;
+          })()}
         </View>
       </View>
 
       <View style={{ gap: spacing.xl, marginTop: spacing.xl3 }}>
         {exerciseGroups.map((exercise) => {
           const isCardioEx = lookup.get(exercise.exerciseId)?.exercise_category === "cardio";
-          const exCalories = exercise.sets.reduce((sum, s) => sum + (s.calories_burned ?? 0), 0);
+          const exCalories = exercise.sets.reduce((sum, s) => sum + setCalories(s), 0);
           return (
           <Card key={exercise.name} elevated style={{ paddingHorizontal: spacing.xl3, paddingVertical: 0 }}>
             <View style={[{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" }, { flexDirection: "row", alignItems: "center", gap: spacing.xl, paddingVertical: spacing.xl2, borderBottomWidth: 1, borderBottomColor: borderColor }]}>
@@ -208,7 +217,7 @@ export function SessionDetailScreen({ navigation, route }: Props) {
                           <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }]}>{set.rpe ?? "-"}</Text>
                         </View>
                         <View style={[{ flex: 1, minHeight: 34, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }, { flex: 1, minHeight: 34, borderRadius: radii.stepper, backgroundColor: "rgba(255,90,54,0.1)", alignItems: "center", justifyContent: "center" }]}>
-                          <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }, { color: "#FF5A36", fontSize: 11, fontWeight: "700" }]}>{formatCalories(set.calories_burned)}</Text>
+                          <Text style={[{ color: textColor, fontSize: 12, fontWeight: "700" }, { color: "#FF5A36", fontSize: 11, fontWeight: "700" }]}>{formatCalories(setCalories(set))}</Text>
                         </View>
                       </>
                     ) : (

@@ -19,11 +19,11 @@ export function AppErrorCard({ error, onRetry }: AppErrorCardProps) {
         <AppIcon
           name="alert-circle"
           size={18}
-          color={theme.colorRed?.toString() ?? "#EF4444"}
+          color={theme.colorRed?.get() ?? "#EF4444"}
         />
         <Text
           style={{
-            color: theme.colorRed?.toString() ?? "#EF4444",
+            color: theme.colorRed?.get() ?? "#EF4444",
             fontSize: 13,
             fontWeight: "700",
           }}
@@ -33,7 +33,7 @@ export function AppErrorCard({ error, onRetry }: AppErrorCardProps) {
       </View>
       <Text
         style={{
-          color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+          color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
           fontSize: 11,
           lineHeight: 16,
         }}
@@ -50,9 +50,9 @@ export function AppErrorCard({ error, onRetry }: AppErrorCardProps) {
             paddingHorizontal: spacing.xl,
             paddingVertical: spacing.md,
             borderRadius: 14,
-            backgroundColor: theme.surface2?.toString(),
+            backgroundColor: theme.surface2?.get(),
             borderWidth: 1,
-            borderColor: theme.borderColor?.toString(),
+            borderColor: theme.borderColor?.get(),
             alignSelf: "flex-start",
             marginTop: spacing.xs,
           }}
@@ -60,11 +60,11 @@ export function AppErrorCard({ error, onRetry }: AppErrorCardProps) {
           <AppIcon
             name="refresh-cw"
             size={13}
-            color={theme.accent?.toString() ?? "#FF5A36"}
+            color={theme.accent?.get() ?? "#FF5A36"}
           />
           <Text
             style={{
-              color: theme.accent?.toString() ?? "#FF5A36",
+              color: theme.accent?.get() ?? "#FF5A36",
               fontSize: 12,
               fontWeight: "700",
             }}

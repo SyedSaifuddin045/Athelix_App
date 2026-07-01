@@ -37,15 +37,15 @@ export function MesocycleListScreen({ navigation }: Props) {
     },
   });
 
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surfaceColor = theme.surface?.toString() ?? "#0D0D0D";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const purpleColor = theme.colorPurple?.toString() ?? "#8B5CF6";
-  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const purpleColor = theme.colorPurple?.get() ?? "#8B5CF6";
+  const greenColor = theme.colorGreen?.get() ?? "#22C55E";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
 
   return (
     <Screen>

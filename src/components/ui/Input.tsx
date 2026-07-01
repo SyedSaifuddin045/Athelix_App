@@ -12,6 +12,7 @@ export function LabeledInput({
   placeholder,
   keyboardType,
   secureTextEntry,
+  error,
 }: {
   label: string;
   value: string;
@@ -19,6 +20,7 @@ export function LabeledInput({
   placeholder?: string;
   keyboardType?: "default" | "numeric" | "email-address";
   secureTextEntry?: boolean;
+  error?: string;
 }) {
   const theme = useTheme();
 
@@ -26,7 +28,7 @@ export function LabeledInput({
     <View style={{ flex: 1 }}>
       <Text
         style={{
-          color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+          color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
           fontSize: 11,
           fontWeight: "700",
           marginBottom: spacing.sm,
@@ -40,21 +42,24 @@ export function LabeledInput({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={theme.colorFaint?.toString()}
+        placeholderTextColor={theme.colorFaint?.get()}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         style={{
           width: "100%",
           minHeight: 52,
           borderRadius: radii.input,
-          backgroundColor: theme.surface2?.toString(),
+          backgroundColor: theme.surface2?.get(),
           borderWidth: 1,
-          borderColor: theme.borderColor?.toString(),
-          color: theme.color?.toString() ?? "#FFFFFF",
+          borderColor: error ? (theme.colorRed?.get() ?? "#EF4444") : (theme.borderColor?.get()),
+          color: theme.color?.get() ?? "#FFFFFF",
           paddingHorizontal: spacing.xl3,
           fontSize: 14,
         }}
       />
+      {error ? (
+        <Text style={{ color: theme.colorRed?.get() ?? "#EF4444", fontSize: 11, marginTop: spacing.xs }}>{error}</Text>
+      ) : null}
     </View>
   );
 }
@@ -83,7 +88,7 @@ export function MiniInput({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder ?? ""}
-      placeholderTextColor={theme.colorFaint?.toString()}
+      placeholderTextColor={theme.colorFaint?.get()}
       keyboardType={keyboardType ?? "decimal-pad"}
       style={[
         {
@@ -91,12 +96,12 @@ export function MiniInput({
           minWidth: 0,
           minHeight: 38,
           borderRadius: radii.stepper,
-          backgroundColor: theme.surface2?.toString(),
+          backgroundColor: theme.surface2?.get(),
           borderWidth: 1,
           borderColor: error
-            ? (theme.colorRed?.toString() ?? "#EF4444")
-            : (theme.borderColor?.toString()),
-          color: theme.color?.toString() ?? "#FFFFFF",
+            ? (theme.colorRed?.get() ?? "#EF4444")
+            : (theme.borderColor?.get()),
+          color: theme.color?.get() ?? "#FFFFFF",
           textAlign: "center",
           fontSize: 13,
           paddingHorizontal: spacing.xs,
@@ -142,15 +147,15 @@ export function ChipWrap({
             paddingVertical: spacing.lg,
             borderRadius: radii.input,
             borderWidth: 1,
-            borderColor: selected === item.value ? `${activeColor}50` : theme.borderColor?.toString(),
-            backgroundColor: selected === item.value ? `${activeColor}20` : theme.surface2?.toString(),
+            borderColor: selected === item.value ? `${activeColor}50` : theme.borderColor?.get(),
+            backgroundColor: selected === item.value ? `${activeColor}20` : theme.surface2?.get(),
           }}
         >
           <Text
             style={{
               color: selected === item.value
-                ? (theme.color?.toString())
-                : (theme.colorMuted?.toString()),
+                ? (theme.color?.get())
+                : (theme.colorMuted?.get()),
               fontSize: 12,
               fontWeight: "700",
               textAlign: "center",
@@ -186,8 +191,8 @@ export function SelectableRow({
         minHeight: 54,
         borderRadius: radii.input,
         borderWidth: 1,
-        borderColor: selected ? `${color}50` : theme.borderColor?.toString(),
-        backgroundColor: selected ? `${color}12` : theme.surface1?.toString(),
+        borderColor: selected ? `${color}50` : theme.borderColor?.get(),
+        backgroundColor: selected ? `${color}12` : theme.surface1?.get(),
         justifyContent: "center",
         paddingHorizontal: spacing.xl2,
       }}
@@ -198,8 +203,8 @@ export function SelectableRow({
           <Text
             style={{
               color: selected
-                ? (theme.color?.toString() ?? "#FFFFFF")
-                : (theme.color?.toString() ?? "#FFFFFF"),
+                ? (theme.color?.get() ?? "#FFFFFF")
+                : (theme.color?.get() ?? "#FFFFFF"),
               fontSize: 13,
               fontWeight: "700",
             }}
@@ -209,7 +214,7 @@ export function SelectableRow({
           {sublabel ? (
             <Text
               style={{
-                color: theme.colorFaint?.toString() ?? "rgba(255,255,255,0.34)",
+                color: theme.colorFaint?.get() ?? "rgba(255,255,255,0.34)",
                 fontSize: 10,
               }}
             >
@@ -237,7 +242,7 @@ export function Radio({
         height: 20,
         borderRadius: 10,
         borderWidth: 2,
-        borderColor: selected ? color : theme.borderColor?.toString(),
+        borderColor: selected ? color : theme.borderColor?.get(),
         alignItems: "center",
         justifyContent: "center",
       }}
@@ -305,13 +310,13 @@ export function PickerColumn({
           paddingVertical: spacing.md,
           borderRadius: radii.stepper,
           borderWidth: 1,
-          borderColor: theme.borderColor?.toString(),
-          backgroundColor: theme.surface2?.toString(),
+          borderColor: theme.borderColor?.get(),
+          backgroundColor: theme.surface2?.get(),
         }}
       >
         <Text
           style={{
-            color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+            color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
             fontSize: 13,
             fontWeight: "600",
           }}
@@ -339,8 +344,8 @@ export function PickerColumn({
                 <Text
                   style={{
                     color: item === currentVal
-                      ? (theme.accent?.toString() ?? "#FF5A36")
-                      : (theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)"),
+                      ? (theme.accent?.get() ?? "#FF5A36")
+                      : (theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)"),
                     fontSize: item === currentVal ? 16 : 14,
                     fontWeight: item === currentVal ? "700" : "400",
                   }}

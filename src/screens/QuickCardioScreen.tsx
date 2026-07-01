@@ -4,18 +4,114 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import type { RootStackParamList } from "../types/navigation";
-import { getCardioActivity } from "../utils/cardio";
-import { iconForActivity } from "../utils/cardio";
-import { createWorkoutSessionWorkoutSessionsPost } from "../api/endpoints/workout-sessions/workout-sessions";
-import { createExerciseSetWorkoutSessionsSessionIdSetsPost } from "../api/endpoints/workout-sessions/workout-sessions";
+import { getCardioActivity, iconForActivity } from "../utils/cardio";
+import { createWorkoutSessionWorkoutSessionsPost, createExerciseSetWorkoutSessionsSessionIdSetsPost } from "../api/endpoints/workout-sessions/workout-sessions";
+import type { ExerciseSetCreate } from "../api/model/exerciseSetCreate";
+import type { WorkoutSessionResponse } from "../api/model/workoutSessionResponse";
 import { useTheme } from "@tamagui/core";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
-import { RpeStepper } from "../components/ui/RpeStepper";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { queryKeys } from "../api/queryKeys";
 import { getApiErrorMessage } from "../api/client";
+import Animated, {
+  useSharedValue,
+  withSpring,
+  useAnimatedStyle,
+} from "react-native-reanimated";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+type ControlVariant = "start" | "pause" | "resume" | "outline";
+
+function ControlButton({
+  label,
+  iconName,
+  onPress,
+  variant,
+  disabled,
+}: {
+  label: string;
+  iconName: string;
+  onPress?: () => void;
+  variant: ControlVariant;
+  disabled?: boolean;
+}) {
+  const theme = useTheme();
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const borderCol = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface2 = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+
+  const isSolid = variant === "start" || variant === "resume";
+  const isPause = variant === "pause";
+  const isOutline = variant === "outline";
+
+  const bgColor = isSolid
+    ? accent
+    : isPause
+      ? surface2
+      : "transparent";
+  const txtColor = isSolid ? "#000000" : mutedColor;
+  const iconColor = isSolid ? "#000000" : mutedColor;
+  const border = isOutline ? borderCol : "transparent";
+  const borderW = isOutline ? 1 : 0;
+
+  return (
+    <AnimatedPressable
+      disabled={disabled}
+      onPress={onPress}
+      onPressIn={() => {
+        scale.value = withSpring(0.95, { damping: 15, stiffness: 300 });
+      }}
+      onPressOut={() => {
+        scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      }}
+      style={[
+        {
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          paddingHorizontal: 24,
+          height: 52,
+          borderRadius: radii.button,
+          backgroundColor: bgColor,
+          borderWidth: borderW,
+          borderColor: border,
+          opacity: disabled ? 0.4 : 1,
+        },
+        isSolid && {
+          shadowColor: accent,
+          shadowOpacity: 0.35,
+          shadowRadius: 16,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: 8,
+        },
+        animatedStyle,
+      ]}
+    >
+      <AppIcon name={iconName} size={18} color={iconColor} />
+      <Text
+        style={{
+          color: txtColor,
+          fontSize: 15,
+          fontWeight: "800",
+        }}
+      >
+        {label}
+      </Text>
+    </AnimatedPressable>
+  );
+}
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "QuickCardio">;
@@ -43,12 +139,13 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const theme = useTheme();
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const surfaceHover = theme.surfaceHover?.get() ?? "rgba(255,255,255,0.06)";
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<Date | null>(null);
 
@@ -92,6 +189,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
       const now = new Date();
       const startedAt = startTimeRef.current ?? now;
       const finishedAt = now;
+      const distKm = parseFloat(distanceKm) || 0;
 
       const sessionRes = await createWorkoutSessionWorkoutSessionsPost({
         name: activity.label,
@@ -99,17 +197,23 @@ export function QuickCardioScreen({ navigation, route }: Props) {
         finished_at: finishedAt.toISOString(),
         is_completed: true,
       });
-      const session = sessionRes.data as import("../api/model/workoutSessionResponse").WorkoutSessionResponse;
+      const session = sessionRes.data as WorkoutSessionResponse;
 
-      await createExerciseSetWorkoutSessionsSessionIdSetsPost(session.id, {
+      const estimatedCalories = distKm > 0 && elapsedSec > 0
+        ? Math.round(parseFloat(activity.exerciseId.includes("walk") ? "0.5" : "1.036") * 80 * distKm)
+        : 0;
+
+      const setPayload: ExerciseSetCreate = {
         exercise_id: activity.exerciseId,
         set_number: 1,
         set_type: "normal",
         duration_sec: elapsedSec,
-        distance_m: parseFloat(distanceKm) * 1000,
+        distance_m: distKm * 1000,
+        calories_burned: estimatedCalories,
         rpe,
         notes: notes || undefined,
-      });
+      };
+      await createExerciseSetWorkoutSessionsSessionIdSetsPost(session.id, setPayload);
 
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
@@ -160,7 +264,29 @@ export function QuickCardioScreen({ navigation, route }: Props) {
 
           <View>
             <Text style={[{ color: mutedColor, fontSize: 11, lineHeight: 16 }, { marginBottom: spacing.sm }]}>RPE (1-10)</Text>
-            <RpeStepper value={rpe} onChange={setRpe} />
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+              {[1,2,3,4,5,6,7,8,9,10].map((val) => {
+                const isSelected = val === rpe;
+                return (
+                  <Pressable
+                    key={val}
+                    onPress={() => setRpe(val)}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 22,
+                      backgroundColor: isSelected ? accent : surfaceHover,
+                      borderWidth: 1,
+                      borderColor: isSelected ? accent : borderColor,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text style={{ color: isSelected ? "#000" : textColor, fontSize: 15, fontWeight: "700" }}>{val}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
 
           <View>
@@ -249,19 +375,25 @@ export function QuickCardioScreen({ navigation, route }: Props) {
         ) : (
           <View style={{ height: 20 }} />
         )}
-        <View style={{ flexDirection: "row", gap: spacing.xl2 }}>
-          {phase === "idle" ? (
-            <PrimaryButton label="Start" onPress={startTimer} />
-          ) : (
-            <>
-              <PrimaryButton
-                label={isRunning ? "Pause" : "Resume"}
-                onPress={isRunning ? pauseTimer : resumeTimer}
-              />
-              <PrimaryButton label="Finish" onPress={finishTimer} disabled={!canFinish} />
-            </>
-          )}
-        </View>
+        {phase === "idle" ? (
+          <ControlButton label="Start" iconName="play" onPress={startTimer} variant="start" />
+        ) : (
+          <View style={{ flexDirection: "row", gap: spacing.md }}>
+            <ControlButton
+              label={isRunning ? "Pause" : "Resume"}
+              iconName={isRunning ? "pause" : "play"}
+              onPress={isRunning ? pauseTimer : resumeTimer}
+              variant={isRunning ? "pause" : "resume"}
+            />
+            <ControlButton
+              label="Finish"
+              iconName="check"
+              onPress={finishTimer}
+              disabled={!canFinish}
+              variant="outline"
+            />
+          </View>
+        )}
       </View>
     </Screen>
   );

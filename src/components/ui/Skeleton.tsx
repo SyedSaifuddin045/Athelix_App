@@ -40,7 +40,7 @@ export function Skeleton({
           width: width ?? "100%",
           height: height ?? 20,
           borderRadius: radius,
-          backgroundColor: theme.surface2?.toString(),
+          backgroundColor: theme.surface2?.get(),
         },
         animatedStyle,
         style,

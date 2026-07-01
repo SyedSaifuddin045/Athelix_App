@@ -24,15 +24,15 @@ export function TemplateListScreen({ navigation }: Props) {
   const templates = useTemplatesQuery(isAuthenticated);
   const deleteTemplate = useDeleteTemplate();
 
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surface1Color = theme.surface1?.toString() ?? "rgba(255,255,255,0.04)";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const blueColor = theme.colorBlue?.toString() ?? "#3B82F6";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
 
   const handleDelete = (template: WorkoutTemplateResponse) => {
     Alert.alert("Delete template?", template.name, [

@@ -14,7 +14,7 @@ export function AppSeparator({ style, marginVertical = 16 }: AppSeparatorProps) 
       style={[
         {
           height: 1,
-          backgroundColor: theme.borderColor?.toString(),
+          backgroundColor: theme.borderColor?.get(),
           marginVertical,
         },
         style,

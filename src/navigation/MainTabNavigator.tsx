@@ -5,6 +5,7 @@ import { View } from "react-native";
 import type { TabParamList } from "../types/navigation";
 import { useTheme } from "@tamagui/core";
 import { spacing } from "../design-system/tokens/spacing";
+import { rawColors } from "../design-system/tokens/colors";
 import { AppIcon, type IconName } from "../design-system/icons/AppIcon";
 
 import { HomeScreen } from "../screens/HomeScreen";
@@ -39,16 +40,19 @@ export function MainTabNavigator() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        sceneStyle: {
+          backgroundColor: rawColors.root,
+        },
         tabBarStyle: {
-          backgroundColor: "rgba(5,5,5,0.96)",
-          borderTopColor: theme.borderColor?.toString(),
+          backgroundColor: rawColors.tabBar,
+          borderTopColor: theme.borderColor?.get() ?? rawColors.border,
           borderTopWidth: 1,
           paddingTop: spacing.md,
           paddingBottom: spacing.lg + Math.max(insets.bottom, spacing.sm),
           height: 70 + Math.max(insets.bottom, spacing.sm),
         },
-        tabBarActiveTintColor: theme.accent?.toString(),
-        tabBarInactiveTintColor: theme.colorFaint?.toString(),
+        tabBarActiveTintColor: theme.accent?.get(),
+        tabBarInactiveTintColor: theme.colorFaint?.get(),
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "600",

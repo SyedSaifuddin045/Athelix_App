@@ -10,12 +10,13 @@ import { useSaveAccount } from "../api/mutations";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
 import { Card, LoadingCard } from "../components/ui/Card";
+import { validateUsername } from "../utils/validation";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { LabeledInput } from "../components/ui/Input";
 import { AppIcon } from "../design-system/icons/AppIcon";
-import { apiFetch, getApiErrorMessage } from "../api/client";
+import { apiFetch, ApiError, getApiErrorMessage } from "../api/client";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
 
@@ -30,6 +31,7 @@ export function SettingsScreen({ navigation }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [notifications, setNotifications] = useState({
     workoutReminders: true,
     prAlerts: true,
@@ -37,16 +39,16 @@ export function SettingsScreen({ navigation }: Props) {
     newFeatures: true,
   });
 
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
-  const greenDarkColor = theme.colorGreenDark?.toString() ?? "rgba(34,197,94,0.12)";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const greenColor = theme.colorGreen?.get() ?? "#22C55E";
+  const greenDarkColor = theme.colorGreenDark?.get() ?? "rgba(34,197,94,0.12)";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.get() ?? "rgba(239,68,68,0.12)";
 
   useEffect(() => {
     if (!currentUser.data) return;
@@ -62,11 +64,22 @@ export function SettingsScreen({ navigation }: Props) {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     },
-    onError: (err) => setError(getApiErrorMessage(err)),
+    onError: (err) => {
+      const msg = getApiErrorMessage(err);
+      const isUsernameConflict = err instanceof ApiError && err.status === 409;
+      if (isUsernameConflict) setUsernameError(msg);
+      else setError(msg);
+    },
   });
 
   const handleSave = () => {
     setError("");
+    const usernameErr = validateUsername(form.username);
+    if (usernameErr) {
+      setUsernameError(usernameErr);
+      return;
+    }
+    setUsernameError("");
     saveAccount.mutate({ username: form.username.trim() || null, email: form.email.trim() || null });
   };
 
@@ -109,7 +122,12 @@ export function SettingsScreen({ navigation }: Props) {
           <SectionEyebrow>Account Details</SectionEyebrow>
           <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
             <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
-              <LabeledInput label="Username" value={form.username} onChangeText={(v) => setForm((c) => ({ ...c, username: v }))} />
+              <LabeledInput
+                label="Username"
+                value={form.username}
+                onChangeText={(v) => { setForm((c) => ({ ...c, username: v })); setUsernameError(""); setError(""); }}
+                error={usernameError}
+              />
             </View>
             <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
             <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>

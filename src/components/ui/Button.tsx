@@ -48,13 +48,13 @@ export function PrimaryButton({
   const theme = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useScalePress();
 
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const bgSoft = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const borderCol = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const bgSoft = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const borderCol = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
 
   const bgColor = subtle ? bgSoft : accent;
   const textColor = subtle
-    ? (theme.color?.toString() ?? "#FFFFFF")
+    ? (theme.color?.get() ?? "#FFFFFF")
     : "#000000";
 
   return (
@@ -81,7 +81,7 @@ export function PrimaryButton({
                 shadowColor: accent,
                 shadowOpacity: 0.28,
                 shadowRadius: 12,
-                shadowOffset: { width: 0, height: 6 },
+                shadowOffset: { width: 0, height: 0 },
                 elevation: 6,
               }),
         },
@@ -90,7 +90,7 @@ export function PrimaryButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={subtle ? theme.colorMuted?.toString() : "#000000"} />
+        <ActivityIndicator size="small" color={subtle ? theme.colorMuted?.get() : "#000000"} />
       ) : (
         icon
       )}
@@ -134,11 +134,11 @@ export function RoundButton({
           justifyContent: "center",
           backgroundColor: accent
             ? "rgba(255,90,54,0.16)"
-            : (theme.surface2?.toString() ?? "rgba(255,255,255,0.07)"),
+            : (theme.surface2?.get() ?? "rgba(255,255,255,0.07)"),
           borderWidth: 1,
           borderColor: accent
             ? "rgba(255,90,54,0.32)"
-            : (theme.borderColor?.toString() ?? "rgba(255,255,255,0.09)"),
+            : (theme.borderColor?.get() ?? "rgba(255,255,255,0.09)"),
         },
         animatedStyle,
       ]}
@@ -177,14 +177,14 @@ export function IconButton({
           borderRadius: btnSize / 2,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: backgroundColor ?? theme.surface2?.toString(),
+          backgroundColor: backgroundColor ?? theme.surface2?.get(),
           borderWidth: 1,
-          borderColor: theme.borderColor?.toString(),
+          borderColor: theme.borderColor?.get(),
         },
         animatedStyle,
       ]}
     >
-      <AppIcon name={icon} size={btnSize * 0.45} color={color ?? theme.color?.toString()} />
+      <AppIcon name={icon} size={btnSize * 0.45} color={color ?? theme.color?.get()} />
     </AnimatedPressable>
   );
 }
@@ -213,13 +213,13 @@ export function BackHeader({
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
         {onBack ? (
           <RoundButton onPress={onBack}>
-            <AppIcon name="arrow-left" size={16} color={theme.color?.toString()} />
+            <AppIcon name="arrow-left" size={16} color={theme.color?.get()} />
           </RoundButton>
         ) : null}
         <View>
           <Text
             style={{
-              color: theme.color?.toString() ?? "#FFFFFF",
+              color: theme.color?.get() ?? "#FFFFFF",
               fontSize: 17,
               fontWeight: "700",
             }}
@@ -229,7 +229,7 @@ export function BackHeader({
           {subtitle ? (
             <Text
               style={{
-                color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+                color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
                 fontSize: 11,
                 marginTop: 2,
               }}

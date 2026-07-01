@@ -43,16 +43,16 @@ export function ProfileScreen({ navigation }: Props) {
   const name = displayName(user, profile);
   const latestWeight = overview.data?.latest_body_weight_log;
 
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surfaceColor = theme.surface?.toString() ?? "#0D0D0D";
-  const screenColor = theme.backgroundFocus?.toString() ?? "#0A0A0A";
-  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
+  const screenColor = theme.backgroundFocus?.get() ?? "#0A0A0A";
+  const greenColor = theme.colorGreen?.get() ?? "#22C55E";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.get() ?? "rgba(239,68,68,0.12)";
 
   return (
     <Screen>
@@ -74,7 +74,7 @@ export function ProfileScreen({ navigation }: Props) {
               shadowColor: accent,
               shadowOpacity: 0.28,
               shadowRadius: 12,
-              shadowOffset: { width: 0, height: 6 },
+              shadowOffset: { width: 0, height: 0 },
               elevation: 6,
             }}
           >

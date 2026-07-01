@@ -31,14 +31,14 @@ export function LoginScreen({ navigation }: Props) {
   const [oauthProvider, setOauthProvider] = useState<string | null>(null);
   const [error, setError] = useState("");
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
-  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.get() ?? "rgba(239,68,68,0.12)";
+  const surfaceHover = theme.surfaceHover?.get() ?? "rgba(255,255,255,0.06)";
 
   const handleOAuth = useCallback(
     async (strategy: "oauth_google" | "oauth_facebook" | "oauth_apple") => {
@@ -121,7 +121,7 @@ export function LoginScreen({ navigation }: Props) {
           style={[
             {
               shadowColor: accent,
-              shadowOffset: { width: 0, height: 4 },
+              shadowOffset: { width: 0, height: 0 },
               shadowOpacity: 0.3,
               shadowRadius: 12,
               elevation: 8,

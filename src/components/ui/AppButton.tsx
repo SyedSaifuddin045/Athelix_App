@@ -43,12 +43,12 @@ function useScalePress() {
 }
 
 function getVariantStyle(variant: ButtonVariant, theme: ReturnType<typeof useTheme>, disabled?: boolean) {
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const bgSoft = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const red = theme.colorRed?.toString() ?? "#EF4444";
-  const bgRed = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const bgSoft = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const red = theme.colorRed?.get() ?? "#EF4444";
+  const bgRed = theme.colorRedDark?.get() ?? "rgba(239,68,68,0.12)";
 
   switch (variant) {
     case "primary":
@@ -59,7 +59,7 @@ function getVariantStyle(variant: ButtonVariant, theme: ReturnType<typeof useThe
         shadowColor: accent,
         shadowOpacity: 0.28,
         shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
+        shadowOffset: { width: 0, height: 0 },
         elevation: 6,
       };
     case "secondary":
@@ -84,7 +84,7 @@ function getVariantStyle(variant: ButtonVariant, theme: ReturnType<typeof useThe
       return {
         backgroundColor: "transparent",
         borderWidth: 0,
-        textColor: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+        textColor: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
         shadowOpacity: 0,
         elevation: 0,
       };

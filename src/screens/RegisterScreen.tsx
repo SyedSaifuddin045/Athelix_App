@@ -11,6 +11,7 @@ import { radii } from "../design-system/tokens/radii";
 import { Screen } from "../components/ui/Layout";
 import { PrimaryButton, RoundButton } from "../components/ui/Button";
 import { AppIcon } from "../design-system/icons/AppIcon";
+import { validateUsername } from "../utils/validation";
 
 const OAUTH_PROVIDERS = [
   { strategy: "oauth_google" as const, label: "Google", icon: "chrome" as const },
@@ -29,16 +30,17 @@ export function RegisterScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
   const [oauthProvider, setOauthProvider] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [pendingVerification, setPendingVerification] = useState(false);
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.toString() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const redDarkColor = theme.colorRedDark?.toString() ?? "rgba(239,68,68,0.12)";
-  const surfaceHover = theme.surfaceHover?.toString() ?? "rgba(255,255,255,0.06)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const redDarkColor = theme.colorRedDark?.get() ?? "rgba(239,68,68,0.12)";
+  const surfaceHover = theme.surfaceHover?.get() ?? "rgba(255,255,255,0.06)";
   const [code, setCode] = useState("");
 
   const checks = [
@@ -106,6 +108,12 @@ export function RegisterScreen({ navigation }: Props) {
       setError("Please fill in all fields.");
       return;
     }
+    const usernameErr = validateUsername(form.username);
+    if (usernameErr) {
+      setUsernameError(usernameErr);
+      return;
+    }
+    setUsernameError("");
     setError("");
     setLoading(true);
     try {
@@ -118,13 +126,31 @@ export function RegisterScreen({ navigation }: Props) {
         const clerkErr = createError as any;
         if (clerkErr.errors?.length) {
           const messages = clerkErr.errors.map((e: any) => e.longMessage || e.message).join("; ");
-          setError(messages);
+          const isTaken = clerkErr.errors.some(
+            (e: any) =>
+              (e.meta?.paramName === "username" || e.meta?.paramName?.includes("username")) &&
+              (e.code === "form_identifier_exists" || e.message?.toLowerCase().includes("taken"))
+          );
+          if (isTaken) setUsernameError("Username is already taken");
+          else setError(messages);
         } else {
           setError(createError.message || "Registration failed");
         }
         return;
       }
-      if (form.username.trim()) await signUp.update({ username: form.username.trim() });
+      if (form.username.trim()) {
+        const { error: updateError } = await signUp.update({ username: form.username.trim() });
+        if (updateError) {
+          setLoading(false);
+          const uErr = updateError as any;
+          if (uErr.errors?.some((e: any) => e.code === "form_identifier_exists" || e.message?.toLowerCase().includes("taken"))) {
+            setUsernameError("Username is already taken");
+          } else {
+            setError(uErr.message || "Failed to set username");
+          }
+          return;
+        }
+      }
       const { error: sendError } = await signUp.verifications.sendEmailCode();
       if (sendError) {
         setLoading(false);
@@ -226,11 +252,14 @@ export function RegisterScreen({ navigation }: Props) {
           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Username</Text>
           <TextInput
             value={form.username}
-            onChangeText={(v) => setForm((c) => ({ ...c, username: v }))}
+            onChangeText={(v) => { setForm((c) => ({ ...c, username: v })); setUsernameError(""); setError(""); }}
             placeholder="jordan_lifts"
             placeholderTextColor={faintColor}
-            style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, color: textColor, paddingHorizontal: 16, fontSize: 14 }}
+            style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: usernameError ? redColor : borderColor, color: textColor, paddingHorizontal: 16, fontSize: 14 }}
           />
+          {usernameError ? (
+            <Text style={{ color: redColor, fontSize: 11, marginTop: spacing.xs }}>{usernameError}</Text>
+          ) : null}
         </View>
         <View>
           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Email</Text>

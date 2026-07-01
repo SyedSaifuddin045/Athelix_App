@@ -10,10 +10,11 @@ interface AppScreenProps {
 
 export function AppScreen({ children, scroll = true, contentContainerStyle }: AppScreenProps) {
   const theme = useTheme();
+  const backgroundColor = theme.background?.get() ?? "#050505";
 
   const screenStyle = {
     flex: 1,
-    backgroundColor: theme.background?.toString(),
+    backgroundColor,
   };
 
   if (!scroll) {
@@ -27,7 +28,8 @@ export function AppScreen({ children, scroll = true, contentContainerStyle }: Ap
   return (
     <View style={screenStyle}>
       <ScrollView
-        contentContainerStyle={[{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }, contentContainerStyle]}
+        style={screenStyle}
+        contentContainerStyle={[{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >

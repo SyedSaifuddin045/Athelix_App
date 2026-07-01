@@ -9,6 +9,7 @@ import { useTheme } from "@tamagui/core";
 import { radii } from "../design-system/tokens/radii";
 import { shadows } from "../design-system/tokens/shadows";
 import { AppIcon } from "../design-system/icons/AppIcon";
+import { rawColors } from "../design-system/tokens/colors";
 
 const CLERK_CACHE_KEYS = [
   "__clerk_client_jwt",
@@ -46,6 +47,10 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
+  const backgroundColor = theme.background?.get() ?? rawColors.root;
+  const accentColor = theme.accent?.get() ?? rawColors.accent;
+  const textColor = theme.color?.get() ?? rawColors.text;
+  const mutedColor = theme.colorMuted?.get() ?? rawColors.muted;
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const [isLoadedTimedOut, setIsLoadedTimedOut] = useState(false);
 
@@ -88,11 +93,11 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (isLoadedTimedOut) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background?.toString(), alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <Text style={{ color: theme.color?.toString(), fontSize: 18, textAlign: "center", marginBottom: 8 }}>
+      <View style={{ flex: 1, backgroundColor, alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <Text style={{ color: textColor, fontSize: 18, textAlign: "center", marginBottom: 8 }}>
           Could not restore session
         </Text>
-        <Text style={{ color: theme.colorMuted?.toString(), fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+        <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center", marginBottom: 24 }}>
           We had trouble loading your account. Please try again.
         </Text>
         <TouchableOpacity
@@ -104,7 +109,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
             await Updates.reloadAsync();
           }}
           style={{
-            backgroundColor: theme.accent?.toString(),
+            backgroundColor: accentColor,
             paddingHorizontal: 24,
             paddingVertical: 12,
             borderRadius: 8,
@@ -120,26 +125,26 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (!isLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background?.toString(), alignItems: "center", justifyContent: "center" }}>
+      <View style={{ flex: 1, backgroundColor, alignItems: "center", justifyContent: "center" }}>
         <View
           style={{
             width: 96,
             height: 96,
             borderRadius: radii.card,
-            backgroundColor: theme.accent?.toString(),
+            backgroundColor: accentColor,
             alignItems: "center",
             justifyContent: "center",
             marginBottom: 24,
-            ...shadows.glow(theme.accent?.toString() ?? "#FF5A36"),
+            ...shadows.glow(accentColor),
           }}
         >
           <AppIcon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
         </View>
-        <Text style={{ color: theme.color?.toString(), fontSize: 24, fontWeight: "700", marginBottom: 32 }}>
+        <Text style={{ color: textColor, fontSize: 24, fontWeight: "700", marginBottom: 32 }}>
           Athelix
         </Text>
-        <ActivityIndicator size="small" color={theme.accent?.toString()} />
-        <Text style={{ color: theme.colorMuted?.toString(), fontSize: 12, marginTop: 16 }}>
+        <ActivityIndicator size="small" color={accentColor} />
+        <Text style={{ color: mutedColor, fontSize: 12, marginTop: 16 }}>
           Restoring session...
         </Text>
       </View>
@@ -155,6 +160,8 @@ export function AppNavigator() {
         screenOptions={{
           headerShown: false,
           animation: "slide_from_right",
+          contentStyle: { backgroundColor: rawColors.root },
+          navigationBarColor: rawColors.root,
         }}
       >
         <RootStack.Screen name="Splash" component={SplashScreen} />

@@ -9,15 +9,18 @@ import { AppNavigator } from "./AppNavigator";
 import { useScreenTracking } from "../analytics/useScreenTracking";
 import type { RootStackParamList } from "../types/navigation";
 
+const FALLBACK_BACKGROUND = "#050505";
+
 export function AppContent() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   const { onReady, onStateChange } = useScreenTracking(navigationRef);
+  const backgroundColor = theme.background?.get() ?? FALLBACK_BACKGROUND;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background?.toString(), paddingTop: insets.top }}>
-      <StatusBar barStyle="light-content" backgroundColor={theme.background?.toString()} translucent={false} />
+    <View style={{ flex: 1, backgroundColor, paddingTop: insets.top }}>
+      <StatusBar barStyle="light-content" backgroundColor={backgroundColor} translucent={false} />
       <NavigationContainer
         ref={navigationRef}
         onReady={onReady}
@@ -25,12 +28,12 @@ export function AppContent() {
         theme={{
           dark: true,
           colors: {
-            primary: theme.accent?.toString() ?? "#FF5A36",
-            background: theme.background?.toString() ?? "#050505",
-            card: theme.backgroundFocus?.toString() ?? "#0A0A0A",
-            text: theme.color?.toString() ?? "#FFFFFF",
-            border: theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)",
-            notification: theme.accent?.toString() ?? "#FF5A36",
+            primary: theme.accent?.get() ?? "#FF5A36",
+            background: backgroundColor,
+            card: theme.backgroundFocus?.get() ?? "#0A0A0A",
+            text: theme.color?.get() ?? "#FFFFFF",
+            border: theme.borderColor?.get() ?? "rgba(255,255,255,0.08)",
+            notification: theme.accent?.get() ?? "#FF5A36",
           },
           fonts: {
             regular: { fontFamily: "System", fontWeight: "400" as const },

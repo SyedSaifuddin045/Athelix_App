@@ -6,6 +6,7 @@ import { radii } from "../../design-system/tokens/radii";
 import { spacing } from "../../design-system/tokens/spacing";
 import { AppIcon } from "../../design-system/icons/AppIcon";
 import { AppCard } from "./AppCard";
+import { AnimatedEnter } from "../../design-system/layout/AnimatedEnter";
 
 const ACCENT_BORDER: Record<string, string> = {
   none: "transparent",
@@ -31,27 +32,31 @@ export function Card({
   elevated,
   accent,
   accentColor,
+  animate,
+  animationDelay,
 }: {
   children: React.ReactNode;
   style?: ViewStyle | ViewStyle[];
   elevated?: boolean;
   accent?: keyof typeof ACCENT_BORDER | "none";
   accentColor?: string;
+  animate?: boolean;
+  animationDelay?: number;
 }) {
   const theme = useTheme();
   const borderColor =
     accent && accent in ACCENT_BORDER
-      ? (theme[ACCENT_BORDER[accent] as keyof typeof theme]?.toString() ?? theme.borderColor?.toString())
-      : theme.borderColor?.toString();
+      ? (theme[ACCENT_BORDER[accent] as keyof typeof theme]?.get() ?? theme.borderColor?.get())
+      : theme.borderColor?.get();
   const bgColor =
     accent && accent in ACCENT_BG
-      ? (theme[ACCENT_BG[accent] as keyof typeof theme]?.toString() ?? theme.surface1?.toString())
-      : theme.surface1?.toString();
+      ? (theme[ACCENT_BG[accent] as keyof typeof theme]?.get() ?? theme.surface1?.get())
+      : theme.surface1?.get();
   const leftAccentStyle: ViewStyle | null = accentColor
     ? { borderLeftWidth: 3, borderLeftColor: accentColor }
     : null;
 
-  return (
+  const card = (
     <View
       style={[
         {
@@ -78,16 +83,22 @@ export function Card({
       {children}
     </View>
   );
+
+  if (animate) {
+    return <AnimatedEnter type="fadeUp" delay={animationDelay ?? 0}>{card}</AnimatedEnter>;
+  }
+
+  return card;
 }
 
 export function LoadingCard({ label = "Loading..." }: { label?: string }) {
   const theme = useTheme();
   return (
     <Card elevated style={{ alignItems: "center", gap: spacing.lg, marginTop: spacing.xl3 }}>
-      <ActivityIndicator size="small" color={theme.accent?.toString() ?? "#FF5A36"} />
+      <ActivityIndicator size="small" color={theme.accent?.get() ?? "#FF5A36"} />
       <Text
         style={{
-          color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+          color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
           fontSize: 11,
           lineHeight: 16,
         }}
@@ -103,10 +114,10 @@ export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => 
   return (
     <Card elevated accent="red" style={{ marginTop: spacing.xl3, gap: spacing.sm }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
-        <AppIcon name="alert-circle" size={18} color={theme.colorRed?.toString() ?? "#EF4444"} />
+        <AppIcon name="alert-circle" size={18} color={theme.colorRed?.get() ?? "#EF4444"} />
         <Text
           style={{
-            color: theme.colorRed?.toString() ?? "#EF4444",
+            color: theme.colorRed?.get() ?? "#EF4444",
             fontSize: 13,
             fontWeight: "700",
           }}
@@ -116,7 +127,7 @@ export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => 
       </View>
       <Text
         style={{
-          color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+          color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
           fontSize: 11,
           lineHeight: 16,
         }}
@@ -133,17 +144,17 @@ export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => 
             paddingHorizontal: spacing.xl,
             paddingVertical: spacing.md,
             borderRadius: 14,
-            backgroundColor: theme.surface2?.toString(),
+            backgroundColor: theme.surface2?.get(),
             borderWidth: 1,
-            borderColor: theme.borderColor?.toString(),
+            borderColor: theme.borderColor?.get(),
             alignSelf: "flex-start",
             marginTop: spacing.xs,
           }}
         >
-          <AppIcon name="refresh-cw" size={13} color={theme.accent?.toString() ?? "#FF5A36"} />
+          <AppIcon name="refresh-cw" size={13} color={theme.accent?.get() ?? "#FF5A36"} />
           <Text
             style={{
-              color: theme.accent?.toString() ?? "#FF5A36",
+              color: theme.accent?.get() ?? "#FF5A36",
               fontSize: 12,
               fontWeight: "700",
             }}
@@ -180,17 +191,17 @@ export function EmptyCard({
             width: 56,
             height: 56,
             borderRadius: radii.iconWrap,
-            backgroundColor: theme.surface2?.toString(),
+            backgroundColor: theme.surface2?.get(),
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <AppIcon name="file-x" size={24} color={theme.colorFaint?.toString()} />
+          <AppIcon name="file-x" size={24} color={theme.colorFaint?.get()} />
         </View>
       )}
       <Text
         style={{
-          color: theme.color?.toString() ?? "#FFFFFF",
+          color: theme.color?.get() ?? "#FFFFFF",
           fontSize: 15,
           fontWeight: "700",
         }}
@@ -199,7 +210,7 @@ export function EmptyCard({
       </Text>
       <Text
         style={{
-          color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+          color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
           fontSize: 13,
           textAlign: "center",
           maxWidth: 260,

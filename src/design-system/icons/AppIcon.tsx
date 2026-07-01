@@ -32,7 +32,7 @@ export function AppIcon({ name, size = 20, color, strokeWidth = 2, style }: AppI
 
   if (!LucideIcon) return null;
 
-  const resolvedColor = color ?? theme.color?.toString();
+  const resolvedColor = color ?? theme.color?.get();
   const iconElement = <LucideIcon size={size} color={resolvedColor} strokeWidth={strokeWidth} />;
 
   if (style) {

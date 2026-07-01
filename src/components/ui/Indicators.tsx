@@ -8,7 +8,7 @@ export function SectionEyebrow({ children, color }: { children: React.ReactNode;
   return (
     <Text
       style={{
-        color: color ?? (theme.colorFaint?.toString() ?? "rgba(255,255,255,0.35)"),
+        color: color ?? (theme.colorFaint?.get() ?? "rgba(255,255,255,0.35)"),
         fontSize: 11,
         fontWeight: "700",
         letterSpacing: 1.4,
@@ -30,7 +30,7 @@ export function Tag({
   backgroundColor?: string;
 }) {
   const theme = useTheme();
-  const resolvedColor = color ?? theme.accent?.toString() ?? "#FF5A36";
+  const resolvedColor = color ?? theme.accent?.get() ?? "#FF5A36";
 
   return (
     <View
@@ -68,7 +68,7 @@ export function ProgressBar({
 }) {
   const theme = useTheme();
   const safeValue = Math.max(0, Math.min(100, value));
-  const resolvedColor = color ?? theme.accent?.toString() ?? "#FF5A36";
+  const resolvedColor = color ?? theme.accent?.get() ?? "#FF5A36";
   const trackBg = backgroundColor ?? "rgba(255,255,255,0.08)";
 
   return (

@@ -20,14 +20,14 @@ export function RpeStepper({ value, onChange, min = 1, max = 10 }: Props) {
           width: 36,
           height: 36,
           borderRadius: radii.card,
-          backgroundColor: theme.surface2?.toString(),
+          backgroundColor: theme.surface2?.get(),
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Text style={{ color: theme.color?.toString(), fontSize: 18, fontWeight: "600" }}>−</Text>
+        <Text style={{ color: theme.color?.get(), fontSize: 18, fontWeight: "600" }}>−</Text>
       </Pressable>
-      <Text style={{ color: theme.color?.toString(), fontSize: 24, fontWeight: "700", minWidth: 30, textAlign: "center" }}>
+      <Text style={{ color: theme.color?.get(), fontSize: 24, fontWeight: "700", minWidth: 30, textAlign: "center" }}>
         {value}
       </Text>
       <Pressable
@@ -36,12 +36,12 @@ export function RpeStepper({ value, onChange, min = 1, max = 10 }: Props) {
           width: 36,
           height: 36,
           borderRadius: radii.card,
-          backgroundColor: theme.surface2?.toString(),
+          backgroundColor: theme.surface2?.get(),
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <Text style={{ color: theme.color?.toString(), fontSize: 18, fontWeight: "600" }}>+</Text>
+        <Text style={{ color: theme.color?.get(), fontSize: 18, fontWeight: "600" }}>+</Text>
       </Pressable>
     </View>
   );

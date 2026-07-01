@@ -35,9 +35,9 @@ export function AchievementsScreen({ navigation }: Props) {
     );
   }
 
-  const gold = theme.colorGold?.toString() ?? "#FBBF24";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
+  const gold = theme.colorGold?.get() ?? "#FBBF24";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
 
   return (
     <Screen>

@@ -23,12 +23,12 @@ export function AppEmptyState({ icon, iconName, title, text }: AppEmptyStateProp
             width: 56,
             height: 56,
             borderRadius: radii.iconWrap,
-            backgroundColor: theme.surface2?.toString(),
+            backgroundColor: theme.surface2?.get(),
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <AppIcon name={iconName} size={24} color={theme.colorFaint?.toString()} />
+          <AppIcon name={iconName} size={24} color={theme.colorFaint?.get()} />
         </View>
       ) : (
         <View
@@ -36,17 +36,17 @@ export function AppEmptyState({ icon, iconName, title, text }: AppEmptyStateProp
             width: 56,
             height: 56,
             borderRadius: radii.iconWrap,
-            backgroundColor: theme.surface2?.toString(),
+            backgroundColor: theme.surface2?.get(),
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <AppIcon name="file-x" size={24} color={theme.colorFaint?.toString()} />
+          <AppIcon name="file-x" size={24} color={theme.colorFaint?.get()} />
         </View>
       ))}
       <Text
         style={{
-          color: theme.color?.toString() ?? "#FFFFFF",
+          color: theme.color?.get() ?? "#FFFFFF",
           fontSize: 15,
           fontWeight: "700",
         }}
@@ -55,7 +55,7 @@ export function AppEmptyState({ icon, iconName, title, text }: AppEmptyStateProp
       </Text>
       <Text
         style={{
-          color: theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)",
+          color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
           fontSize: 13,
           textAlign: "center",
           maxWidth: 260,

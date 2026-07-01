@@ -31,12 +31,12 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
   const exerciseQuery = useExerciseDetailQuery(id, isAuthenticated);
   const exercise = exerciseQuery.data ? mapExerciseDetail(exerciseQuery.data) : null;
 
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const surface2Color = theme.surface2?.toString() ?? "rgba(255,255,255,0.06)";
-  const goldColor = theme.colorGold?.toString() ?? "#FBBF24";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const goldColor = theme.colorGold?.get() ?? "#FBBF24";
 
   useEffect(() => {
     if (exercise) {

@@ -64,9 +64,9 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
     });
   };
 
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const accent = theme.accent?.toString() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const accent = theme.accent?.get() ?? "#FF5A36";
 
   return (
     <Screen>
@@ -85,8 +85,8 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
           </Text>
           <Text style={{ color: mutedColor, fontSize: 13 }}>kg</Text>
           {entries.length > 1 ? (
-            <Text style={{ color: change < 0 ? theme.colorGreen?.toString() : theme.colorRed?.toString(), fontSize: 11, fontWeight: "700" }}>
-              <AppIcon name={change < 0 ? "trending-down" : "trending-up"} size={12} color={change < 0 ? (theme.colorGreen?.toString() ?? "#22C55E") : (theme.colorRed?.toString() ?? "#EF4444")} />
+            <Text style={{ color: change < 0 ? theme.colorGreen?.get() : theme.colorRed?.get(), fontSize: 11, fontWeight: "700" }}>
+              <AppIcon name={change < 0 ? "trending-down" : "trending-up"} size={12} color={change < 0 ? (theme.colorGreen?.get() ?? "#22C55E") : (theme.colorRed?.get() ?? "#EF4444")} />
               {" "}{Math.abs(change).toFixed(1)} kg
             </Text>
           ) : null}
@@ -121,8 +121,8 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
                   </Text>
                   {index === 0 ? <Tag label="Latest" color={accent} /> : null}
                   {index > 0 ? (
-                    <Text style={{ color: entry.weight_kg < entries[index - 1].weight_kg ? (theme.colorGreen?.toString() ?? "#22C55E") : (theme.colorRed?.toString() ?? "#EF4444"), fontSize: 11, fontWeight: "700" }}>
-                      <AppIcon name={entry.weight_kg < entries[index - 1].weight_kg ? "trending-down" : "trending-up"} size={10} color={entry.weight_kg < entries[index - 1].weight_kg ? (theme.colorGreen?.toString() ?? "#22C55E") : (theme.colorRed?.toString() ?? "#EF4444")} />
+                    <Text style={{ color: entry.weight_kg < entries[index - 1].weight_kg ? (theme.colorGreen?.get() ?? "#22C55E") : (theme.colorRed?.get() ?? "#EF4444"), fontSize: 11, fontWeight: "700" }}>
+                      <AppIcon name={entry.weight_kg < entries[index - 1].weight_kg ? "trending-down" : "trending-up"} size={10} color={entry.weight_kg < entries[index - 1].weight_kg ? (theme.colorGreen?.get() ?? "#22C55E") : (theme.colorRed?.get() ?? "#EF4444")} />
                       {" "}{Math.abs(entry.weight_kg - entries[index - 1].weight_kg).toFixed(1)}
                     </Text>
                   ) : null}
@@ -132,8 +132,8 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
                   {entry.notes ? ` - ${entry.notes}` : ""}
                 </Text>
               </View>
-              <Pressable onPress={() => deleteLog.mutate(entry.id)} style={{ width: 32, height: 32, borderRadius: radii.stepper, backgroundColor: theme.colorRedDark?.toString(), alignItems: "center", justifyContent: "center" }}>
-                <AppIcon name="trash-2" size={13} color={theme.colorRed?.toString() ?? "#EF4444"} />
+              <Pressable onPress={() => deleteLog.mutate(entry.id)} style={{ width: 32, height: 32, borderRadius: radii.stepper, backgroundColor: theme.colorRedDark?.get(), alignItems: "center", justifyContent: "center" }}>
+                <AppIcon name="trash-2" size={13} color={theme.colorRed?.get() ?? "#EF4444"} />
               </Pressable>
             </Card>
           ))}
@@ -146,8 +146,8 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
       <Modal visible={showAdd} transparent animationType="slide" onRequestClose={() => setShowAdd(false)}>
         <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }}>
           <Pressable style={{ flex: 1 }} onPress={() => setShowAdd(false)} />
-          <View style={{ backgroundColor: theme.surface?.toString(), borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, borderWidth: 1, borderColor: theme.borderColor?.toString(), paddingHorizontal: spacing.xl5, paddingTop: spacing.xl2, paddingBottom: spacing.xl6 }}>
-            <View style={{ width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: theme.colorFaint?.toString(), marginBottom: spacing.xl3 }} />
+          <View style={{ backgroundColor: theme.surface?.get(), borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, borderWidth: 1, borderColor: theme.borderColor?.get(), paddingHorizontal: spacing.xl5, paddingTop: spacing.xl2, paddingBottom: spacing.xl6 }}>
+            <View style={{ width: 40, height: 4, borderRadius: 4, alignSelf: "center", backgroundColor: theme.colorFaint?.get(), marginBottom: spacing.xl3 }} />
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <Text style={{ color: textColor, fontSize: 22, fontWeight: "900", textAlign: "center" }}>Log Bodyweight</Text>
               <Pressable onPress={() => setShowAdd(false)}>
@@ -160,14 +160,14 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
                 value={newWeight}
                 onChangeText={setNewWeight}
                 placeholder="e.g. 82.5"
-                placeholderTextColor={theme.colorFaint?.toString()}
+                placeholderTextColor={theme.colorFaint?.get()}
                 style={{
                   width: "100%",
                   minHeight: 70,
                   borderRadius: radii.input,
-                  backgroundColor: theme.surface2?.toString(),
+                  backgroundColor: theme.surface2?.get(),
                   borderWidth: 1,
-                  borderColor: theme.borderColor?.toString(),
+                  borderColor: theme.borderColor?.get(),
                   color: textColor,
                   fontSize: 28,
                   fontWeight: "900",
@@ -183,14 +183,14 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
                 value={newNote}
                 onChangeText={setNewNote}
                 placeholder="e.g. Morning, fasted"
-                placeholderTextColor={theme.colorFaint?.toString()}
+                placeholderTextColor={theme.colorFaint?.get()}
                 style={{
                   width: "100%",
                   minHeight: 52,
                   borderRadius: radii.input,
-                  backgroundColor: theme.surface2?.toString(),
+                  backgroundColor: theme.surface2?.get(),
                   borderWidth: 1,
-                  borderColor: theme.borderColor?.toString(),
+                  borderColor: theme.borderColor?.get(),
                   color: textColor,
                   paddingHorizontal: spacing.xl3,
                   fontSize: 14,
@@ -205,7 +205,7 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
               style={{ marginTop: spacing.xl4 }}
             />
             {createLog.isError ? (
-              <Text style={{ color: theme.colorRed?.toString() ?? "#EF4444", fontSize: 12, marginTop: spacing.lg }}>{getApiErrorMessage(createLog.error)}</Text>
+              <Text style={{ color: theme.colorRed?.get() ?? "#EF4444", fontSize: 12, marginTop: spacing.lg }}>{getApiErrorMessage(createLog.error)}</Text>
             ) : null}
           </View>
         </View>

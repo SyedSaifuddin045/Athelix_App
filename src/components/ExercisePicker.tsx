@@ -79,12 +79,12 @@ export function ExercisePicker({
 }: ExercisePickerProps) {
   const screenHeight = useWindowDimensions().height;
   const theme = useTheme();
-  const accent = theme.accent?.toString() ?? "#FF5A36";
-  const textColor = theme.color?.toString() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.toString() ?? "rgba(255,255,255,0.45)";
-  const borderColor = theme.borderColor?.toString() ?? "rgba(255,255,255,0.08)";
-  const redColor = theme.colorRed?.toString() ?? "#EF4444";
-  const greenColor = theme.colorGreen?.toString() ?? "#22C55E";
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const greenColor = theme.colorGreen?.get() ?? "#22C55E";
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
