@@ -225,6 +225,7 @@ export function useExerciseProgressQuery(
     queryKey: queryKeys.exerciseProgress(id, params),
     queryFn: async () => dataOf(await getExerciseProgressProgressExerciseIdGet(id ?? "", params)),
     enabled: enabled && !!id,
+    staleTime: 60_000,
   });
 }
 
