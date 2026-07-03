@@ -50,7 +50,11 @@ describe("nameForExercise", () => {
     expect(nameForExercise("ex1", lookup)).toBe("Bench Press");
   });
 
-  it("returns null as fallback", () => {
-    expect(nameForExercise("unknown", new Map())).toBeNull();
+  it("humanizes slug-style id as fallback", () => {
+    expect(nameForExercise("unknown", new Map())).toBe("Unknown");
+  });
+
+  it("returns Unknown label for numeric ids", () => {
+    expect(nameForExercise("1307", new Map())).toBe("Unknown (#1307)");
   });
 });

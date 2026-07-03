@@ -12,6 +12,5 @@ export { Screen } from "./Layout";
 export { Icon, type IconName } from "./Icon";
 export { ConfirmDialog } from "./Modal";
 export { RpeStepper } from "./RpeStepper";
-export { Skeleton, SkeletonCard, SkeletonRow } from "./Skeleton";
 export { StatPill, CompactStatCard, MetricBlock, DetailStat, AnalyticsCard, MetaInline, DividerVertical } from "./Stats";
 export { VerticalBars, TrendChart } from "./Charts";

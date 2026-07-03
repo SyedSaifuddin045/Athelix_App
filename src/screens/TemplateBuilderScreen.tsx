@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, LayoutAnimation, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, BackHandler, LayoutAnimation, Modal, Pressable, Text, TextInput, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -68,6 +68,10 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   const [saveError, setSaveError] = useState("");
   const [rpePicker, setRpePicker] = useState<string | null>(null);
   const [rpeSetIndex, setRpeSetIndex] = useState(0);
+  const [bulkModal, setBulkModal] = useState<{ exerciseId: string; field: "reps" | "rpe" | "rest" } | null>(null);
+  const [deletedExercise, setDeletedExercise] = useState<TemplateDraftExercise | null>(null);
+  const [showUndo, setShowUndo] = useState(false);
+  const undoRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const detail = useTemplateDetailQuery(templateId, isAuthenticated && isEdit);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
@@ -234,8 +238,31 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   };
 
   const removeExercise = (exerciseId: string) => {
+    const idx = exercises.findIndex((e) => e.id === exerciseId);
+    const ex = exercises[idx];
+    if (!ex) return;
     setExercises((current) => current.filter((exercise) => exercise.id !== exerciseId));
+    setDeletedExercise(ex);
+    setShowUndo(true);
+    if (undoRef.current) clearTimeout(undoRef.current);
+    undoRef.current = setTimeout(() => {
+      setShowUndo(false);
+      setDeletedExercise(null);
+    }, 5000);
   };
+
+  const handleUndoDelete = () => {
+    if (!deletedExercise) return;
+    if (undoRef.current) clearTimeout(undoRef.current);
+    undoRef.current = null;
+    setExercises((current) => [...current, deletedExercise]);
+    setShowUndo(false);
+    setDeletedExercise(null);
+  };
+
+  const isDirty = useMemo(() => {
+    return name.trim().length > 0 || exercises.length > 0;
+  }, [name, exercises]);
 
   const moveExercise = (fromIndex: number, toIndex: number) => {
     if (toIndex < 0 || toIndex >= exercises.length) return;
@@ -257,6 +284,25 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
     setCustomMinutes(1);
     setCustomSeconds(30);
   };
+
+  useEffect(() => {
+    const onBack = () => {
+      if (!isDirty) return false;
+      Alert.alert("Discard changes?", "You have unsaved changes to this template. Discard them?", [
+        { text: "Keep Editing", style: "cancel", onPress: () => {} },
+        { text: "Discard", style: "destructive", onPress: () => navigation.goBack() },
+      ]);
+      return true;
+    };
+    const sub = BackHandler.addEventListener("hardwareBackPress", onBack);
+    return () => sub.remove();
+  }, [isDirty, navigation]);
+
+  useEffect(() => {
+    return () => {
+      if (undoRef.current) clearTimeout(undoRef.current);
+    };
+  }, []);
 
   const [dragActiveId, setDragActiveId] = useState<string | null>(null);
   const draggedIdRef = useRef<string | null>(null);
@@ -474,9 +520,18 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                     <View style={{ marginTop: 14, gap: 8 }}>
                       <View style={{ flexDirection: "row", paddingHorizontal: 2, marginBottom: 4 }}>
                         <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 28, letterSpacing: 0.4, textTransform: "uppercase" }}>#</Text>
-                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", flex: 1, letterSpacing: 0.4, textTransform: "uppercase" }}>Reps</Text>
-                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 46, textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>RPE</Text>
-                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 60, textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
+                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "reps" })} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" }}>Reps</Text>
+                          <AppIcon name="pen" size={10} color="rgba(255,255,255,0.2)" />
+                        </Pressable>
+                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "rpe" })} style={{ width: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>RPE</Text>
+                          <AppIcon name="pen" size={10} color="rgba(255,255,255,0.2)" />
+                        </Pressable>
+                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "rest" })} style={{ width: 60, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
+                          <AppIcon name="pen" size={10} color="rgba(255,255,255,0.2)" />
+                        </Pressable>
                         <View style={{ width: 24 }} />
                       </View>
                       {exercise.sets.map((set, setIdx) => (
@@ -570,6 +625,15 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
           </View>
         ))}
 
+        {showUndo && deletedExercise ? (
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,90,54,0.12)", borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: "rgba(255,90,54,0.25)", marginTop: 8 }}>
+            <Text style={{ color: textColor, fontSize: 12, flex: 1 }}>Removed {deletedExercise.name}</Text>
+            <Pressable onPress={handleUndoDelete} hitSlop={8}>
+              <Text style={{ color: accent, fontSize: 12, fontWeight: "800" }}>Undo</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         <Pressable onPress={() => setShowExercisePicker(true)}>
           <View style={{ borderRadius: 24, borderWidth: 1, borderStyle: "dashed", borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.02)", paddingHorizontal: 16, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 12 }}>
             <View style={[{ width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)" }, { backgroundColor: "rgba(255,90,54,0.12)" }]}>
@@ -633,6 +697,40 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
             <PrimaryButton label="Done" onPress={() => { setShowTimerModal(false); resetCustomTime(); }} style={{ marginTop: 12 }} />
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={!!bulkModal} transparent animationType="fade" onRequestClose={() => setBulkModal(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }} onPress={() => setBulkModal(null)}>
+          <Pressable onPress={() => {}} style={{ backgroundColor: theme.surface?.get(), borderRadius: radii.card, padding: spacing.xl3, width: 240, borderWidth: 1, borderColor }}>
+            <Text style={{ color: textColor, fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: spacing.lg }}>
+              Set all {bulkModal?.field === "rpe" ? "RPE" : bulkModal?.field === "rest" ? "Rest" : "Reps"}
+            </Text>
+            <TextInput
+              autoFocus
+              keyboardType={bulkModal?.field === "rest" ? "default" : "decimal-pad"}
+              placeholder={bulkModal?.field === "rest" ? "mm:ss" : "Value"}
+              placeholderTextColor="rgba(255,255,255,0.28)"
+              style={[{ width: "100%", minHeight: 52, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", color: textColor, paddingHorizontal: 16, fontSize: 16, textAlign: "center", fontWeight: "700" }]}
+              onSubmitEditing={(e) => {
+                const val = e.nativeEvent.text;
+                if (bulkModal && val) {
+                  setExercises((prev) =>
+                    prev.map((ex) =>
+                      ex.id === bulkModal.exerciseId
+                        ? { ...ex, sets: ex.sets.map((s) => ({ ...s, [bulkModal.field]: val })) }
+                        : ex,
+                    ),
+                  );
+                  setBulkModal(null);
+                }
+              }}
+              returnKeyType="done"
+            />
+            <Pressable onPress={() => setBulkModal(null)} style={{ marginTop: spacing.lg, alignItems: "center" }}>
+              <Text style={{ color: mutedColor, fontSize: 13 }}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       <Modal visible={!!rpePicker} transparent animationType="fade" onRequestClose={() => setRpePicker(null)}>

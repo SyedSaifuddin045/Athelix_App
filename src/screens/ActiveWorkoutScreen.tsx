@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -45,7 +45,75 @@ import { numberOrNull, rpeError } from "../utils/validation";
 import { toNumberId } from "../utils/helpers";
 import { Events } from "../analytics/events";
 
-const GRID_COL_WIDTHS = { index: 32, input: 72, rpe: 44, checkbox: 36 } as const;
+const GRID_COL_WIDTHS = { index: 32, input: 72, rpe: 60, checkbox: 36 } as const;
+function SwipeableSetRow({ onToggle, children }: { onToggle: () => void; children: React.ReactNode }) {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const pan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 8,
+      onPanResponderMove: (_, g) => {
+        translateX.setValue(Math.max(-100, Math.min(0, g.dx)));
+      },
+      onPanResponderRelease: (_, g) => {
+        if (g.dx < -50) {
+          Animated.timing(translateX, { toValue: -80, duration: 150, useNativeDriver: true }).start(() => {
+            onToggle();
+            Animated.timing(translateX, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+          });
+        } else {
+          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+      },
+    })
+  ).current;
+
+  return (
+    <View style={{ overflow: "hidden" }}>
+      <View style={{ position: "absolute", right: 12, top: 0, bottom: 0, justifyContent: "center" }}>
+        <Text style={{ color: "rgba(255,255,255,0.2)", fontSize: 9 }}>SWIPE</Text>
+      </View>
+      <Animated.View style={{ transform: [{ translateX }] }} {...pan.panHandlers}>
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
+const RPE_REFERENCE: { rpe: string; description: string }[] = [
+
+  { rpe: "10", description: "Max effort — cannot complete another rep" },
+  { rpe: "9", description: "1 rep left in tank" },
+  { rpe: "8", description: "2 reps left in tank" },
+  { rpe: "7", description: "3 reps left in tank — moderate speed" },
+  { rpe: "6", description: "4 reps left — light speed" },
+  { rpe: "5", description: "Warm-up pace — very light" },
+  { rpe: "4", description: "Barely feels like work" },
+  { rpe: "3", description: "Light effort" },
+  { rpe: "2", description: "Very light" },
+  { rpe: "1", description: "Minimal effort" },
+];
+
+const BARBELL_WEIGHT_KG = 20;
+const PLATES_KG = [25, 20, 15, 10, 5, 2.5, 1.25];
+
+function calculatePlates(targetKg: number): { plate: number; perSide: number }[] {
+  const remaining = targetKg - BARBELL_WEIGHT_KG;
+  if (remaining <= 0) return [];
+  let perSide = remaining / 2;
+  const result: { plate: number; perSide: number }[] = [];
+  for (const plate of PLATES_KG) {
+    if (perSide < plate) continue;
+    const count = Math.floor(perSide / plate);
+    if (count > 0) {
+      result.push({ plate, perSide: count });
+      perSide -= count * plate;
+    }
+  }
+  return result;
+}
 
 const MOODS = [
   { icon: "sleep" as const, label: "Tired" },
@@ -94,6 +162,8 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [error, setError] = useState("");
   const [rpePicker, setRpePicker] = useState<{ exerciseId: string; setId: string } | null>(null);
+  const [rpeChartModal, setRpeChartModal] = useState(false);
+  const [plateCalc, setPlateCalc] = useState<{ exerciseId: string; setId: string; weight: string } | null>(null);
   const [restTimer, setRestTimer] = useState<{ exerciseId: string; remaining: number; total: number } | null>(null);
   const draftRef = useRef({ exercises, elapsed, mood, note });
   const template = useTemplateDetailQuery(templateId, isAuthenticated && !!templateId);
@@ -126,7 +196,9 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       };
       try {
         await AsyncStorage.setItem(`workout_draft_${sessionId}`, JSON.stringify(draft));
-      } catch {}
+      } catch (e) {
+        posthog.capture(Events.DRAFT_SAVE_FAILED, { error: String(e), sessionId });
+      }
     }, 30000);
     return () => clearInterval(interval);
   }, [sessionId]);
@@ -154,12 +226,19 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
             },
           ],
         );
-      } catch {}
-    }).catch(() => {});
+      } catch (e) {
+        posthog.capture(Events.DRAFT_RESTORE_FAILED, { error: String(e), sessionId });
+      }
+    }).catch((e) => {
+      posthog.capture(Events.DRAFT_RESTORE_FAILED, { error: String(e), sessionId });
+    });
   }, [sessionId]);
 
   useEffect(() => {
     if (!restTimer || restTimer.remaining <= 0) {
+      if (restTimer && restTimer.remaining <= 0) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      }
       setRestTimer(null);
       return;
     }
@@ -274,7 +353,9 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     if (!sessionId) return;
     try {
       await AsyncStorage.removeItem(`workout_draft_${sessionId}`);
-    } catch {}
+    } catch (e) {
+      posthog.capture(Events.DRAFT_CLEAR_FAILED, { error: String(e), sessionId });
+    }
   }, [sessionId]);
 
   const toggleSet = (exerciseId: string, setId: string) => {
@@ -330,6 +411,16 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       current.map((ex) =>
         ex.id === exerciseId
           ? { ...ex, sets: ex.sets.map((s) => (s.id === setId ? { ...s, [field]: value } : s)) }
+          : ex,
+      ),
+    );
+  };
+
+  const toggleWarmup = (exerciseId: string, setId: string) => {
+    setExercises((current) =>
+      current.map((ex) =>
+        ex.id === exerciseId
+          ? { ...ex, sets: ex.sets.map((s) => (s.id === setId ? { ...s, warmup: !s.warmup } : s)) }
           : ex,
       ),
     );
@@ -541,17 +632,24 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                       <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1 }]}>
                         {isCardio(exercise.exerciseId) ? "km" : "Reps"}
                       </Text>
-                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.rpe }]}>RPE</Text>
+                      <Pressable onPress={() => setRpeChartModal(true)} style={[{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 }, { width: GRID_COL_WIDTHS.rpe }]}>
+                        <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }]}>RPE</Text>
+                        <Text style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, fontWeight: "700" }}>?</Text>
+                      </Pressable>
                       <View style={{ width: GRID_COL_WIDTHS.checkbox }} />
                     </View>
                     <View style={{ gap: spacing.md }}>
                       {exercise.sets.map((set) => (
-                        <View key={set.id} style={[{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 }, set.done ? { opacity: 0.5 } : null]}>
-                          <View style={{ width: GRID_COL_WIDTHS.index, alignItems: "center", justifyContent: "center" }}>
+                        <SwipeableSetRow key={set.id} onToggle={() => toggleSet(exercise.id, set.id)}>
+                        <View style={[{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 }, set.done ? { opacity: 0.5 } : null]}>
+                          <Pressable
+                            onPress={() => toggleWarmup(exercise.id, set.id)}
+                            style={{ width: GRID_COL_WIDTHS.index, alignItems: "center", justifyContent: "center" }}
+                          >
                             <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: set.warmup ? theme.colorOrange?.get() : "rgba(255,255,255,0.55)" }]}>
                               {set.warmup ? "W" : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
                             </Text>
-                          </View>
+                          </Pressable>
                           {isCardio(exercise.exerciseId) ? (
                             <>
                               <MiniInput
@@ -578,6 +676,13 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                                 strike={set.done}
                                 style={{ width: GRID_COL_WIDTHS.input }}
                               />
+                              <Pressable
+                                onPress={() => setPlateCalc({ exerciseId: exercise.id, setId: set.id, weight: set.weight })}
+                                hitSlop={6}
+                                style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}
+                              >
+                                <AppIcon name="scale" size={13} color="rgba(255,255,255,0.25)" />
+                              </Pressable>
                               <MiniInput
                                 value={set.reps}
                                 onChangeText={(v) => updateSet(exercise.id, set.id, "reps", v)}
@@ -619,6 +724,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                             {set.done ? <AppIcon name="check" size={15} color="#000000" /> : null}
                           </Pressable>
                         </View>
+                        </SwipeableSetRow>
                       ))}
                     </View>
                     <Pressable
@@ -872,9 +978,86 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
           </Pressable>
         </Modal>
 
+        <Modal visible={rpeChartModal} transparent animationType="fade" onRequestClose={() => setRpeChartModal(false)}>
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }} onPress={() => setRpeChartModal(false)}>
+            <Pressable onPress={() => {}} style={{ backgroundColor: theme.surface?.get(), borderRadius: radii.card, padding: spacing.xl3, width: 280, borderWidth: 1, borderColor: borderColor }}>
+              <Text style={{ color: textColor, fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: spacing.xl }}>
+                RPE Reference Chart
+              </Text>
+              <View style={{ gap: spacing.lg }}>
+                {RPE_REFERENCE.map((entry) => (
+                  <View key={entry.rpe} style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}>
+                    <View
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 16,
+                        backgroundColor: surface2Color,
+                        borderWidth: 1,
+                        borderColor: borderColor,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text style={{ color: textColor, fontSize: 12, fontWeight: "700" }}>{entry.rpe}</Text>
+                    </View>
+                    <Text style={{ color: mutedColor, fontSize: 12, lineHeight: 18, flex: 1, marginTop: 6 }}>{entry.description}</Text>
+                  </View>
+                ))}
+              </View>
+              <Pressable onPress={() => setRpeChartModal(false)} style={{ marginTop: spacing.xl, alignItems: "center" }}>
+                <Text style={{ color: mutedColor, fontSize: 13 }}>Close</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={!!plateCalc} transparent animationType="fade" onRequestClose={() => setPlateCalc(null)}>
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }} onPress={() => setPlateCalc(null)}>
+            <Pressable onPress={() => {}} style={{ backgroundColor: theme.surface?.get(), borderRadius: radii.card, padding: spacing.xl3, width: 260, borderWidth: 1, borderColor: borderColor }}>
+              <Text style={{ color: textColor, fontSize: 14, fontWeight: "700", textAlign: "center", marginBottom: spacing.md }}>
+                Plate Calculator
+              </Text>
+              <Text style={{ color: mutedColor, fontSize: 12, textAlign: "center", marginBottom: spacing.lg }}>
+                Target: {plateCalc?.weight ?? "0"} kg → Barbell + Plates
+              </Text>
+              <View style={{ gap: spacing.sm }}>
+                {(() => {
+                  const weight = parseFloat(plateCalc?.weight ?? "0");
+                  if (!weight || weight <= BARBELL_WEIGHT_KG) {
+                    return <Text style={{ color: mutedColor, fontSize: 12, textAlign: "center" }}>No plates needed (≤ barbell weight)</Text>;
+                  }
+                  const plates = calculatePlates(weight);
+                  return (
+                    <>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: borderColor }}>
+                        <Text style={{ color: textColor, fontSize: 13, fontWeight: "600" }}>Bar (20 kg)</Text>
+                        <Text style={{ color: mutedColor, fontSize: 13 }}>x1</Text>
+                      </View>
+                      {plates.map((p, i) => (
+                        <View key={i} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, borderBottomWidth: i < plates.length - 1 ? 1 : 0, borderBottomColor: borderColor }}>
+                          <Text style={{ color: textColor, fontSize: 13 }}>{p.plate} kg</Text>
+                          <Text style={{ color: mutedColor, fontSize: 13 }}>x{p.perSide} per side</Text>
+                        </View>
+                      ))}
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 6, marginTop: spacing.sm }}>
+                        <Text style={{ color: accent, fontSize: 13, fontWeight: "700" }}>Total</Text>
+                        <Text style={{ color: accent, fontSize: 13, fontWeight: "700" }}>{BARBELL_WEIGHT_KG + plates.reduce((s, p) => s + p.plate * p.perSide * 2, 0)} kg</Text>
+                      </View>
+                    </>
+                  );
+                })()}
+              </View>
+              <Pressable onPress={() => setPlateCalc(null)} style={{ marginTop: spacing.xl, alignItems: "center" }}>
+                <Text style={{ color: mutedColor, fontSize: 13 }}>Close</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
         {restTimer && (
           <Modal visible transparent animationType="fade" onRequestClose={() => setRestTimer(null)}>
-            <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center" }} onPress={() => setRestTimer(null)}>
+            <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", alignItems: "center" }} onPress={() => setRestTimer(null)}>
               <Pressable onPress={() => {}} style={{
                 backgroundColor: surface1Color,
                 borderRadius: radii.card,
@@ -897,7 +1080,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                       <>
                         <View style={{ position: "absolute", top: 0, left: h, width: h, height: 130, overflow: "hidden" }}>
                           <View style={{
-                            position: "absolute", top: 0, left: 0, width: 130, height: 130, borderRadius: 65,
+                            position: "absolute", top: 0, left: -h, width: 130, height: 130, borderRadius: 65,
                             borderWidth: 6, borderColor: "transparent", borderTopColor: accent, borderRightColor: accent,
                             transform: [{ rotate: `${-90 + Math.min(a, 180)}deg` }],
                           }} />

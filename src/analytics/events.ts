@@ -33,4 +33,9 @@ export const Events = {
   NOTIFICATION_SETTING_CHANGED: "notification setting changed",
   ACCOUNT_SETTINGS_UPDATED: "account settings updated",
   FEEDBACK_PORTAL_OPENED: "feedback portal opened",
+
+  // Errors
+  DRAFT_SAVE_FAILED: "draft save failed",
+  DRAFT_RESTORE_FAILED: "draft restore failed",
+  DRAFT_CLEAR_FAILED: "draft clear failed",
 } as const;

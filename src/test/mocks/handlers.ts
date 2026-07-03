@@ -43,8 +43,8 @@ export const handlers = [
         latest_body_weight_log: null,
         active_mesocycle: null,
         weekly_activity: [
-          { day: "Mon", value: 1 }, { day: "Tue", value: 0 }, { day: "Wed", value: 1 },
-          { day: "Thu", value: 0 }, { day: "Fri", value: 1 }, { day: "Sat", value: 1 }, { day: "Sun", value: 0 },
+          { day: "Mon", value: 3 }, { day: "Tue", value: 1 }, { day: "Wed", value: 2 },
+          { day: "Thu", value: 0 }, { day: "Fri", value: 4 }, { day: "Sat", value: 0 }, { day: "Sun", value: 1 },
         ],
       },
       status: 200,

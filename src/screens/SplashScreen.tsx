@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "@tamagui/core";
@@ -41,8 +42,13 @@ export function SplashScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (!ready) return;
-    const timer = setTimeout(() => {
-      navigation.replace(isSignedIn ? "MainTabs" : "Login");
+    const timer = setTimeout(async () => {
+      if (isSignedIn) {
+        navigation.replace("MainTabs");
+      } else {
+        const done = await AsyncStorage.getItem("onboarding_complete");
+        navigation.replace(done === "true" ? "Login" : "Onboarding");
+      }
     }, 450);
     return () => clearTimeout(timer);
   }, [ready, isSignedIn, navigation]);

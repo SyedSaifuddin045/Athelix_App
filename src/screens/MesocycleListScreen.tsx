@@ -78,47 +78,48 @@ export function MesocycleListScreen({ navigation }: Props) {
         </View>
       </Card>
 
-      {mesocycles.isPending ? <LoadingCard label="Loading mesocycles..." /> : null}
       {mesocycles.isError ? <ErrorCard error={mesocycles.error} onRetry={() => mesocycles.refetch()} /> : null}
 
-      <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
-        {(mesocycles.data ?? []).map((meso) => {
-          const start = new Date(meso.started_on).getTime();
-          const end = meso.ended_on ? new Date(meso.ended_on).getTime() : start + (meso.weeks ?? 0) * 7 * 24 * 60 * 60 * 1000;
-          const progress = end > start ? ((Date.now() - start) / (end - start)) * 100 : 0;
-          return (
-            <Pressable key={meso.id} onPress={() => navigation.navigate("MesocycleDetail", { id: String(meso.id) })}>
-              <Card elevated accent="purple">
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: purpleColor }} />
-                      <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>{meso.name}</Text>
-                    </View>
-                    <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16, marginLeft: spacing.xl2, marginTop: spacing.sm }}>{meso.goal ?? "Training block"}</Text>
-                  </View>
-                  <View style={{ alignItems: "flex-end", gap: spacing.sm }}>
-                    <Tag label={meso.ended_on ? "Complete" : "Active"} color={meso.ended_on ? greenColor : purpleColor} />
-                    <AppIcon name="chevron-right" size={14} color={faintColor} />
-                  </View>
-                </View>
-                <View style={{ marginTop: spacing.xl2 }}>
+      {!mesocycles.isPending && !mesocycles.isError ? (
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
+          {(mesocycles.data ?? []).map((meso) => {
+            const start = new Date(meso.started_on).getTime();
+            const end = meso.ended_on ? new Date(meso.ended_on).getTime() : start + (meso.weeks ?? 0) * 7 * 24 * 60 * 60 * 1000;
+            const progress = end > start ? ((Date.now() - start) / (end - start)) * 100 : 0;
+            return (
+              <Pressable key={meso.id} onPress={() => navigation.navigate("MesocycleDetail", { id: String(meso.id) })}>
+                <Card elevated accent="purple">
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
-                    <Text style={{ color: purpleColor, fontSize: 11, fontWeight: "700" }}>{Math.round(Math.max(0, Math.min(100, progress)))}%</Text>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: purpleColor }} />
+                        <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>{meso.name}</Text>
+                      </View>
+                      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16, marginLeft: spacing.xl2, marginTop: spacing.sm }}>{meso.goal ?? "Training block"}</Text>
+                    </View>
+                    <View style={{ alignItems: "flex-end", gap: spacing.sm }}>
+                      <Tag label={meso.ended_on ? "Complete" : "Active"} color={meso.ended_on ? greenColor : purpleColor} />
+                      <AppIcon name="chevron-right" size={14} color={faintColor} />
+                    </View>
                   </View>
-                  <View style={{ marginTop: spacing.md }}>
-                    <ProgressBar value={progress} color={purpleColor} />
+                  <View style={{ marginTop: spacing.xl2 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
+                      <Text style={{ color: purpleColor, fontSize: 11, fontWeight: "700" }}>{Math.round(Math.max(0, Math.min(100, progress)))}%</Text>
+                    </View>
+                    <View style={{ marginTop: spacing.md }}>
+                      <ProgressBar value={progress} color={purpleColor} />
+                    </View>
                   </View>
-                </View>
-              </Card>
-            </Pressable>
-          );
-        })}
-        {!mesocycles.isPending && (mesocycles.data?.length ?? 0) === 0 ? (
-          <EmptyCard title="No mesocycles yet" text="Create a block when you want advanced planning." />
-        ) : null}
-      </View>
+                </Card>
+              </Pressable>
+            );
+          })}
+          {!mesocycles.isPending && (mesocycles.data?.length ?? 0) === 0 ? (
+            <EmptyCard title="No mesocycles yet" text="Create a block when you want advanced planning." />
+          ) : null}
+        </View>
+      ) : null}
 
       <Modal visible={showCreateModal} transparent animationType="slide" onRequestClose={() => setShowCreateModal(false)}>
         <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.72)" }}>

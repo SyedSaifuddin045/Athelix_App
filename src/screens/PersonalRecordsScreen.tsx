@@ -9,7 +9,7 @@ import { RECORD_TYPES } from "../data";
 import type { ExerciseResponse, PersonalRecordResponse } from "../api/model";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, EmptyCard, ErrorCard, LoadingCard } from "../components/ui/Card";
+import { Card, EmptyCard, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
 import { AppIcon } from "../design-system/icons/AppIcon";
@@ -52,7 +52,7 @@ export function PersonalRecordsScreen({ navigation }: Props) {
     return Array.from(groups.entries()).map(([exerciseId, items]) => ({ exerciseId, records: items }));
   }, [lookup, records.data, search]);
 
-  const recordTypes = ["All", ...(appConfig.data?.supported_values.personal_record_types ?? RECORD_TYPES.filter((t) => t !== "All"))];
+  const recordTypes = appConfig.data?.supported_values.personal_record_types ?? RECORD_TYPES;
 
   return (
     <Screen>
@@ -96,50 +96,51 @@ export function PersonalRecordsScreen({ navigation }: Props) {
         ))}
       </View>
 
-      {records.isPending ? <LoadingCard label="Loading personal records..." /> : null}
       {records.isError ? <ErrorCard error={records.error} onRetry={() => records.refetch()} /> : null}
 
-      <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
-        {grouped.map((entry) => {
-          const exercise = lookup.get(entry.exerciseId);
-          return (
-            <Card key={entry.exerciseId} elevated style={{ paddingVertical: 0 }}>
-              <Pressable
-                style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, paddingVertical: spacing.xl2, paddingHorizontal: spacing.xl3, borderBottomWidth: 1, borderBottomColor: borderColor }}
-                onPress={() => navigation.navigate("ExerciseProgress", { id: entry.exerciseId })}
-              >
-                <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(exercise?.target ?? exercise?.body_part) ?? accent }} />
-                <Text style={{ flex: 1, color: textColor, fontSize: 13, fontWeight: "700" }}>{nameForExercise(entry.exerciseId, lookup) ?? entry.exerciseId}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <AppIcon name="trending-up" size={13} color={faintColor} />
-                  <AppIcon name="chevron-right" size={13} color={faintColor} />
-                </View>
-              </Pressable>
-              <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2, gap: spacing.lg }}>
-                {entry.records.map((record) => (
-                  <View key={record.id} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                      <View style={{ width: 34, height: 34, borderRadius: radii.iconWrap, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" }}>
-                        <AppIcon name="award" size={13} color={goldColor} />
-                      </View>
-                      <View>
-                        <Text style={{ color: textColor, fontSize: 11, fontWeight: "700" }}>{record.record_type}</Text>
-                        <Text style={{ color: mutedColor, fontSize: 10 }}>{formatShortDate(record.achieved_on)}</Text>
-                      </View>
-                    </View>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                      <Text style={{ color: goldColor, fontSize: 16, fontWeight: "900" }}>{recordValue(record)}</Text>
-                    </View>
+      {!records.isPending && !records.isError ? (
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
+          {grouped.map((entry) => {
+            const exercise = lookup.get(entry.exerciseId);
+            return (
+              <Card key={entry.exerciseId} elevated style={{ paddingVertical: 0 }}>
+                <Pressable
+                  style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, paddingVertical: spacing.xl2, paddingHorizontal: spacing.xl3, borderBottomWidth: 1, borderBottomColor: borderColor }}
+                  onPress={() => navigation.navigate("ExerciseProgress", { id: entry.exerciseId })}
+                >
+                  <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(exercise?.target ?? exercise?.body_part) ?? accent }} />
+                  <Text style={{ flex: 1, color: textColor, fontSize: 13, fontWeight: "700" }}>{nameForExercise(entry.exerciseId, lookup) ?? entry.exerciseId}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <AppIcon name="trending-up" size={13} color={faintColor} />
+                    <AppIcon name="chevron-right" size={13} color={faintColor} />
                   </View>
-                ))}
-              </View>
-            </Card>
-          );
-        })}
-        {!records.isPending && grouped.length === 0 ? (
-          <EmptyCard title="No records found" text="Complete workouts to generate records." />
-        ) : null}
-      </View>
+                </Pressable>
+                <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2, gap: spacing.lg }}>
+                  {entry.records.map((record) => (
+                    <View key={record.id} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <View style={{ width: 34, height: 34, borderRadius: radii.iconWrap, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" }}>
+                          <AppIcon name="award" size={13} color={goldColor} />
+                        </View>
+                        <View>
+                          <Text style={{ color: textColor, fontSize: 11, fontWeight: "700" }}>{record.record_type}</Text>
+                          <Text style={{ color: mutedColor, fontSize: 10 }}>{formatShortDate(record.achieved_on)}</Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <Text style={{ color: goldColor, fontSize: 16, fontWeight: "900" }}>{recordValue(record)}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </Card>
+            );
+          })}
+          {!records.isPending && grouped.length === 0 ? (
+            <EmptyCard title="No records found" text="Complete workouts to generate records." />
+          ) : null}
+        </View>
+      ) : null}
     </Screen>
   );
 }

@@ -11,7 +11,6 @@ import { GENDERS, FITNESS_LEVELS, GOALS, UNITS } from "../data";
 import { useTheme } from "@tamagui/core";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
@@ -39,6 +38,8 @@ export function ProfileSetupScreen({ navigation }: Props) {
   });
   const [error, setError] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [heightFeet, setHeightFeet] = useState("");
+  const [heightInches, setHeightInches] = useState("");
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
@@ -63,6 +64,11 @@ export function ProfileSetupScreen({ navigation }: Props) {
       goal: profile.primary_goal ?? "",
       unit: profile.preferred_unit ?? "metric",
     }));
+    if (profile.preferred_unit === "imperial" && profile.height_cm) {
+      const totalIn = profile.height_cm / 2.54;
+      setHeightFeet(String(Math.floor(totalIn / 12)));
+      setHeightInches(String(Math.round(totalIn % 12)));
+    }
   }, [profileQuery.data]);
 
   const onDateChange = useCallback((_: DateTimePickerEvent, selectedDate?: Date) => {
@@ -75,10 +81,32 @@ export function ProfileSetupScreen({ navigation }: Props) {
     }
   }, []);
 
-  const parsedDob = form.dob ? new Date(form.dob + "T00:00:00") : new Date(2000, 0, 1);
+  const parsedDob = form.dob ? new Date(form.dob + "T00:00:00") : undefined;
+  const pickerDate = parsedDob ?? new Date();
   const formattedDob = form.dob
     ? new Date(form.dob + "T00:00:00").toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
     : "Tap to select";
+
+  const syncHeightFromImperial = useCallback((ft: string, inc: string) => {
+    const ftNum = parseFloat(ft) || 0;
+    const incNum = parseFloat(inc) || 0;
+    const totalCm = Math.round(ftNum * 30.48 + incNum * 2.54);
+    setForm((c) => ({ ...c, height: totalCm > 0 ? String(totalCm) : "" }));
+  }, []);
+
+  const syncHeightToImperial = useCallback((cm: string) => {
+    const cmNum = parseFloat(cm) || 0;
+    if (cmNum > 0) {
+      const totalIn = cmNum / 2.54;
+      const ft = Math.floor(totalIn / 12);
+      const inc = Math.round(totalIn % 12);
+      setHeightFeet(String(ft));
+      setHeightInches(String(inc));
+    } else {
+      setHeightFeet("");
+      setHeightInches("");
+    }
+  }, []);
 
   const saveProfile = useSaveProfile({
     onSuccess: () => {
@@ -136,13 +164,13 @@ export function ProfileSetupScreen({ navigation }: Props) {
         }
       />
 
-      {profileQuery.isPending ? <LoadingCard label="Loading profile..." /> : null}
       {error ? (
         <View style={{ borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, backgroundColor: redDarkColor, borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", marginTop: spacing.xl }}>
           <Text style={{ color: redColor, fontSize: 12 }}>{error}</Text>
         </View>
       ) : null}
 
+      {!profileQuery.isPending ? (
       <View style={{ marginTop: spacing.xl3, gap: spacing.xl5 }}>
         <View>
           <SectionEyebrow>Basic Info</SectionEyebrow>
@@ -156,7 +184,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
                 </Text>
               </Pressable>
               {showDatePicker && (
-                <DateTimePicker value={parsedDob} mode="date" display={Platform.OS === "android" ? "default" : "spinner"} maximumDate={new Date()} onChange={onDateChange} />
+                <DateTimePicker value={pickerDate} mode="date" display={Platform.OS === "android" ? "default" : "spinner"} maximumDate={new Date()} onChange={onDateChange} />
               )}
             </View>
             <View>
@@ -170,7 +198,18 @@ export function ProfileSetupScreen({ navigation }: Props) {
           <SectionEyebrow>Body Stats</SectionEyebrow>
           <View style={{ flexDirection: "row", gap: spacing.xl }}>
             <View style={{ flex: 1 }}>
-              <LabeledInput label={`Height (${form.unit === "metric" ? "cm" : "ft"})`} value={form.height} onChangeText={(v) => setForm((c) => ({ ...c, height: v }))} keyboardType="numeric" />
+              {form.unit === "metric" ? (
+                <LabeledInput label="Height (cm)" value={form.height} onChangeText={(v) => setForm((c) => ({ ...c, height: v }))} keyboardType="numeric" />
+              ) : (
+                <View style={{ flexDirection: "row", gap: spacing.sm }}>
+                  <View style={{ flex: 1 }}>
+                    <LabeledInput label="Height (ft)" value={heightFeet} onChangeText={(v) => { setHeightFeet(v); syncHeightFromImperial(v, heightInches); }} keyboardType="numeric" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <LabeledInput label="Height (in)" value={heightInches} onChangeText={(v) => { setHeightInches(v); syncHeightFromImperial(heightFeet, v); }} keyboardType="numeric" />
+                  </View>
+                </View>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <LabeledInput label={`Weight (${form.unit === "metric" ? "kg" : "lbs"})`} value={form.weight} onChangeText={(v) => setForm((c) => ({ ...c, weight: v }))} keyboardType="numeric" />
@@ -196,7 +235,19 @@ export function ProfileSetupScreen({ navigation }: Props) {
           <SectionEyebrow>Preferred Units</SectionEyebrow>
           <View style={{ gap: spacing.lg, marginTop: spacing.lg }}>
             {UNITS.map((unit) => (
-              <SelectableRow key={unit.value} selected={form.unit === unit.value} onPress={() => setForm((c) => ({ ...c, unit: unit.value }))} label={unit.label} />
+              <SelectableRow key={unit.value} selected={form.unit === unit.value} onPress={() => {
+                if (unit.value !== form.unit) {
+                  if (unit.value === "imperial") {
+                    syncHeightToImperial(form.height);
+                  } else {
+                    const ft = parseFloat(heightFeet) || 0;
+                    const inc = parseFloat(heightInches) || 0;
+                    const cm = Math.round(ft * 30.48 + inc * 2.54);
+                    setForm((c) => ({ ...c, height: cm > 0 ? String(cm) : c.height }));
+                  }
+                }
+                setForm((c) => ({ ...c, unit: unit.value }));
+              }} label={unit.label} />
             ))}
           </View>
         </View>
@@ -219,6 +270,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
           style={{ marginTop: spacing.sm }}
         />
       </View>
+      ) : null}
     </Screen>
   );
 }

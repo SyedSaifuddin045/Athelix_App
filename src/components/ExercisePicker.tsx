@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Modal,
   Pressable,
@@ -17,6 +18,24 @@ import { useAllExercisesQuery, useExerciseFiltersQuery, useExercisesQuery } from
 import type { ExerciseResponse } from "../api/model";
 import { getApiErrorMessage } from "../api/client";
 import { CARDIO_ACTIVITIES } from "../utils/cardio";
+
+function SkeletonCount() {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.View style={{ opacity, width: 24, height: 12, borderRadius: 4, backgroundColor: "rgba(255,255,255,0.12)", marginLeft: 8 }} />
+  );
+}
 
 const QUICK_CARDIO_IDS = new Set(CARDIO_ACTIVITIES.map((a) => a.exerciseId));
 
@@ -84,7 +103,7 @@ export function ExercisePicker({
   const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
-  const greenColor = theme.colorGreen?.get() ?? "#22C55E";
+  const surfaceColor = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
@@ -125,7 +144,7 @@ export function ExercisePicker({
   );
 
   const activeQuery = exercisesQuery;
-  const isPending = activeQuery.isPending;
+  const isPending = activeQuery.isPending || allExercisesQuery.isPending;
   const isError = activeQuery.isError;
   const error = activeQuery.error;
 
@@ -187,7 +206,7 @@ export function ExercisePicker({
         }
       }}
     >
-      <Card elevated accentColor={muscleAccentColor(exercise.target)} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 14, marginBottom: 10 }}>
+      <Card elevated style={{ flexDirection: "row", alignItems: "center", paddingVertical: 14, paddingHorizontal: 14, marginBottom: 10 }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
             <Text style={{ color: textColor, fontSize: 14, fontWeight: "700" }} numberOfLines={1}>
@@ -211,71 +230,61 @@ export function ExercisePicker({
 
   const renderGridItem = ({ item }: { item: string }) => {
     const count = groupCounts[item] ?? 0;
-    const accent = muscleAccentColor(item) ?? "rgba(255,255,255,0.2)";
+    const accentColor = muscleAccentColor(item) ?? "rgba(255,255,255,0.2)";
     return (
       <Pressable onPress={() => handleGroupSelect(item)} style={{ flex: 1, maxWidth: "50%" }}>
-        <Card elevated accentColor={accent} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48, paddingHorizontal: 14, paddingVertical: 10 }}>
+        <Card elevated accentColor={accentColor} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 48, paddingHorizontal: 14, paddingVertical: 10 }}>
           <Text style={{ color: textColor, fontSize: 14, fontWeight: "700", flex: 1 }} numberOfLines={1}>
             {item}
           </Text>
-          <Text style={{ color: mutedColor, fontSize: 12, marginLeft: 8 }}>{count}</Text>
+          {isPending ? <SkeletonCount /> : (
+            <Text style={{ color: mutedColor, fontSize: 12, marginLeft: 8 }}>{count}</Text>
+          )}
         </Card>
       </Pressable>
     );
   };
 
-  const renderListHeader = () => {
-    if (isSearching) return null;
-    if (selectedGroup) {
-      const accent = muscleAccentColor(selectedGroup) ?? "rgba(255,255,255,0.2)";
-      return (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10 }}>
-          <Pressable onPress={handleBack} hitSlop={8} style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)" }}>
-            <AppIcon name="arrow-left" size={18} color="rgba(255,255,255,0.5)" />
-          </Pressable>
-          <View style={[{ width: 3, height: 18, borderRadius: 2 }, { backgroundColor: accent }]} />
-          <Text style={{ color: textColor, fontSize: 18, fontWeight: "700" }}>{selectedGroup}</Text>
-          <Text style={{ color: mutedColor, fontSize: 12 }}>{groupCounts[selectedGroup] ?? 0}</Text>
-        </View>
-      );
-    }
-    return null;
-  };
-
   const renderEmpty = () => {
     if (isPending) {
       return (
-        <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
-          <ActivityIndicator size="small" color={accent} />
-          <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center" }}>Loading exercises...</Text>
+        <View style={{ alignItems: "center", paddingVertical: 60 }}>
+          <ActivityIndicator color={accent} size="small" />
         </View>
       );
     }
     if (isError) {
       return (
         <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
-          <Text style={{ color: redColor, fontSize: 12, flex: 1 }}>{getApiErrorMessage(error)}</Text>
-          <Pressable onPress={() => activeQuery.refetch()}>
-            <Text style={{ color: accent, fontSize: 12, fontWeight: "700", marginLeft: 12 }}>Retry</Text>
+          <Text style={{ color: redColor, fontSize: 12, textAlign: "center" }}>{getApiErrorMessage(error)}</Text>
+          <Pressable onPress={() => activeQuery.refetch()} style={{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, backgroundColor: accent + "20" }}>
+            <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>Retry</Text>
           </Pressable>
         </View>
       );
     }
-    return (
-      <View style={{ alignItems: "center", paddingVertical: 40, gap: 8 }}>
-        <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center" }}>No exercises match your search</Text>
-      </View>
-    );
+    if (isSearching) {
+      return (
+        <View style={{ alignItems: "center", paddingVertical: 40 }}>
+          <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center" }}>No exercises match your search</Text>
+        </View>
+      );
+    }
+    return null;
   };
 
-  const gridExercises = useMemo(() => {
-    if (isSearching) return filteredExercises;
-    if (selectedGroup) return filteredExercises;
-    if (selectedCategory) return filteredExercises;
-    return [];
-  }, [isSearching, filteredExercises, selectedGroup, selectedCategory]);
+  const listHeader = !isSearching && selectedGroup ? (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10 }}>
+      <Pressable onPress={handleBack} hitSlop={8} style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: surfaceColor, borderWidth: 1, borderColor: borderColor }}>
+        <AppIcon name="arrow-left" size={16} color="rgba(255,255,255,0.5)" />
+      </Pressable>
+      <View style={[{ width: 3, height: 18, borderRadius: 2 }, { backgroundColor: muscleAccentColor(selectedGroup) ?? "rgba(255,255,255,0.2)" }]} />
+      <Text style={{ color: textColor, fontSize: 18, fontWeight: "700" }}>{selectedGroup}</Text>
+      {isPending ? <SkeletonCount /> : <Text style={{ color: mutedColor, fontSize: 12 }}>{groupCounts[selectedGroup] ?? 0}</Text>}
+    </View>
+  ) : null;
 
-  const showCategoryGrid = (selectedCategory === null || selectedCategory === "strength") && !isSearching && !selectedGroup;
+  const showCategoryGrid = !isSearching && !selectedGroup && (selectedCategory === null || selectedCategory === "strength");
 
   const content = (
     <View style={variant === "browse" ? { flex: 1, paddingHorizontal: 20 } : { flex: 1 }}>
@@ -287,7 +296,7 @@ export function ExercisePicker({
       ) : null}
 
       <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, marginBottom: 14 }}>
-        <View style={{ flex: 1, minHeight: 32, borderRadius: 10, backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)", paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <View style={{ flex: 1, minHeight: 32, borderRadius: 10, backgroundColor: surfaceColor, borderWidth: 1, borderColor: borderColor, paddingHorizontal: 10, flexDirection: "row", alignItems: "center", gap: 6 }}>
           <AppIcon name="search" size={15} color="rgba(255,255,255,0.4)" />
           <TextInput
             value={query}
@@ -352,13 +361,12 @@ export function ExercisePicker({
 
       {showCategoryGrid ? (
         <FlatList
-          key="grid"
           data={MUSCLE_GROUPS}
           keyExtractor={(item) => item}
           numColumns={2}
           columnWrapperStyle={{ gap: 8, marginBottom: 8 }}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 60, paddingTop: 4 }}
+          contentContainerStyle={{ paddingBottom: 60, paddingTop: 4, flexGrow: 1 }}
           style={{ flex: 1 }}
           ListFooterComponent={
             isError ? (
@@ -370,26 +378,21 @@ export function ExercisePicker({
               </View>
             ) : null
           }
+          ListEmptyComponent={isPending ? (
+            <View style={{ alignItems: "center", paddingVertical: 60 }}>
+              <ActivityIndicator color={accent} size="small" />
+            </View>
+          ) : null}
           renderItem={renderGridItem}
         />
       ) : (
         <View style={{ flex: 1 }}>
-          {!isSearching && selectedGroup ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingBottom: 10 }}>
-              <Pressable onPress={handleBack} hitSlop={8} style={{ width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)" }}>
-                <AppIcon name="arrow-left" size={16} color="rgba(255,255,255,0.5)" />
-              </Pressable>
-              <View style={[{ width: 3, height: 18, borderRadius: 2 }, { backgroundColor: muscleAccentColor(selectedGroup) ?? "rgba(255,255,255,0.2)" }]} />
-              <Text style={{ color: textColor, fontSize: 18, fontWeight: "700" }}>{selectedGroup}</Text>
-              <Text style={{ color: mutedColor, fontSize: 12 }}>{groupCounts[selectedGroup] ?? 0}</Text>
-            </View>
-          ) : null}
+          {listHeader}
           <FlatList
-            key="list"
-            data={gridExercises}
+            data={filteredExercises}
             keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 60, paddingTop: 4 }}
+            contentContainerStyle={{ paddingBottom: 60, paddingTop: 4, flexGrow: 1 }}
             style={{ flex: 1 }}
             ListEmptyComponent={renderEmpty}
             renderItem={({ item }) => renderExerciseItem(item)}

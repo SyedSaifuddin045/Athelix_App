@@ -59,57 +59,58 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
         <CompactStatCard icon="check-circle" label="Completed" value={String((sessions.data ?? []).filter((s) => s.is_completed).length)} color={greenColor} />
       </View>
 
-      {sessions.isPending ? <LoadingCard label="Loading history..." /> : null}
       {sessions.isError ? <ErrorCard error={sessions.error} onRetry={() => sessions.refetch()} /> : null}
 
-      <View style={{ marginTop: spacing.xl3, gap: spacing.xl3 }}>
-        {Object.entries(grouped).map(([week, weekSessions]) => (
-          <View key={week}>
-            <SectionEyebrow>{week}</SectionEyebrow>
-            <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
-              {weekSessions.map((session) => {
-                const moodIcon = session.mood ? MOOD_ICONS[session.mood] : null;
-                return (
-                  <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
-                    <Card elevated style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg }}>
-                      <View style={{ width: 44, height: 44, borderRadius: radii.iconWrap, backgroundColor: surface2Color, alignItems: "center", justifyContent: "center" }}>
-                        {moodIcon ? (
-                          <AppIcon name={moodIcon} size={20} color={accent} />
-                        ) : (
-                          <AppIcon name="check" size={20} color={mutedColor} />
-                        )}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{workoutTitle(session)}</Text>
-                        <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
-                          {formatShortDate(session.started_at)} - {formatTimeLabel(session.started_at)}
-                        </Text>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: spacing.sm }}>
-                          <MetaInline icon="clock" label={`${session.duration_minutes ?? 0}m`} />
-                          <MetaInline icon="list-checks" label={`${session.total_sets ?? 0} sets`} />
-                          {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR`} color={goldColor} /> : null}
+      {!sessions.isPending && !sessions.isError ? (
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl3 }}>
+          {Object.entries(grouped).map(([week, weekSessions]) => (
+            <View key={week}>
+              <SectionEyebrow>{week}</SectionEyebrow>
+              <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
+                {weekSessions.map((session) => {
+                  const moodIcon = session.mood ? MOOD_ICONS[session.mood] : null;
+                  return (
+                    <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
+                      <Card elevated style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg }}>
+                        <View style={{ width: 44, height: 44, borderRadius: radii.iconWrap, backgroundColor: surface2Color, alignItems: "center", justifyContent: "center" }}>
+                          {moodIcon ? (
+                            <AppIcon name={moodIcon} size={20} color={accent} />
+                          ) : (
+                            <AppIcon name="check" size={20} color={mutedColor} />
+                          )}
                         </View>
-                      </View>
-                      <AppIcon name="chevron-right" size={14} color={faintColor} />
-                    </Card>
-                  </Pressable>
-                );
-              })}
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{workoutTitle(session)}</Text>
+                          <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
+                            {formatShortDate(session.started_at)} - {formatTimeLabel(session.started_at)}
+                          </Text>
+                          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: spacing.sm }}>
+                            <MetaInline icon="clock" label={`${session.duration_minutes ?? 0}m`} />
+                            <MetaInline icon="list-checks" label={`${session.total_sets ?? 0} sets`} />
+                            {(session.prs_count ?? 0) > 0 ? <Tag label={`${session.prs_count} PR`} color={goldColor} /> : null}
+                          </View>
+                        </View>
+                        <AppIcon name="chevron-right" size={14} color={faintColor} />
+                      </Card>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        ))}
-        {!sessions.isPending && (sessions.data?.length ?? 0) === 0 ? (
-          <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
-            <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No workouts yet</Text>
-            <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Start a workout to populate your history.</Text>
-            <PrimaryButton
-              label="Start Your First Workout"
-              onPress={() => navigation.navigate("StartWorkout", {})}
-              icon={<AppIcon name="dumbbell" size={16} color="#000000" />}
-            />
-          </View>
-        ) : null}
-      </View>
+          ))}
+          {!sessions.isPending && (sessions.data?.length ?? 0) === 0 ? (
+            <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
+              <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No workouts yet</Text>
+              <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Start a workout to populate your history.</Text>
+              <PrimaryButton
+                label="Start Your First Workout"
+                onPress={() => navigation.navigate("StartWorkout", {})}
+                icon={<AppIcon name="dumbbell" size={16} color="#000000" />}
+              />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
     </Screen>
   );
 }

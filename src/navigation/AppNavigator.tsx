@@ -21,6 +21,7 @@ const CLERK_CACHE_KEYS = [
 import type { RootStackParamList } from "../types/navigation";
 
 import { SplashScreen } from "../screens/SplashScreen";
+import { OnboardingScreen } from "../screens/OnboardingScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { ProfileSetupScreen } from "../screens/ProfileSetupScreen";
@@ -161,10 +162,10 @@ export function AppNavigator() {
           headerShown: false,
           animation: "slide_from_right",
           contentStyle: { backgroundColor: rawColors.root },
-          navigationBarColor: rawColors.root,
         }}
       >
         <RootStack.Screen name="Splash" component={SplashScreen} />
+        <RootStack.Screen name="Onboarding" component={OnboardingScreen} />
         <RootStack.Screen name="Login" component={LoginScreen} />
         <RootStack.Screen name="Register" component={RegisterScreen} />
         <RootStack.Screen name="ProfileSetup" component={ProfileSetupScreen} />

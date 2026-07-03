@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useState, useMemo } from "react";
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -11,7 +11,7 @@ import { getApiErrorMessage } from "../api/client";
 import { useTheme } from "@tamagui/core";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, LoadingCard } from "../components/ui/Card";
+import { Card } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { Radio, SelectableRow } from "../components/ui/Input";
 import { SectionEyebrow } from "../components/ui/Indicators";
@@ -42,6 +42,10 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(id ?? null);
   const [selectedMeso, setSelectedMeso] = useState<string | null>(null);
   const templates = useTemplatesQuery(isAuthenticated);
+  const recentTemplates = useMemo(() => {
+    if (!templates.data) return [];
+    return [...templates.data].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()).slice(0, 3);
+  }, [templates.data]);
   const mesocycles = useMesocyclesQuery(isAuthenticated);
   const startSession = useStartSession({
     onSuccess: (session) => {
@@ -90,6 +94,35 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
         </Card>
       </Pressable>
 
+      {recentTemplates.length > 0 ? (
+        <View style={{ marginTop: spacing.xl5 }}>
+          <SectionEyebrow>Recent Templates</SectionEyebrow>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.xl }} contentContainerStyle={{ gap: spacing.md }}>
+            {recentTemplates.map((template) => {
+              const isSelected = selectedTemplate === String(template.id);
+              return (
+                <Pressable
+                  key={template.id}
+                  onPress={() => setSelectedTemplate((c) => (c === String(template.id) ? null : String(template.id)))}
+                  style={{
+                    paddingHorizontal: 16,
+                    paddingVertical: 14,
+                    borderRadius: radii.card,
+                    borderWidth: 1,
+                    borderColor: isSelected ? "rgba(255,90,54,0.44)" : borderColor,
+                    backgroundColor: isSelected ? "rgba(255,90,54,0.12)" : surface1Color,
+                    minWidth: 140,
+                  }}
+                >
+                  <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{template.name}</Text>
+                  <Text style={{ color: mutedColor, fontSize: 10, marginTop: 4 }}>{formatShortDate(template.updated_at)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ) : null}
+
       <View style={{ marginTop: spacing.xl5 }}>
         <SectionEyebrow>Attach to Mesocycle (optional)</SectionEyebrow>
         <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
@@ -110,8 +143,9 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
       <View style={{ marginTop: spacing.xl5 }}>
         <SectionEyebrow>From Template</SectionEyebrow>
         <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
-          {templates.isPending ? <LoadingCard label="Loading templates..." /> : null}
-          {(templates.data ?? []).map((template) => (
+          {!templates.isPending ? (
+            <>
+              {(templates.data ?? []).map((template) => (
             <Pressable key={template.id} onPress={() => setSelectedTemplate((c) => (c === String(template.id) ? null : String(template.id)))}>
               <Card
                 elevated
@@ -136,6 +170,8 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
               </Card>
             </Pressable>
           ))}
+            </>
+          ) : null}
         </View>
       </View>
 

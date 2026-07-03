@@ -9,7 +9,7 @@ import { useCurrentUserQuery } from "../api/queries";
 import { useSaveAccount } from "../api/mutations";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, LoadingCard } from "../components/ui/Card";
+import { Card } from "../components/ui/Card";
 import { validateUsername } from "../utils/validation";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
@@ -32,12 +32,6 @@ export function SettingsScreen({ navigation }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [usernameError, setUsernameError] = useState("");
-  const [notifications, setNotifications] = useState({
-    workoutReminders: true,
-    prAlerts: true,
-    weeklyReport: false,
-    newFeatures: true,
-  });
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
@@ -110,195 +104,199 @@ export function SettingsScreen({ navigation }: Props) {
         }
       />
 
-      {currentUser.isPending ? <LoadingCard label="Loading account..." /> : null}
       {error ? (
         <View style={{ borderRadius: radii.modal, paddingHorizontal: spacing.xl2, paddingVertical: spacing.lg, backgroundColor: redDarkColor, borderWidth: 1, borderColor: "rgba(239,68,68,0.25)", marginTop: spacing.xl }}>
           <Text style={{ color: redColor, fontSize: 12 }}>{error}</Text>
         </View>
       ) : null}
 
-      <View style={{ marginTop: spacing.xl3, gap: spacing.xl5 }}>
-        <View>
-          <SectionEyebrow>Account Details</SectionEyebrow>
-          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
-            <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
-              <LabeledInput
-                label="Username"
-                value={form.username}
-                onChangeText={(v) => { setForm((c) => ({ ...c, username: v })); setUsernameError(""); setError(""); }}
-                error={usernameError}
-              />
-            </View>
-            <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
-            <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
-              <LabeledInput label="Email Address" value={form.email} onChangeText={(v) => setForm((c) => ({ ...c, email: v }))} keyboardType="email-address" />
-            </View>
-          </Card>
-        </View>
-
-        <View>
-          <SectionEyebrow>Security</SectionEyebrow>
-          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
-            <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
-              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>New Password</Text>
-              <View style={{ position: "relative" }}>
-                <TextInput
-                  value={form.newPassword}
-                  onChangeText={(v) => setForm((c) => ({ ...c, newPassword: v }))}
-                  placeholder="Leave blank to keep current"
-                  placeholderTextColor={faintColor}
-                  style={{
-                    width: "100%",
-                    minHeight: 52,
-                    borderRadius: radii.input,
-                    backgroundColor: surface2Color,
-                    borderWidth: 1,
-                    borderColor,
-                    color: textColor,
-                    paddingHorizontal: 16,
-                    fontSize: 14,
-                    paddingRight: 46,
-                  }}
-                  secureTextEntry={!showPassword}
+      {!currentUser.isPending ? (
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl5 }}>
+          <View>
+            <SectionEyebrow>Account Details</SectionEyebrow>
+            <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
+              <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
+                <LabeledInput
+                  label="Username"
+                  value={form.username}
+                  onChangeText={(v) => { setForm((c) => ({ ...c, username: v })); setUsernameError(""); setError(""); }}
+                  error={usernameError}
                 />
-                <Pressable
-                  style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3 }}
-                  onPress={() => setShowPassword((v) => !v)}
-                >
-                  <AppIcon name={showPassword ? "eye-off" : "eye"} size={16} color={mutedColor} />
-                </Pressable>
               </View>
-            </View>
-          </Card>
-        </View>
+              <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
+              <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
+                <LabeledInput label="Email Address" value={form.email} onChangeText={(v) => setForm((c) => ({ ...c, email: v }))} keyboardType="email-address" />
+              </View>
+            </Card>
+          </View>
 
-        <View>
-          <SectionEyebrow>Notifications</SectionEyebrow>
-          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg, opacity: 0.5 }}>
-            {([
-              ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
-              ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
-              ["weeklyReport", "Weekly Report", "Weekly summary of your training"],
-              ["newFeatures", "New Features", "Updates about new app features"],
-            ] as const).map(([key, label, description], index, array) => (
-              <View key={key}>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2, gap: spacing.xl2 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, flex: 1 }}>
-                    <AppIcon
-                      name="bell"
-                      size={15}
-                      color={faintColor}
-                    />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{label}</Text>
-                      <Text style={{ color: mutedColor, fontSize: 10 }}>{description}</Text>
-                      <Text style={{ color: mutedColor, fontSize: 9, marginTop: 2, fontStyle: "italic" }}>Coming soon</Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={false}
-                    onValueChange={() => {}}
-                    trackColor={{ false: borderColor, true: accent }}
-                    thumbColor="#ffffff"
+          <View>
+            <SectionEyebrow>Security</SectionEyebrow>
+            <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
+              <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
+                <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>New Password</Text>
+                <View style={{ position: "relative" }}>
+                  <TextInput
+                    value={form.newPassword}
+                    onChangeText={(v) => setForm((c) => ({ ...c, newPassword: v }))}
+                    placeholder="Leave blank to keep current"
+                    placeholderTextColor={faintColor}
+                    style={{
+                      width: "100%",
+                      minHeight: 52,
+                      borderRadius: radii.input,
+                      backgroundColor: surface2Color,
+                      borderWidth: 1,
+                      borderColor,
+                      color: textColor,
+                      paddingHorizontal: 16,
+                      fontSize: 14,
+                      paddingRight: 46,
+                    }}
+                    secureTextEntry={!showPassword}
                   />
+                  <Pressable
+                    style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3 }}
+                    onPress={() => setShowPassword((v) => !v)}
+                  >
+                    <AppIcon name={showPassword ? "eye-off" : "eye"} size={16} color={mutedColor} />
+                  </Pressable>
                 </View>
-                {index < array.length - 1 ? (
-                  <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
-                ) : null}
               </View>
-            ))}
-          </Card>
-        </View>
+            </Card>
+          </View>
 
-        <View>
-          <SectionEyebrow>Feedback</SectionEyebrow>
-          <Pressable
-            onPress={async () => {
-              posthog.capture(Events.FEEDBACK_PORTAL_OPENED);
-              try {
-                const resp = await apiFetch("/auth/generate-portal-token", { method: "POST" });
-                const data = await resp.json() as { url: string };
-                Linking.openURL(data.url).catch(() => Alert.alert("Error", "Could not open feedback portal"));
-              } catch {
-                Linking.openURL("https://feedback.athelix.fit").catch(() =>
-                  Alert.alert("Error", "Could not open feedback portal"),
-                );
-              }
-            }}
-          >
-            <View
-              style={{
-                minHeight: 74,
-                borderRadius: radii.input,
-                borderWidth: 1,
-                borderColor: "rgba(255,90,54,0.2)",
-                backgroundColor: "rgba(255,90,54,0.08)",
-                paddingHorizontal: spacing.xl3,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: spacing.xl,
-                marginTop: spacing.lg,
+          <View>
+            <SectionEyebrow>Notifications</SectionEyebrow>
+            <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg, opacity: 0.5 }}>
+              {([
+                ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
+                ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
+                ["weeklyReport", "Weekly Report", "Weekly summary of your training"],
+                ["newFeatures", "New Features", "Updates about new app features"],
+              ] as const).map(([key, label, description], index, array) => (
+                <View key={key}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2, gap: spacing.xl2 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, flex: 1 }}>
+                      <AppIcon
+                        name="bell"
+                        size={15}
+                        color={faintColor}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{label}</Text>
+                        <Text style={{ color: mutedColor, fontSize: 10 }}>{description}</Text>
+                        <Text style={{ color: mutedColor, fontSize: 9, marginTop: 2, fontStyle: "italic" }}>Coming soon</Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={false}
+                      onValueChange={() => {
+                        posthog.capture(Events.NOTIFICATION_SETTING_CHANGED, { setting: key, enabled: false, reason: "coming_soon" });
+                        Alert.alert("Coming Soon", `${label} will be available in a future update.`);
+                      }}
+                      trackColor={{ false: borderColor, true: accent }}
+                      thumbColor="#ffffff"
+                    />
+                  </View>
+                  {index < array.length - 1 ? (
+                    <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
+                  ) : null}
+                </View>
+              ))}
+            </Card>
+          </View>
+
+          <View>
+            <SectionEyebrow>Feedback</SectionEyebrow>
+            <Pressable
+              onPress={async () => {
+                posthog.capture(Events.FEEDBACK_PORTAL_OPENED);
+                try {
+                  const resp = await apiFetch("/auth/generate-portal-token", { method: "POST" });
+                  const data = await resp.json() as { url: string };
+                  Linking.openURL(data.url).catch(() => Alert.alert("Error", "Could not open feedback portal"));
+                } catch {
+                  Linking.openURL("https://feedback.athelix.fit").catch(() =>
+                    Alert.alert("Error", "Could not open feedback portal"),
+                  );
+                }
               }}
             >
-              <AppIcon name="message-circle" size={16} color={accent} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: accent, fontSize: 13, fontWeight: "700" }}>Feedback & Feature Requests</Text>
-                <Text style={{ color: "rgba(255,90,54,0.66)", fontSize: 10 }}>
-                  Suggest features, report bugs, or write a review
-                </Text>
+              <View
+                style={{
+                  minHeight: 74,
+                  borderRadius: radii.input,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,90,54,0.2)",
+                  backgroundColor: "rgba(255,90,54,0.08)",
+                  paddingHorizontal: spacing.xl3,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: spacing.xl,
+                  marginTop: spacing.lg,
+                }}
+              >
+                <AppIcon name="message-circle" size={16} color={accent} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: accent, fontSize: 13, fontWeight: "700" }}>Feedback & Feature Requests</Text>
+                  <Text style={{ color: "rgba(255,90,54,0.66)", fontSize: 10 }}>
+                    Suggest features, report bugs, or write a review
+                  </Text>
+                </View>
+                <AppIcon name="external-link" size={14} color="rgba(255,90,54,0.5)" />
               </View>
-              <AppIcon name="external-link" size={14} color="rgba(255,90,54,0.5)" />
-            </View>
-          </Pressable>
-        </View>
+            </Pressable>
+          </View>
 
-        <View>
-          <SectionEyebrow color={redColor}>Danger Zone</SectionEyebrow>
-          <Pressable
-            onPress={() =>
-              Alert.alert("Delete Account", "This will permanently delete your account and all data. This cannot be undone.", [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: async () => {
-                    try {
-                      await apiFetch("/auth/delete-account", { method: "POST" });
-                      await signOut();
-                      navigation.replace("Login");
-                    } catch (err) {
-                      Alert.alert("Error", getApiErrorMessage(err));
-                    }
+          <View>
+            <SectionEyebrow color={redColor}>Danger Zone</SectionEyebrow>
+            <Pressable
+              onPress={() =>
+                Alert.alert("Delete Account", "This will permanently delete your account and all data. This cannot be undone.", [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                      try {
+                        await apiFetch("/auth/delete-account", { method: "POST" });
+                        await signOut();
+                        navigation.replace("Login");
+                      } catch (err) {
+                        Alert.alert("Error", getApiErrorMessage(err));
+                      }
+                    },
                   },
-                },
-              ])
-            }
-          >
-            <View
-              style={{
-                minHeight: 74,
-                borderRadius: radii.input,
-                borderWidth: 1,
-                borderColor: "rgba(239,68,68,0.2)",
-                backgroundColor: redDarkColor,
-                paddingHorizontal: spacing.xl3,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: spacing.xl,
-                marginTop: spacing.lg,
-              }}
+                ])
+              }
             >
-              <AppIcon name="trash-2" size={16} color={redColor} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: redColor, fontSize: 13, fontWeight: "700" }}>Delete Account</Text>
-                <Text style={{ color: "rgba(239,68,68,0.66)", fontSize: 10 }}>
-                  Permanently delete all data. This cannot be undone.
-                </Text>
+              <View
+                style={{
+                  minHeight: 74,
+                  borderRadius: radii.input,
+                  borderWidth: 1,
+                  borderColor: "rgba(239,68,68,0.2)",
+                  backgroundColor: redDarkColor,
+                  paddingHorizontal: spacing.xl3,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: spacing.xl,
+                  marginTop: spacing.lg,
+                }}
+              >
+                <AppIcon name="trash-2" size={16} color={redColor} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: redColor, fontSize: 13, fontWeight: "700" }}>Delete Account</Text>
+                  <Text style={{ color: "rgba(239,68,68,0.66)", fontSize: 10 }}>
+                    Permanently delete all data. This cannot be undone.
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Pressable>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      ) : null}
     </Screen>
   );
 }

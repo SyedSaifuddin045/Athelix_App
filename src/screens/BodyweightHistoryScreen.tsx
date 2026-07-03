@@ -32,14 +32,12 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
     [logs.data],
   );
 
-  const chartData = useMemo(
-    () =>
-      entries
-        .slice()
-        .reverse()
-        .map((entry) => ({ label: formatShortDate(entry.logged_at), value: entry.weight_kg })),
+  const sortedAsc = useMemo(
+    () => entries.slice().reverse(),
     [entries],
   );
+
+  const chartData = sortedAsc.map((entry) => ({ label: formatShortDate(entry.logged_at), value: entry.weight_kg }));
 
   const latest = entries[0]?.weight_kg ?? 0;
   const previous = entries[1]?.weight_kg ?? latest;

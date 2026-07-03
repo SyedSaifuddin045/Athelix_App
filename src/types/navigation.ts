@@ -2,6 +2,7 @@ import type { CardioActivityType } from "../utils/cardio";
 
 export type RootStackParamList = {
   Splash: undefined;
+  Onboarding: undefined;
   Login: undefined;
   Register: undefined;
   ProfileSetup: undefined;

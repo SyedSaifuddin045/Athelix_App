@@ -11,7 +11,7 @@ import { useMuscleBalanceQuery } from "../api/queries";
 import { MUSCLE_PERIODS } from "../data";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, ErrorCard, LoadingCard } from "../components/ui/Card";
+import { Card, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { Tag } from "../components/ui/Indicators";
@@ -209,69 +209,70 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
         ))}
       </View>
 
-      {report.isPending ? <LoadingCard label="Analyzing muscle balance..." /> : null}
+      {!report.isPending && !report.isError ? (
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
+          {items.map((item: MuscleGroupBalanceItemResponse) => {
+            const isExpanded = expanded === item.muscle_group;
+            const accent = muscleAccentColor(item.muscle_group) ?? "rgba(255,255,255,0.2)";
+            const exercises = item.exercises ?? [];
+            return (
+              <Card key={item.muscle_group} elevated accentColor={accent}>
+                <Pressable onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                      <View
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: accent,
+                        }}
+                      />
+                      <Text style={{ color: textColor, fontSize: 15, fontWeight: "800", flex: 1 }} numberOfLines={1}>
+                        {item.muscle_group}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
+                      <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>
+                        {item.score}%
+                      </Text>
+                      <Tag label={item.status} color={STATUS_COLORS[item.status] ?? mutedColor} />
+                    </View>
+                  </View>
+
+                  <VolumeBar
+                    current={item.weekly_sets}
+                    average={item.average_weekly_sets}
+                    color={accent}
+                    score={item.score}
+                  />
+                </Pressable>
+
+                {isExpanded && exercises.length > 0 ? (
+                  <View style={{ marginTop: spacing.xl2, gap: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" }}>
+                    {exercises.map((ex: MuscleGroupExerciseItemResponse) => (
+                      <ExerciseRow key={ex.exercise_name} exercise={ex} color={accent} />
+                    ))}
+                  </View>
+                ) : null}
+              </Card>
+            );
+          })}
+          {!report.isPending && items.length === 0 ? (
+            <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
+              <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No data yet</Text>
+              <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Complete workouts to see your muscle balance breakdown.</Text>
+              <PrimaryButton
+                label="Start Your First Workout"
+                onPress={() => navigation.navigate("StartWorkout", {})}
+                icon={<AppIcon name="dumbbell" size={16} color="#000000" />}
+              />
+            </View>
+          ) : null}
+        </View>
+      ) : null}
+
       {report.isError ? <ErrorCard error={report.error} onRetry={() => report.refetch()} /> : null}
-
-      <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
-        {items.map((item: MuscleGroupBalanceItemResponse) => {
-          const isExpanded = expanded === item.muscle_group;
-          const accent = muscleAccentColor(item.muscle_group) ?? "rgba(255,255,255,0.2)";
-          const exercises = item.exercises ?? [];
-          return (
-            <Card key={item.muscle_group} elevated accentColor={accent}>
-              <Pressable onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: accent,
-                      }}
-                    />
-                    <Text style={{ color: textColor, fontSize: 15, fontWeight: "800", flex: 1 }} numberOfLines={1}>
-                      {item.muscle_group}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
-                    <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>
-                      {item.score}%
-                    </Text>
-                    <Tag label={item.status} color={STATUS_COLORS[item.status] ?? mutedColor} />
-                  </View>
-                </View>
-
-                <VolumeBar
-                  current={item.weekly_sets}
-                  average={item.average_weekly_sets}
-                  color={accent}
-                  score={item.score}
-                />
-              </Pressable>
-
-              {isExpanded && exercises.length > 0 ? (
-                <View style={{ marginTop: spacing.xl2, gap: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" }}>
-                  {exercises.map((ex: MuscleGroupExerciseItemResponse) => (
-                    <ExerciseRow key={ex.exercise_name} exercise={ex} color={accent} />
-                  ))}
-                </View>
-              ) : null}
-            </Card>
-          );
-        })}
-        {!report.isPending && items.length === 0 ? (
-          <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
-            <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No data yet</Text>
-            <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Complete workouts to see your muscle balance breakdown.</Text>
-            <PrimaryButton
-              label="Start Your First Workout"
-              onPress={() => navigation.navigate("StartWorkout", {})}
-              icon={<AppIcon name="dumbbell" size={16} color="#000000" />}
-            />
-          </View>
-        ) : null}
-      </View>
     </Screen>
   );
 }

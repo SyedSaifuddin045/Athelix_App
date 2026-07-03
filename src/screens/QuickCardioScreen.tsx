@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth } from "@clerk/expo";
 import { Pressable, Text, TextInput, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
@@ -15,6 +16,7 @@ import { Screen } from "../components/ui/Layout";
 import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { AppIcon } from "../design-system/icons/AppIcon";
 import { queryKeys } from "../api/queryKeys";
+import { useProfileQuery } from "../api/queries";
 import { getApiErrorMessage } from "../api/client";
 import Animated, {
   useSharedValue,
@@ -138,6 +140,10 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isSignedIn: isAuthenticated = false } = useAuth();
+  const { data: profile } = useProfileQuery(isAuthenticated);
+  const bodyWeightKg = profile?.weight_kg ?? 80;
+  const [expanded, setExpanded] = useState(false);
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
@@ -200,7 +206,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
       const session = sessionRes.data as WorkoutSessionResponse;
 
       const estimatedCalories = distKm > 0 && elapsedSec > 0
-        ? Math.round(parseFloat(activity.exerciseId.includes("walk") ? "0.5" : "1.036") * 80 * distKm)
+        ? Math.round(parseFloat(activity.exerciseId.includes("walk") ? "0.5" : "1.036") * bodyWeightKg * distKm)
         : 0;
 
       const setPayload: ExerciseSetCreate = {
@@ -229,7 +235,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   if (phase === "finish") {
     const distNum = parseFloat(distanceKm) || 0;
     const estimatedCalories = distNum > 0 && elapsedSec > 0
-      ? Math.round(parseFloat(activity.exerciseId.includes("walk") ? "0.5" : "1.036") * 80 * distNum)
+      ? Math.round(parseFloat(activity.exerciseId.includes("walk") ? "0.5" : "1.036") * bodyWeightKg * distNum)
       : null;
 
     return (
@@ -350,7 +356,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   return (
     <Screen>
       <BackHeader title={activity.label} onBack={() => navigation.goBack()} />
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xl4 }}>
+        <View style={{ flex: 1, alignItems: "center", justifyContent: "center", gap: spacing.xl4 }}>
         <View
           style={{
             width: 80,
@@ -361,9 +367,31 @@ export function QuickCardioScreen({ navigation, route }: Props) {
             justifyContent: "center",
           }}
         >
-          <Text style={{ fontSize: 36 }}>{iconForActivity(route.params.activityType)}</Text>
+          <AppIcon name={iconForActivity(route.params.activityType)} size={36} color={accent} />
         </View>
         <Text style={{ fontSize: 22, color: textColor, fontWeight: "700" }}>{activity.label}</Text>
+
+        {phase === "idle" && activity.instructions?.length ? (
+          <View style={{ width: "100%", paddingHorizontal: spacing.xl5, gap: spacing.sm, marginBottom: spacing.xs }}>
+            <Pressable onPress={() => setExpanded((e) => !e)} style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
+              <AppIcon name={expanded ? "chevron-down" : "chevron-right"} size={14} color={mutedColor} />
+              <Text style={{ color: mutedColor, fontSize: 12, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Instructions
+              </Text>
+            </Pressable>
+            {expanded ? (
+              <View style={{ gap: spacing.xs, paddingLeft: spacing.lg }}>
+                {activity.instructions.map((step: string, i: number) => (
+                  <View key={i} style={{ flexDirection: "row", gap: spacing.sm, alignItems: "flex-start" }}>
+                    <Text style={{ color: accent, fontSize: 12, fontWeight: "700", width: 16 }}>{i + 1}.</Text>
+                    <Text style={{ flex: 1, color: mutedColor, fontSize: 13, lineHeight: 18 }}>{step}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+
         <Text style={{ fontSize: 48, color: textColor, fontWeight: "200", fontVariant: ["tabular-nums"] }}>
           {formatTimer(elapsedSec)}
         </Text>

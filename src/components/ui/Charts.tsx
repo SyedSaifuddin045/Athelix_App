@@ -27,6 +27,9 @@ export function VerticalBars({
         const barHeight = Math.max((item.value / max) * height, 4);
         return (
           <View key={i} style={{ flex: 1, alignItems: "center", gap: spacing.xxs }}>
+            <Text style={{ color: barColor, fontSize: 10, fontWeight: "700", minHeight: 14 }}>
+              {item.value > 0 ? item.value : ""}
+            </Text>
             <View style={{ justifyContent: "flex-end", width: 26, height }}>
               <View
                 style={{

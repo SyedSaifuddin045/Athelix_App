@@ -118,6 +118,7 @@ export function useExerciseFiltersQuery(enabled: boolean) {
     queryKey: queryKeys.exerciseFilters,
     queryFn: async () => dataOf(await getExerciseFiltersExercisesFiltersGet()),
     enabled,
+    retry: false,
     staleTime: Infinity,
     gcTime: 24 * 60 * 60 * 1000,
   });
@@ -128,6 +129,7 @@ export function useExercisesQuery(params: ListExercisesExercisesGetParams, enabl
     queryKey: queryKeys.exercises(params),
     queryFn: async () => dataOf(await listExercisesExercisesGet(params)),
     enabled,
+    retry: false,
     placeholderData: keepPreviousData,
     staleTime: Infinity,
     gcTime: 24 * 60 * 60 * 1000,

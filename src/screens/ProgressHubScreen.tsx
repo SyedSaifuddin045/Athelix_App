@@ -1,8 +1,9 @@
+import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
-import { useOverviewQuery } from "../api/queries";
+import { useOverviewQuery, useExercisesQuery } from "../api/queries";
 import { useTheme } from "@tamagui/core";
 import { spacing } from "../design-system/tokens/spacing";
 import { Card } from "../components/ui/Card";
@@ -12,6 +13,8 @@ import { CompactStatCard } from "../components/ui/Stats";
 import { PROGRESS_SECTIONS } from "../data";
 import { AppIcon } from "../design-system/icons/AppIcon";
 import type { IconName } from "../components/ui/Icon";
+import { nameForExercise } from "../utils/display";
+import { exerciseLookup } from "../utils/mapping";
 import { formatShortDate } from "../utils/format";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTabs"> };
@@ -25,6 +28,8 @@ const SECTION_ICONS: Record<string, IconName> = {
 
 export function ProgressHubScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
+  const exercisesQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
+  const lookup = useMemo(() => exerciseLookup(exercisesQuery.data?.items), [exercisesQuery.data?.items]);
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
@@ -62,6 +67,13 @@ export function ProgressHubScreen({ navigation }: Props) {
         />
       </View>
 
+      {!overview.isPending && !overview.isError && (overview.data?.stats.completed_sessions ?? 0) === 0 ? (
+        <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
+          <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No workouts yet</Text>
+          <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Complete your first workout to see progress analytics, streaks, and personal records.</Text>
+        </View>
+      ) : null}
+
       {overview.data?.recent_personal_records && overview.data.recent_personal_records.length > 0 ? (
         <Pressable style={{ marginTop: spacing.xl3, marginBottom: spacing.xl2 }}>
           <Card elevated accent="gold">
@@ -85,8 +97,8 @@ export function ProgressHubScreen({ navigation }: Props) {
                 <Text style={{ color: goldColor, fontSize: 15, fontWeight: "800" }}>
                   New {overview.data.recent_personal_records[0].record_type.replace(/_/g, " ")} PR
                 </Text>
-                <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16, marginTop: spacing.xxs }}>
-                  {overview.data.recent_personal_records[0].exercise_id} • {overview.data.recent_personal_records[0].value}
+                <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16, marginTop: spacing.xxs }} numberOfLines={1}>
+                  {nameForExercise(overview.data.recent_personal_records[0].exercise_id, lookup) ?? overview.data.recent_personal_records[0].exercise_id} • {overview.data.recent_personal_records[0].value}
                 </Text>
                 <Text style={{ color: faintColor, fontSize: 11, lineHeight: 16, marginTop: spacing.xxs }}>
                   {formatShortDate(overview.data.recent_personal_records[0].achieved_on)}

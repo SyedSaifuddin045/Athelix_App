@@ -1,13 +1,14 @@
-import { useEffect } from "react";
-import { Pressable, Text, View, ActivityIndicator, FlatList } from "react-native";
+import { useEffect, useMemo } from "react";
+import { Pressable, Text, View, ActivityIndicator, ScrollView } from "react-native";
 import { useAuth } from "@clerk/expo";
 import { useTheme } from "@tamagui/core";
 import type { CompositeNavigationProp } from "@react-navigation/native";
 import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList, TabParamList } from "../types/navigation";
-import { useOverviewQuery } from "../api/queries";
-import { displayName, initialsFor, workoutTitle } from "../utils/display";
+import { useOverviewQuery, useExercisesQuery } from "../api/queries";
+import { displayName, initialsFor, workoutTitle, nameForExercise } from "../utils/display";
+import { exerciseLookup } from "../utils/mapping";
 import { formatShortDate, formatTimeLabel, formatVolume } from "../utils/format";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
@@ -30,6 +31,8 @@ type Props = {
 
 export function HomeScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
+  const exercisesQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
+  const lookup = useMemo(() => exerciseLookup(exercisesQuery.data?.items), [exercisesQuery.data?.items]);
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
@@ -53,20 +56,10 @@ export function HomeScreen({ navigation }: Props) {
     label: day.day.slice(0, 3),
     value: day.value,
   }));
-  const daysCount = daysToShow.length;
-  const workoutDaysCount = daysToShow.reduce((sum, d) => sum + d.value, 0);
 
   useEffect(() => {
     if (data && !data.has_profile) navigation.navigate("ProfileSetup");
   }, [data, navigation]);
-
-  if (overview.isPending) {
-    return (
-      <Screen>
-        <LoadingCard label="Loading your dashboard..." />
-      </Screen>
-    );
-  }
 
   if (overview.isError) {
     return (
@@ -93,7 +86,13 @@ export function HomeScreen({ navigation }: Props) {
         <IconButton icon="bell" size={40} />
       </View>
 
-      <Pressable
+      {overview.isPending ? (
+        <View style={{ alignItems: "center", paddingVertical: 60 }}>
+          <ActivityIndicator color={accent} size="small" />
+        </View>
+      ) : (
+        <>
+        <Pressable
         onPress={() =>
           activeMeso
             ? navigation.navigate("MesocycleDetail", { id: String(activeMeso.id) })
@@ -135,9 +134,6 @@ export function HomeScreen({ navigation }: Props) {
       <Card elevated style={{ marginBottom: spacing.xl2 }} animate animationDelay={100}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>This Week</Text>
-          <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: accent }]}>
-            {workoutDaysCount} / {daysCount} days
-          </Text>
         </View>
         <View style={{ marginTop: spacing.xl3 }}>
           <VerticalBars data={daysToShow} />
@@ -183,14 +179,14 @@ export function HomeScreen({ navigation }: Props) {
         <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }, { marginBottom: spacing.lg }]}>
           <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>Quick Cardio</Text>
         </View>
-        <FlatList
-          data={CARDIO_ACTIVITIES}
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ gap: spacing.md }}
-          keyExtractor={(item) => item.type}
-          renderItem={({ item }: { item: CardioActivity }) => (
+        >
+          {CARDIO_ACTIVITIES.map((item: CardioActivity) => (
             <Pressable
+              key={item.type}
               onPress={() => navigation.navigate("QuickCardio", { activityType: item.type })}
             >
               <View
@@ -216,7 +212,7 @@ export function HomeScreen({ navigation }: Props) {
                     justifyContent: "center",
                   }}
                 >
-                  <Text style={{ fontSize: 20 }}>{iconForActivity(item.type)}</Text>
+                  <AppIcon name={iconForActivity(item.type)} size={20} color={textColor} />
                 </View>
                 <Text
                   style={{
@@ -230,8 +226,8 @@ export function HomeScreen({ navigation }: Props) {
                 </Text>
               </View>
             </Pressable>
-          )}
-        />
+          ))}
+        </ScrollView>
       </View>
 
       <View style={{ marginBottom: spacing.xl2 }}>
@@ -312,9 +308,11 @@ export function HomeScreen({ navigation }: Props) {
           {data.recent_personal_records.map((pr) => (
             <View key={pr.id} style={{ marginBottom: spacing.md }}>
               <Card elevated>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <Text style={{ color: textColor, fontSize: 14, fontWeight: "700" }}>{pr.exercise_id}</Text>
-                  <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={{ color: textColor, fontSize: 14, fontWeight: "700" }} numberOfLines={1}>{nameForExercise(pr.exercise_id, lookup) ?? pr.exercise_id}</Text>
+                  </View>
+                  <Text style={{ flexShrink: 0, color: accent, fontSize: 12, fontWeight: "700", marginLeft: 8 }}>
                     {pr.record_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())} +{pr.value}
                   </Text>
                 </View>
@@ -330,6 +328,8 @@ export function HomeScreen({ navigation }: Props) {
         icon={<AppIcon name="plus" size={20} color="#000000" />}
         style={{ marginBottom: spacing.xl4 }}
       />
+      </>
+      )}
     </Screen>
   );
 }

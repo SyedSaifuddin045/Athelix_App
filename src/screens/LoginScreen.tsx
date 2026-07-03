@@ -77,7 +77,7 @@ export function LoginScreen({ navigation }: Props) {
   );
 
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!email.trim() || !password.trim()) {
       setError("Please fill in all fields.");
       return;
     }

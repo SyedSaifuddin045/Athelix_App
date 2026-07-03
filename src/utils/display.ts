@@ -19,7 +19,11 @@ export function initialsFor(name: string) {
 }
 
 export function nameForExercise(id: string, lookup: Map<string, any>) {
-  return lookup.get(id)?.name ?? null;
+  const name = lookup.get(id)?.name;
+  if (name) return name;
+  // Not in lookup — humanize raw ID
+  if (/^\d+$/.test(id)) return `Unknown (#${id})`;
+  return id.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const MUSCLE_COLORS: Record<string, string> = {

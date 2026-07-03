@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, Alert, Animated, Pressable, ScrollView, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -12,7 +12,7 @@ import type { WorkoutSessionResponse } from "../api/model/workoutSessionResponse
 import { getApiErrorMessage } from "../api/client";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, ErrorCard, LoadingCard } from "../components/ui/Card";
+import { Card, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
 import { BackHeader } from "../components/ui/Button";
 import { CompactStatCard } from "../components/ui/Stats";
@@ -23,6 +23,42 @@ import { ExercisePicker } from "../components/ExercisePicker";
 import { formatShortDate } from "../utils/format";
 import { exerciseLookup } from "../utils/mapping";
 import { nameForExercise } from "../utils/display";
+
+function ProgressSkeleton() {
+  const skeletonColor = "rgba(255,255,255,0.12)";
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  const S = ({ h }: { h: number }) => (
+    <Animated.View style={{ opacity, height: h, borderRadius: 16, backgroundColor: skeletonColor, flex: 1 }} />
+  );
+
+  return (
+    <View style={{ marginTop: 24, gap: 24 }}>
+      <View style={{ flexDirection: "row", gap: 16 }}>
+        <S h={88} />
+        <S h={88} />
+      </View>
+      <S h={160} />
+      <S h={140} />
+      <View style={{ gap: 12 }}>
+        <S h={20} />
+        <S h={88} />
+        <S h={88} />
+      </View>
+    </View>
+  );
+}
 
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "ExerciseProgress">;
@@ -86,12 +122,13 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
   }
 
   return (
-    <Screen>
+    <Screen scroll={!pickerOpen}>
       <BackHeader
         title={!pickerOpen && selectedId ? "Exercise Progress" : "Exercise Progress"}
         onBack={() => {
           if (!pickerOpen) {
             setPickerOpen(true);
+            setSelectedId(undefined);
           } else {
             navigation.goBack();
           }
@@ -99,7 +136,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
       />
 
       {pickerOpen ? (
-        <View style={{ marginTop: spacing.xl3 }}>
+        <View style={{ flex: 1, marginTop: spacing.xl3 }}>
           <ExercisePicker
             variant="browse"
             title="Select Exercise"
@@ -152,8 +189,9 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
-      {selectedId && progress.isPending ? <LoadingCard label="Loading progress..." /> : null}
-      {progress.isError ? <ErrorCard error={progress.error} onRetry={() => progress.refetch()} /> : null}
+      {selectedId && progress.isPending ? (
+        <ProgressSkeleton />
+      ) : null}
 
       {selectedId && progress.isSuccess ? (
         <View style={{ marginTop: spacing.xl3, gap: spacing.xl3 }}>
@@ -265,6 +303,8 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
           })()}
         </View>
       ) : null}
+
+      {progress.isError ? <ErrorCard error={progress.error} onRetry={() => progress.refetch()} /> : null}
 
       {!selectedId ? (
         <Card elevated style={{ marginTop: spacing.xl3 }}>
