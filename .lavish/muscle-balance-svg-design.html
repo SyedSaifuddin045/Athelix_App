@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Muscle Balance SVG Integration — Design Options</title>
+<style>
+  :root {
+    --bg: #111111;
+    --surface1: #1A1A1A;
+    --surface2: #222222;
+    --surface3: #2A2A2A;
+    --text: #FFFFFF;
+    --text-muted: rgba(255,255,255,0.45);
+    --text-dim: rgba(255,255,255,0.25);
+    --border: rgba(255,255,255,0.08);
+    --accent-orange: #FF5A36;
+    --accent-green: #22C55E;
+    --accent-purple: #8B5CF6;
+    --accent-blue: #3B82F6;
+    --accent-yellow: #F59E0B;
+    --accent-pink: #EC4899;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.5;
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; margin-bottom: 4px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  p, li { font-size: 13px; color: var(--text-muted); }
+  .subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card.surface2 { background: var(--surface2); }
+  .card.surface3 { background: var(--surface3); }
+
+  /* Color dots */
+  .color-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    vertical-align: middle;
+    margin-right: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  /* Muscle color mapping grid */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    margin: 12px 0;
+  }
+  .color-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 10px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .color-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Approach cards */
+  .approach-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .approach-card.recommended {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 1px var(--accent-blue);
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge.rec { background: var(--accent-blue); color: #000; }
+  .badge.opt { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+  }
+  .pros-cons ul { list-style: none; padding: 0; }
+  .pros-cons li {
+    font-size: 12px;
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+    color: var(--text-muted);
+  }
+  .pros-cons li::before {
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+  }
+  .pros li::before { content: "+"; color: var(--accent-green); }
+  .cons li::before { content: "–"; color: #EF4444; }
+
+  /* Layout mockups */
+  .layout-mockup {
+    display: flex;
+    gap: 16px;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .mockup {
+    flex: 1;
+    min-width: 200px;
+    background: var(--surface3);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .mockup-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .mockup-svg {
+    background: #2A2A2A;
+    border-radius: 6px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    border: 1px dashed rgba(255,255,255,0.1);
+  }
+  .mockup-list-item {
+    height: 8px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    margin-top: 8px;
+  }
+  .mockup-list-item:nth-child(2) { width: 90%; }
+  .mockup-list-item:nth-child(3) { width: 75%; }
+  .mockup-list-item:nth-child(4) { width: 60%; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  /* Form controls */
+  form { margin: 0; }
+  fieldset { border: none; padding: 0; margin: 0; }
+  legend { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+  .option-group { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  .option-group label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: var(--surface3);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .option-group label:has(input:checked) {
+    border-color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.06);
+  }
+  .option-group input[type="radio"] {
+    margin-top: 2px;
+    accent-color: var(--accent-blue);
+    flex-shrink: 0;
+  }
+  .option-group .option-text { display: flex; flex-direction: column; gap: 2px; }
+  .option-group .option-title { font-size: 13px; font-weight: 600; }
+  .option-group .option-desc { font-size: 11px; color: var(--text-muted); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn-primary { background: var(--accent-blue); color: #000; }
+  .btn-secondary { background: var(--surface3); color: var(--text); border: 1px solid var(--border); }
+  .btn-row { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 20px; margin: 12px 0; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border);
+  }
+  .timeline-item { position: relative; padding-bottom: 14px; }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -17px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+  }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-item h4 { font-size: 13px; font-weight: 600; }
+  .timeline-item p { font-size: 12px; }
+
+  /* SVG preview inline */
+  .svg-preview {
+    background: #2A2A2A;
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin: 12px 0;
+    text-align: center;
+  }
+  .svg-preview svg { max-width: 100%; height: auto; max-height: 160px; }
+
+  /* Question separator */
+  .question-block { margin: 20px 0; padding-top: 8px; padding: 16px; background: rgba(59, 130, 246, 0.04); border-radius: var(--radius-md); border: 1px solid rgba(59, 130, 246, 0.1); }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    body { padding: 16px; }
+    .pros-cons { grid-template-columns: 1fr; }
+    .layout-mockup { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Muscle Balance Screen &mdash; SVG Integration</h1>
+<p class="subtitle">Design options for embedding the full-body SVG into the existing MuscleBalanceScreen</p>
+
+<!-- SECTION 1: Current State -->
+<div class="card">
+  <h2><span class="color-dot" style="background: #3B82F6;"></span> Current State</h2>
+  <p>The <code>MuscleBalanceScreen</code> shows a flat list of muscle group cards. Each card has a <strong>score %</strong>, <strong>status tag</strong> (Strong/Balanced/Needs Attention), a <strong>volume bar</strong>, and expandable <strong>exercise rows</strong>.</p>
+  <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px;">
+    <div>
+      <div style="font-weight: 700; margin-bottom: 6px; color: var(--text);">Layout</div>
+      <ul style="list-style: none; padding: 0;">
+        <li style="padding: 2px 0;">&bull; Period selector (1W/2W/4W/8W)</li>
+        <li style="padding: 2px 0;">&bull; Scrollable list of muscle group cards</li>
+        <li style="padding: 2px 0;">&bull; Each card = score + status + volume bar</li>
+        <li style="padding: 2px 0;">&bull; Expandable exercise detail rows</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-weight: 700; margin-bottom: 6px; color: var(--text);">Data</div>
+      <ul style="list-style: none; padding: 0;">
+        <li style="padding: 2px 0;">&bull; 10 muscle groups from API</li>
+        <li style="padding: 2px 0;">&bull; Score 0-100, status, weekly sets</li>
+        <li style="padding: 2px 0;">&bull; Exercises with completed_sets</li>
+        <li style="padding: 2px 0;">&bull; Uses <code>muscleAccentColor</code> mapping</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 2: SVG Structure -->
+<div class="card surface2">
+  <h2><span class="color-dot" style="background: #22C55E;"></span> Full_Body.svg &mdash; Structure</h2>
+  <p>The SVG is a <strong>1280 &times; 832</strong> single-layer illustration with <strong>112 path elements</strong>. Muscle regions are drawn in <code>#E8E8E8</code> (light outline), with <code>#0F0E0F</code> separator lines and <code>#3A3A3A</code> background. There are <strong>no semantic IDs</strong> on individual muscle paths.</p>
+  <div class="color-grid">
+    <div class="color-item"><div class="color-swatch" style="background: #E8E8E8;"></div> Muscle regions (~80 paths)</div>
+    <div class="color-item"><div class="color-swatch" style="background: #0F0E0F;"></div> Separator lines (9 paths)</div>
+    <div class="color-item"><div class="color-swatch" style="background: #3A3A3A;"></div> Background / outline (4 paths)</div>
+    <div class="color-item"><div class="color-swatch" style="background: #7E8080;"></div> Detail highlights (2 paths)</div>
+    <div class="color-item"><div class="color-swatch" style="background: #AAA;"></div> Accessory details (4 paths)</div>
+    <div class="color-item"><div class="color-swatch" style="background: url(#gradient_0);"></div> Gradient fills (2 paths)</div>
+  </div>
+  <div class="svg-preview">
+    <!-- Inlined simplified SVG representation -->
+    <svg viewBox="0 0 1280 832" width="100%" height="auto" style="max-height: 160px;" xmlns="http://www.w3.org/2000/svg">
+      <rect width="1280" height="832" fill="#2A2A2A" rx="8"/>
+      <!-- Head -->
+      <ellipse cx="640" cy="80" rx="55" ry="65" fill="#E8E8E8" opacity="0.5"/>
+      <!-- Torso -->
+      <path d="M540 170 L740 170 L760 400 L520 400 Z" fill="#E8E8E8" opacity="0.5"/>
+      <!-- Left arm -->
+      <path d="M540 180 L440 300 L420 450 L455 455 L475 310 L540 220 Z" fill="#E8E8E8" opacity="0.5"/>
+      <!-- Right arm -->
+      <path d="M740 180 L840 300 L860 450 L825 455 L805 310 L740 220 Z" fill="#E8E8E8" opacity="0.5"/>
+      <!-- Left leg -->
+      <path d="M560 400 L540 700 L575 700 L600 400 Z" fill="#E8E8E8" opacity="0.5"/>
+      <!-- Right leg -->
+      <path d="M680 400 L700 700 L665 700 L640 400 Z" fill="#E8E8E8" opacity="0.5"/>
+      <text x="640" y="420" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="12">(simplified — actual SVG has 112 detailed paths)</text>
+    </svg>
+  </div>
+  <p style="font-size: 11px; color: var(--text-dim); margin-top: 6px;">Integration requires assigning muscle group IDs to relevant paths so React Native can apply per-group fill colors and touch handling.</p>
+</div>
+
+<hr>
+
+<!-- SECTION 3: Three Approaches -->
+<h2><span class="color-dot" style="background: #F59E0B;"></span> Three Approaches</h2>
+
+<div class="approach-card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <h3 style="margin: 0;">A — SVG as Visual Header</h3>
+    <span class="badge opt">MINIMAL</span>
+  </div>
+  <p>Place the SVG at the top of the scrollable area as a static visual reference. The existing card list below remains unchanged. The SVG shows a color-coded heatmap of all muscle groups based on their scores.</p>
+  <div class="layout-mockup">
+    <div class="mockup">
+      <div class="mockup-label">Screen Layout</div>
+      <div class="mockup-svg" style="height: 140px;">
+        <div style="text-align: center; line-height: 1.4;">
+          <span style="display: block; font-weight: 700; font-size: 11px; color: rgba(255,255,255,0.6);">SVG Heatmap</span>
+          <span style="display: block; font-size: 10px;">color-coded by score</span>
+        </div>
+      </div>
+      <div class="mockup-list-item"></div>
+      <div class="mockup-list-item"></div>
+      <div class="mockup-list-item"></div>
+      <div class="mockup-list-item" style="width: 50%;"></div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros">
+      <ul>
+        <li>Quick to implement</li>
+        <li>No path-ID mapping needed</li>
+        <li>Doesn't change existing UX</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <ul>
+        <li>No interactivity</li>
+        <li>SVG is purely ornamental</li>
+        <li>User can't tap to filter</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="approach-card recommended">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <h3 style="margin: 0;">B — Interactive SVG + Condensed List <span class="badge rec" style="margin-left: 8px;">RECOMMENDED</span></h3>
+    <span class="badge opt">BALANCED</span>
+  </div>
+  <p>SVG body becomes interactive: each muscle region responds to taps. Tapping a region <strong>highlights it</strong> and <strong>scrolls</strong> or <strong>filters</strong> the list to that group. A compact representation of the current card list sits below, with expandable exercise rows. The SVG uses <code>react-native-svg</code> with <code>Pressable</code> wrappers on each path group.</p>
+  <div class="layout-mockup">
+    <div class="mockup">
+      <div class="mockup-label">Idle State</div>
+      <div class="mockup-svg" style="height: 140px;">
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; padding: 8px;">
+          <span style="background: #FF5A36; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #22C55E; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #8B5CF6; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #3B82F6; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #F59E0B; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #EC4899; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #FF5A36; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #22C55E; width: 20px; height: 20px; border-radius: 3px;"></span>
+        </div>
+        <span style="font-size: 9px; color: rgba(255,255,255,0.3);">muscle groups colored by score</span>
+      </div>
+      <div class="mockup-list-item"></div>
+      <div class="mockup-list-item"></div>
+      <div class="mockup-list-item"></div>
+    </div>
+    <div class="mockup">
+      <div class="mockup-label">After Tapping "Chest"</div>
+      <div class="mockup-svg" style="height: 140px; border-color: var(--accent-orange);">
+        <div style="display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; padding: 8px; opacity: 0.3;">
+          <span style="background: #FF5A36; width: 20px; height: 20px; border-radius: 3px;"></span>
+          <span style="background: #22C55E; width: 20px; height: 20px; border-radius: 3px;"></span>
+        </div>
+        <span style="color: var(--accent-orange); font-size: 11px; font-weight: 700;">✦ Chest selected</span>
+      </div>
+      <div class="mockup-list-item" style="width: 100%; background: var(--accent-orange); opacity: 0.3;"></div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros">
+      <ul>
+        <li>Direct visual-to-data connection</li>
+        <li>Fast muscle group navigation</li>
+        <li>Maintains existing card detail</li>
+        <li>Feels polished and premium</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <ul>
+        <li>Requires path ID mapping (1-2h)</li>
+        <li>Complex component structure</li>
+        <li>SVG touch areas need native coords</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="approach-card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+    <h3 style="margin: 0;">C — Full SVG Heatmap, No List</h3>
+    <span class="badge opt">BOLD</span>
+  </div>
+  <p>Replace the entire card list with a large, fully interactive SVG. Each muscle region is tappable and shows a floating tooltip/popover with score + sets. The list is removed — all navigation is visual. Detailed exercise data shown in a bottom sheet on tap.</p>
+  <div class="layout-mockup">
+    <div class="mockup">
+      <div class="mockup-label">Full-Screen SVG</div>
+      <div class="mockup-svg" style="height: 300px; flex-direction: column; gap: 6px;">
+        <span style="font-size: 11px; font-weight: 700;">Large interactive SVG</span>
+        <span style="font-size: 9px; color: var(--text-dim);">tap any muscle → score tooltip</span>
+        <span style="font-size: 9px; color: var(--text-dim);">tap again → bottom sheet with exercises</span>
+      </div>
+    </div>
+  </div>
+  <div class="pros-cons">
+    <div class="pros">
+      <ul>
+        <li>Most visually impressive</li>
+        <li>Good for smaller screens</li>
+        <li>Unique UX differentiator</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <ul>
+        <li>Loses quick-scan list view</li>
+        <li>Harder to compare groups side-by-side</li>
+        <li>More development time</li>
+        <li>Exercise detail hidden behind tap</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- SECTION 4: Specific Design Decisions -->
+<h2 style="margin-bottom: 16px;"><span class="color-dot" style="background: #EC4899;"></span> Design Decisions — Pick Your Preferences</h2>
+
+<form id="decisionForm" onsubmit="event.preventDefault(); submitDecisions();">
+
+<!-- Q1: Approach -->
+<div class="question-block">
+  <fieldset>
+    <legend>Q1: Which approach?</legend>
+    <div class="option-group">
+      <label>
+        <input type="radio" name="approach" value="A" data-queue-key="approach">
+        <div class="option-text">
+          <span class="option-title">A — SVG as Visual Header</span>
+          <span class="option-desc">Static heatmap above existing card list. No interactivity. Quickest to ship.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="approach" value="B" data-queue-key="approach" checked>
+        <div class="option-text">
+          <span class="option-title">B — Interactive SVG + Condensed List <span class="badge rec" style="font-size: 9px; margin-left: 4px;">REC</span></span>
+          <span class="option-desc">Tap muscle → highlight + filter list. Best balance of visual and data.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="approach" value="C" data-queue-key="approach">
+        <div class="option-text">
+          <span class="option-title">C — Full SVG Heatmap, No List</span>
+          <span class="option-desc">Replace list entirely. Tooltips + bottom sheets for data. Boldest but most work.</span>
+        </div>
+      </label>
+    </div>
+  </fieldset>
+</div>
+
+<!-- Q2: SVG Position -->
+<div class="question-block">
+  <fieldset>
+    <legend>Q2: Where should the SVG sit?</legend>
+    <div class="option-group">
+      <label>
+        <input type="radio" name="position" value="scroll-header" data-queue-key="position" checked>
+        <div class="option-text">
+          <span class="option-title">Scroll header</span>
+          <span class="option-desc">Above the list, scrolls away as user scrolls down (part of ScrollView/SectionList header).</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="position" value="sticky-top" data-queue-key="position">
+        <div class="option-text">
+          <span class="option-title">Sticky top</span>
+          <span class="option-desc">Fixed at top of screen, list scrolls beneath it. Always visible.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="position" value="side-by-side" data-queue-key="position">
+        <div class="option-text">
+          <span class="option-title">Side by side (wide only)</span>
+          <span class="option-desc">SVG on left, condensed list on right. Only works on larger screens.</span>
+        </div>
+      </label>
+    </div>
+  </fieldset>
+</div>
+
+<!-- Q3: Color Mapping -->
+<div class="question-block">
+  <fieldset>
+    <legend>Q3: How should scores map to SVG colors?</legend>
+    <div class="option-group">
+      <label>
+        <input type="radio" name="color-mapping" value="accent" data-queue-key="color-mapping" checked>
+        <div class="option-text">
+          <span class="option-title">Muscle accent colors</span>
+          <span class="option-desc">Use existing <code>muscleAccentColor</code> palette. Each muscle is its category color regardless of score.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="color-mapping" value="score-gradient" data-queue-key="color-mapping">
+        <div class="option-text">
+          <span class="option-title">Score heatmap gradient</span>
+          <span class="option-desc">Red (low score) → Yellow → Green (high score). Status-driven coloring.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="color-mapping" value="hybrid" data-queue-key="color-mapping">
+        <div class="option-text">
+          <span class="option-title">Hybrid: accent base + opacity by score</span>
+          <span class="option-desc">Fill = accent color, opacity = score/100. Combines category identity with balance at a glance.</span>
+        </div>
+      </label>
+    </div>
+  </fieldset>
+</div>
+
+<!-- Q4: SVG Size -->
+<div class="question-block">
+  <fieldset>
+    <legend>Q4: How large should the SVG be?</legend>
+    <div class="option-group">
+      <label>
+        <input type="radio" name="size" value="compact" data-queue-key="size">
+        <div class="option-text">
+          <span class="option-title">Compact (~120px)</span>
+          <span class="option-desc">Small reference, fits above period selector. Maximum list visibility.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="size" value="medium" data-queue-key="size" checked>
+        <div class="option-text">
+          <span class="option-title">Medium (~200px)</span>
+          <span class="option-desc">Clear enough to distinguish muscle groups without dominating screen.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="size" value="large" data-queue-key="size">
+        <div class="option-text">
+          <span class="option-title">Large (~300px+)</span>
+          <span class="option-desc">Needs scrolling. Best for interactive approach where SVG is primary nav.</span>
+        </div>
+      </label>
+    </div>
+  </fieldset>
+</div>
+
+<!-- Q5: Default State -->
+<div class="question-block">
+  <fieldset>
+    <legend>Q5: Default visual state on load?</legend>
+    <div class="option-group">
+      <label>
+        <input type="radio" name="default-state" value="heatmap" data-queue-key="default-state" checked>
+        <div class="option-text">
+          <span class="option-title">Full heatmap</span>
+          <span class="option-desc">All muscle groups colored by their score. Highest visual impact.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="default-state" value="neutral" data-queue-key="default-state">
+        <div class="option-text">
+          <span class="option-title">Neutral / muted</span>
+          <span class="option-desc">All muscles shown in low-opacity gray. Only colors on tap/selection.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="default-state" value="top-highlight" data-queue-key="default-state">
+        <div class="option-text">
+          <span class="option-title">Top muscle highlighted</span>
+          <span class="option-desc">Only the highest-scored group colored. Others muted until tapped.</span>
+        </div>
+      </label>
+    </div>
+  </fieldset>
+</div>
+
+<!-- Q6: Touch Feedback -->
+<div class="question-block">
+  <fieldset>
+    <legend>Q6: What happens on muscle tap?</legend>
+    <div class="option-group">
+      <label>
+        <input type="radio" name="tap-action" value="scroll-to-card" data-queue-key="tap-action" checked>
+        <div class="option-text">
+          <span class="option-title">Scroll to card</span>
+          <span class="option-desc">SVG highlights selected muscle, list scrolls to that card. User can expand exercises below.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="tap-action" value="filter-list" data-queue-key="tap-action">
+        <div class="option-text">
+          <span class="option-title">Filter list + expand</span>
+          <span class="option-desc">List filters to only that muscle group with exercises auto-expanded.</span>
+        </div>
+      </label>
+      <label>
+        <input type="radio" name="tap-action" value="show-tooltip" data-queue-key="tap-action">
+        <div class="option-text">
+          <span class="option-title">Show tooltip + keep list</span>
+          <span class="option-desc">Floating tooltip with score/stats near tap point. List stays as-is.</span>
+        </div>
+      </label>
+    </div>
+  </fieldset>
+</div>
+
+<div class="btn-row">
+  <button type="submit" class="btn btn-primary">Queue all answers</button>
+  <button type="reset" class="btn btn-secondary" onclick="resetForm()">Reset to defaults</button>
+</div>
+</form>
+
+<hr>
+
+<!-- SECTION 5: Implementation Sequence -->
+<div class="card surface3">
+  <h2><span class="color-dot" style="background: #F59E0B;"></span> Implementation Sequence (Recommended Approach B)</h2>
+  <div class="timeline">
+    <div class="timeline-item">
+      <h4>1. Annotate SVG paths</h4>
+      <p>Add <code>id</code> and <code>data-muscle</code> attributes to each relevant path group in the SVG. Group related paths (e.g., left/right pecs → "Chest"). ~1-2h manual work.</p>
+    </div>
+    <div class="timeline-item">
+      <h4>2. Create <code>MuscleSVG</code> component</h4>
+      <p>React Native wrapper using <code>react-native-svg</code>. Import SVG as component, add <code>fill</code> overrides per muscle ID based on score/color data.</p>
+    </div>
+    <div class="timeline-item">
+      <h4>3. Add touch handlers</h4>
+      <p>Wrap each muscle path group in <code>Pressable</code>. On tap: update selected state, trigger list scroll via <code>ref.scrollToItem</code> or Animated scroll.</p>
+    </div>
+    <div class="timeline-item">
+      <h4>4. Integrate into <code>MuscleBalanceScreen</code></h4>
+      <p>Replace current card-list-only layout with SVG header + condensed list. Wire up state: selected muscle ↔ SVG highlight ↔ list scroll.</p>
+    </div>
+    <div class="timeline-item">
+      <h4>5. Polish animations</h4>
+      <p>Animated transitions for SVG fill changes, list scroll, selected state. Use Reanimated for smooth 60fps.</p>
+    </div>
+  </div>
+</div>
+
+<!-- SECTION 6: Open Questions -->
+<div class="card">
+  <h2><span class="color-dot" style="background: #EF4444;"></span> Open Questions</h2>
+  <ul style="list-style: none; padding: 0; font-size: 13px;">
+    <li style="padding: 6px 0; display: flex; gap: 8px;">
+      <span style="color: var(--accent-yellow); font-weight: 700;">Q</span>
+      <span>The SVG has <strong>no semantic IDs</strong> on muscle paths. Should we add IDs inline (modify .svg file) or create a JS mapping from path index to muscle name?</span>
+    </li>
+    <li style="padding: 6px 0; display: flex; gap: 8px;">
+      <span style="color: var(--accent-yellow); font-weight: 700;">Q</span>
+      <span>Should scroll-to-muscle use <code>SectionList.scrollToLocation</code> or <code>Animated.ScrollView.scrollTo</code>? (SectionList better for performance, ScrollView simpler for dynamic heights).</span>
+    </li>
+    <li style="padding: 6px 0; display: flex; gap: 8px;">
+      <span style="color: var(--accent-yellow); font-weight: 700;">Q</span>
+      <span>Should we add haptic feedback on muscle tap? iOS <code>selection</code> feedback type.</span>
+    </li>
+  </ul>
+</div>
+
+<script>
+function submitDecisions() {
+  const form = document.getElementById('decisionForm');
+  const data = new FormData(form);
+  const entries = {};
+  for (const [key, value] of data.entries()) {
+    entries[key] = value;
+  }
+  const summary = Object.entries(entries)
+    .map(([q, a]) => `${q}: ${a}`)
+    .join('\n');
+  window.lavish.queuePrompt(
+    'Design decisions submitted:\n' + summary,
+    {
+      tag: 'design-decisions',
+      text: 'Muscle Balance SVG design choices submitted',
+      data: { decisions: entries }
+    }
+  );
+}
+
+function resetForm() {
+  document.getElementById('decisionForm').reset();
+  // Re-check defaults
+  document.querySelector('input[name="approach"][value="B"]').checked = true;
+  document.querySelector('input[name="position"][value="scroll-header"]').checked = true;
+  document.querySelector('input[name="color-mapping"][value="accent"]').checked = true;
+  document.querySelector('input[name="size"][value="medium"]').checked = true;
+  document.querySelector('input[name="default-state"][value="heatmap"]').checked = true;
+  document.querySelector('input[name="tap-action"][value="scroll-to-card"]').checked = true;
+}
+
+// Expose for approval shortcut
+window.queueApproval = function(approach) {
+  window.lavish.queuePrompt(
+    'Approved approach ' + approach + ' with recommended defaults. Proceed to implementation plan.',
+    { tag: 'approval', text: 'Approved: ' + approach }
+  );
+};
+</script>
+
+</body>
+</html>

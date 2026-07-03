@@ -1,0 +1,223 @@
+# Muscle Balance SVG Integration — Design Spec
+
+**Date:** 2026-07-03
+**Status:** Draft
+**Previous spec:** `2026-06-11-muscle-balance-redesign.md` (partially implemented)
+
+---
+
+## 1. Goals
+
+- Embed `Full_Body.svg` (1280×832) into `MuscleBalanceScreen` as an interactive body map
+- Map API muscle group data to SVG paths for color-coded heatmap display
+- Tap muscle region → animated scroll to corresponding card in the list below
+- Animate on load: paths fade in with their fill colors
+- Keep existing card list, period selector, and expandable exercise rows
+
+## 2. Non-Goals
+
+- Removing or replacing the existing card list
+- Changing API queries or data models
+- Haptic feedback
+- Tooltip overlays on the SVG
+- Side-by-side layout
+
+---
+
+## 3. Architecture
+
+### 3a. File Changes
+
+| File | Change |
+|---|---|
+| `assets/images/Full_Body.svg` | Add `id` attributes to muscle group path groups |
+| `src/components/ui/MuscleSVG.tsx` | **New** — `MuscleSVG` component (react-native-svg) |
+| `src/components/ui/MuscleSVG.utils.ts` | **New** — muscle-to-path mapping / path index lookup |
+| `src/screens/MuscleBalanceScreen.tsx` | Integrate `MuscleSVG`, add selected-muscle state, animated scroll |
+
+### 3b. Component Tree
+
+```
+MuscleBalanceScreen
+├── BackHeader
+├── PeriodSelector (existing)
+├── MuscleSVG                     ← new
+│   └── Svg
+│       ├── Defs (gradients from original SVG)
+│       ├── Background paths
+│       ├── MusclePath (Pressable) × N
+│       │   └── Path (react-native-svg)
+│       └── Separator/detail paths
+└── SectionList (existing card list, ref for scrollToLocation)
+```
+
+### 3c. Data Flow
+
+```
+API response (items[])
+  → muscleSvgProps = items.map(i => ({ name: i.muscle_group, score: i.score, color: muscleAccentColor(i.muscle_group) }))
+  → MuscleSVG receives muscleSvgProps, renders paths with fill=color
+  → onMuscleTap(name) → setSelectedMuscle(name) → Animated scroll to card index
+```
+
+---
+
+## 4. SVG Path ID Mapping
+
+### 4a. Approach
+
+Add `id` attributes inline to `Full_Body.svg`. Group related paths under a single muscle group ID, with `data-muscle="MuscleName"`. For bilateral muscles (left/right), use `id="Chest-left"` / `id="Chest-right"` and `data-muscle="Chest"` so the component groups them.
+
+### 4b. Muscle Group → Path ID Mapping
+
+| Muscle Group | SVG Path ID(s) | Data Attribute |
+|---|---|---|
+| Chest | `Chest-left`, `Chest-right` | `data-muscle="Chest"` |
+| Back | `Back-upper`, `Back-lower`, `Back-lat-left`, `Back-lat-right` | `data-muscle="Back"` |
+| Shoulders | `Shoulder-left`, `Shoulder-right` | `data-muscle="Shoulders"` |
+| Biceps | `Bicep-left`, `Bicep-right` | `data-muscle="Biceps"` |
+| Triceps | `Tricep-left`, `Tricep-right` | `data-muscle="Triceps"` |
+| Forearms | `Forearm-left`, `Forearm-right` | `data-muscle="Forearms"` |
+| Abs | `Abs-upper`, `Abs-lower`, `Oblique-left`, `Oblique-right` | `data-muscle="Abs"` |
+| Quads | `Quad-left`, `Quad-right` | `data-muscle="Quads"` |
+| Hamstrings | `Hamstring-left`, `Hamstring-right` | `data-muscle="Hamstrings"` |
+| Glutes | `Glute-left`, `Glute-right` | `data-muscle="Glutes"` |
+| Calves | `Calf-left`, `Calf-right` | `data-muscle="Calves"` |
+| Traps | `Trap-left`, `Trap-right` | `data-muscle="Traps"` |
+
+(Exact path IDs finalised during SVG annotation — aim for 10-15 identifiable groups)
+
+### 4c. Path Index Lookup
+
+`MuscleSVG.utils.ts` exports:
+
+```ts
+// Map from muscle group name (as returned by API) to array of SVG path IDs
+const MUSCLE_PATH_MAP: Record<string, string[]> = { ... }
+
+// Get fill color for a path based on score data
+function getPathFill(
+  pathId: string,
+  muscleData: Map<string, { score: number; color: string }>,
+  defaultState: 'heatmap' | 'neutral' | 'top-highlight'
+): string
+```
+
+---
+
+## 5. MuscleSVG Component
+
+### 5a. Props
+
+```ts
+type MuscleSVGProps = {
+  muscleData: { name: string; score: number; status: string; color: string }[];
+  selectedMuscle: string | null;
+  onMuscleTap: (muscleName: string) => void;
+  size?: 'compact' | 'medium' | 'large';
+  defaultState?: 'heatmap' | 'neutral' | 'top-highlight';
+};
+```
+
+### 5b. Rendering Strategy
+
+Extract each `<path>` element's `d` attribute from `Full_Body.svg` into a JS data file. Group paths by muscle region. Render as individual `<Path>` components inside a `<Svg>` wrapper — this gives direct control over `fill`, `opacity`, and `onPress` per path.
+
+Rationale: `react-native-svg` cannot query-select children from an imported `.svg` file. Extracting path `d` strings into JS is the standard approach for interactive SVGs in React Native.
+
+The data file (`MuscleSVG.paths.ts`) exports:
+```ts
+type PathDef = { id: string; d: string; muscleGroup?: string; isSeparator?: boolean; isBackground?: boolean };
+const PATHS: PathDef[] = [ ... ];
+```
+
+The SVG file itself (`assets/images/Full_Body.svg`) remains the source of truth and gets `id` attributes for maintainability. The JS data file is generated by extracting path data from the annotated SVG.
+
+### 5c. Fill Override Logic
+
+```
+For each path element:
+  if path has no data-muscle attribute → render with original fill (separators, bg, details)
+  if path has data-muscle:
+    look up muscleData for that muscle name
+    if found:
+      fill = muscleData.color (muscle accent color)
+      opacity = muscleData.score / 100 (heatmap)
+    else:
+      fill = "rgba(255,255,255,0.06)" (unmapped — dim)
+```
+
+### 5d. Interaction States
+
+| State | SVG Behavior | List Behavior |
+|---|---|---|
+| Idle (no selection) | Full heatmap, all paths colored by score | All cards visible, expanded=none |
+| Tap muscle | Selected paths glow (opacity 1.0, slight scale bump via `Animated`), others dim to 0.2 | Scroll to that card's position |
+| Tap same muscle again | Reset to idle heatmap | Scroll back to top |
+| Tap different muscle | Previous dimmed, new one selected | Scroll to new card |
+
+### 5e. Animation
+
+- **On mount**: paths fade in sequentially (100ms stagger, 300ms each) using `useAnimatedStyle` + `withTiming`
+- **On tap**: selected muscle paths scale from 1.0 → 1.03 with spring animation
+- **On scroll**: `useRef` on SectionList, call `sectionListRef.current.scrollToLocation({ sectionIndex, itemIndex: 0, animated: true })`
+
+---
+
+## 6. MuscleBalanceScreen Integration
+
+### 6a. New State
+
+```ts
+const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null);
+const sectionListRef = useRef<SectionList>(null);
+```
+
+### 6b. Animated Scroll
+
+On `onMuscleTap(muscleName)`:
+
+1. `setSelectedMuscle(prev => prev === muscleName ? null : muscleName)`
+2. Look up the index of the tapped muscle in `items[]`
+3. Call `sectionListRef.current?.scrollToLocation({ sectionIndex: index, itemIndex: 0, animated: true, viewPosition: 0 })`
+
+No haptic feedback.
+
+### 6c. Layout Order
+
+```
+BackHeader
+PeriodSelector (1W/2W/4W/8W)
+MuscleSVG (medium, ~200px height)     ← new
+Card list (SectionList)                ← existing
+```
+
+SVG is part of the scroll content (not sticky) — scrolls away as user moves down.
+
+### 6d. Empty / Loading / Error
+
+- **Loading**: Skeleton placeholder where SVG sits (dark rect with shimmer)
+- **Error**: SVG hidden, ErrorCard shown
+- **Empty data (no items)**: SVG hidden, empty state shown ("No data yet — Complete workouts...")
+- **No matching muscle in SVG**: Fallback — muscle name not found in path map, path stays unmapped color
+
+---
+
+## 7. Files to Verify
+
+| Check | Reason |
+|---|---|
+| `react-native-svg` installed in `package.json` | Required for `<Svg>`, `<Path>` — already present |
+| `react-native-reanimated` available | For animated path mount/tap effects — already present |
+| No extra transformer needed | Path `d` data extracted to `.ts` file, no `.svg` file import required |
+
+---
+
+## 8. Risks & Mitigations
+
+| Risk | Mitigation |
+|---|---|
+| SVG path annotation error (wrong muscle mapped) | Preview after annotation — verify in simulator before proceeding |
+| Large SVG (41KB) slows mount | Optimise: remove unused paths, simplify path precision, or lazy-load |
+| Scroll-to crash on missing index | Guard: `if (index < 0 \|\| index >= items.length) return` |
+| `react-native-svg` Pressable on paths has small touch target | `hitSlop` prop or use invisible larger `<Rect>` overlays per muscle region |
