@@ -67,6 +67,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [rpePicker, setRpePicker] = useState<string | null>(null);
+  const [rpeSetIndex, setRpeSetIndex] = useState(0);
   const detail = useTemplateDetailQuery(templateId, isAuthenticated && isEdit);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
@@ -132,7 +133,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
           exercise_id: exercise.exerciseId,
           exercise_name: exercise.name,
           order_index: index,
-          target_sets: exercise.setCount,
+          target_sets: exercise.sets.length,
           target_reps: config ? numberOrNull(config.reps) : null,
           target_rpe: config ? numberOrNull(config.rpe) : null,
           rest_seconds: config ? parseRestSeconds(config.rest) : null,
@@ -155,7 +156,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
     onSuccess: (template) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.templates });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
-      const totalTargetSets = exercises.reduce((sum, ex) => sum + ex.setCount, 0);
+      const totalTargetSets = exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
       if (isEdit) {
         posthog.capture(Events.TEMPLATE_EDITED, {
           template_id: String(template.id),
@@ -185,26 +186,43 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
       exerciseId: exercise.id,
       name: exercise.name,
       notes: "",
-      setCount: 1,
-      sets: [{ reps: "8", rpe: "7", rest: "2:00" }],
+      sets: [
+        { reps: "8", rpe: "7", rest: "2:00" },
+        { reps: "8", rpe: "7", rest: "2:00" },
+        { reps: "8", rpe: "7", rest: "2:00" },
+      ],
     };
     setExercises((current) => [...current, nextExercise]);
     setExpanded(nextId);
     setShowExercisePicker(false);
   };
 
-  const setSetCount = (exerciseId: string, delta: number) => {
+  const updateSetConfig = (exerciseId: string, setIndex: number, field: "reps" | "rpe" | "rest", value: string) => {
     setExercises((prev) =>
       prev.map((ex) =>
-        ex.id === exerciseId ? { ...ex, setCount: Math.max(1, ex.setCount + delta) } : ex,
+        ex.id === exerciseId
+          ? { ...ex, sets: ex.sets.map((s, i) => (i === setIndex ? { ...s, [field]: value } : s)) }
+          : ex,
       ),
     );
   };
 
-  const updateSingleConfig = (exerciseId: string, field: "reps" | "rpe" | "rest", value: string) => {
+  const addSet = (exerciseId: string) => {
     setExercises((prev) =>
       prev.map((ex) =>
-        ex.id === exerciseId ? { ...ex, sets: [{ ...ex.sets[0], [field]: value }] } : ex,
+        ex.id === exerciseId
+          ? { ...ex, sets: [...ex.sets, { reps: "8", rpe: "7", rest: "2:00" }] }
+          : ex,
+      ),
+    );
+  };
+
+  const removeSet = (exerciseId: string, setIndex: number) => {
+    setExercises((prev) =>
+      prev.map((ex) =>
+        ex.id === exerciseId
+          ? { ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) }
+          : ex,
       ),
     );
   };
@@ -231,6 +249,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
 
   const [showTimerModal, setShowTimerModal] = useState(false);
   const [timerExerciseId, setTimerExerciseId] = useState<string | null>(null);
+  const [restSetIndex, setRestSetIndex] = useState(0);
   const [customMinutes, setCustomMinutes] = useState(1);
   const [customSeconds, setCustomSeconds] = useState(30);
 
@@ -353,7 +372,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   const dragTargetIdx = draggingId ? Math.max(0, Math.min(exercises.length - 1, dragStartIdx + dragSwaps)) : -1;
 
   const setRestTime = (exerciseId: string, rest: string) => {
-    updateSingleConfig(exerciseId, "rest", rest);
+    updateSetConfig(exerciseId, restSetIndex, "rest", rest);
     setShowTimerModal(false);
     setTimerExerciseId(null);
   };
@@ -452,65 +471,64 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                   </PanGestureHandler>
 
                   {expanded === exercise.id ? (
-                    <View style={{ marginTop: 14, gap: 14 }}>
-                      <View style={{ flexDirection: "row", gap: 12 }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Reps</Text>
-                          <MiniInput
-                            value={exercise.sets[0]?.reps ?? "8"}
-                            onChangeText={(value) => updateSingleConfig(exercise.id, "reps", value)}
-                          />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Sets</Text>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                            <Pressable
-                              onPress={() => setSetCount(exercise.id, -1)}
-                              style={[{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, { opacity: exercise.setCount <= 1 ? 0.3 : 1 }]}
-                              disabled={exercise.setCount <= 1}
-                            >
-                              <AppIcon name="minus" size={14} color={textColor} />
-                            </Pressable>
-                            <Text style={[{ color: textColor, fontSize: 13, fontWeight: "700" }, { minWidth: 22, textAlign: "center" }]}>
-                              {exercise.setCount}
-                            </Text>
-                            <Pressable onPress={() => setSetCount(exercise.id, 1)} style={{ width: 28, height: 28, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
-                              <AppIcon name="plus" size={14} color={textColor} />
-                            </Pressable>
-                          </View>
-                        </View>
+                    <View style={{ marginTop: 14, gap: 8 }}>
+                      <View style={{ flexDirection: "row", paddingHorizontal: 2, marginBottom: 4 }}>
+                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 28, letterSpacing: 0.4, textTransform: "uppercase" }}>#</Text>
+                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", flex: 1, letterSpacing: 0.4, textTransform: "uppercase" }}>Reps</Text>
+                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 46, textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>RPE</Text>
+                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 60, textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
+                        <View style={{ width: 24 }} />
                       </View>
-                      <View style={{ flexDirection: "row", gap: 12 }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>RPE</Text>
-                          <Pressable
-                            onPress={() => setRpePicker(exercise.id)}
-                            style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.04)" }}
-                          >
-                            <Text style={{ color: textColor, fontSize: 13, fontWeight: "700", flex: 1 }}>
-                              {exercise.sets[0]?.rpe ?? "7"}
-                            </Text>
-                            <AppIcon name="chevron-down" size={13} color="rgba(255,255,255,0.4)" />
-                          </Pressable>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
+                      {exercise.sets.map((set, setIdx) => (
+                        <View key={setIdx} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 28 }}>
+                            {setIdx + 1}
+                          </Text>
+                          <MiniInput
+                            value={set.reps}
+                            onChangeText={(v) => updateSetConfig(exercise.id, setIdx, "reps", v)}
+                            style={{ flex: 1 }}
+                            keyboardType="decimal-pad"
+                          />
                           <Pressable
                             onPress={() => {
-                              const current = exercise.sets[0]?.rest ?? "2:00";
+                              setRpePicker(exercise.id);
+                              setRpeSetIndex(setIdx);
+                            }}
+                            style={{ width: 46, alignItems: "center", paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor }}
+                          >
+                            <Text style={{ color: textColor, fontSize: 12 }}>{set.rpe}</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => {
+                              const current = set.rest ?? "2:00";
                               const parts = current.includes(":") ? current.split(":") : [current, "0"];
                               setCustomMinutes(Number(parts[0]) || 2);
                               setCustomSeconds(Number(parts[1]) || 0);
                               setTimerExerciseId(exercise.id);
+                              setRestSetIndex(setIdx);
                               setShowTimerModal(true);
                             }}
-                            style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", backgroundColor: "rgba(255,255,255,0.04)" }}
+                            style={{ width: 60, alignItems: "center", paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor }}
                           >
-                            <AppIcon name="clock" size={12} color="rgba(255,255,255,0.5)" />
-                            <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 13, fontWeight: "600" }}>{exercise.sets[0]?.rest ?? "2:00"}</Text>
+                            <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>{set.rest}</Text>
                           </Pressable>
+                          {setIdx > 0 ? (
+                            <Pressable onPress={() => removeSet(exercise.id, setIdx)} hitSlop={6}>
+                              <AppIcon name="x" size={14} color="rgba(239,68,68,0.6)" />
+                            </Pressable>
+                          ) : (
+                            <View style={{ width: 24 }} />
+                          )}
                         </View>
-                      </View>
+                      ))}
+                      <Pressable
+                        onPress={() => addSet(exercise.id)}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 }}
+                      >
+                        <AppIcon name="plus" size={12} color={accent} />
+                        <Text style={{ color: accent, fontSize: 11 }}>Add Set</Text>
+                      </Pressable>
                       <TextInput
                         value={exercise.notes}
                         onChangeText={(value) => updateNote(exercise.id, value)}
@@ -636,7 +654,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
               {[1,2,3,4,5,6,7,8,9,10].map((val) => {
                 const current = rpePicker
-                  ? exercises.find((e) => e.id === rpePicker)?.sets[0]?.rpe
+                  ? exercises.find((e) => e.id === rpePicker)?.sets[rpeSetIndex]?.rpe
                   : "";
                 const isSelected = String(val) === current;
                 return (
@@ -644,7 +662,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                     key={val}
                     onPress={() => {
                       if (rpePicker) {
-                        updateSingleConfig(rpePicker, "rpe", String(val));
+                        updateSetConfig(rpePicker, rpeSetIndex, "rpe", String(val));
                         setRpePicker(null);
                       }
                     }}

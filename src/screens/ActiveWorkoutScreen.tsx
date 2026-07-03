@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Haptics from "expo-haptics";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -53,6 +55,15 @@ const MOODS = [
   { icon: "flame" as const, label: "Beast" },
 ];
 
+interface WorkoutDraft {
+  sessionId: number;
+  exercises: WorkoutDraftExercise[];
+  elapsed: number;
+  mood: string | null;
+  note: string;
+  savedAt: string;
+}
+
 type Props = {
   navigation: NativeStackNavigationProp<RootStackParamList, "ActiveWorkout">;
   route: RouteProp<RootStackParamList, "ActiveWorkout">;
@@ -83,6 +94,8 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [error, setError] = useState("");
   const [rpePicker, setRpePicker] = useState<{ exerciseId: string; setId: string } | null>(null);
+  const [restTimer, setRestTimer] = useState<{ exerciseId: string; remaining: number; total: number } | null>(null);
+  const draftRef = useRef({ exercises, elapsed, mood, note });
   const template = useTemplateDetailQuery(templateId, isAuthenticated && !!templateId);
   const sessionDetail = useSessionDetailQuery(templateId ? undefined : sessionId, isAuthenticated && !!sessionId && !templateId);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
@@ -94,6 +107,67 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     const interval = setInterval(() => setElapsed((value) => value + 1), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    draftRef.current = { exercises, elapsed, mood, note };
+  });
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const interval = setInterval(async () => {
+      const { exercises, elapsed, mood, note } = draftRef.current;
+      const draft: WorkoutDraft = {
+        sessionId,
+        exercises,
+        elapsed,
+        mood,
+        note,
+        savedAt: new Date().toISOString(),
+      };
+      try {
+        await AsyncStorage.setItem(`workout_draft_${sessionId}`, JSON.stringify(draft));
+      } catch {}
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    AsyncStorage.getItem(`workout_draft_${sessionId}`).then((saved) => {
+      if (!saved) return;
+      try {
+        const draft = JSON.parse(saved) as WorkoutDraft;
+        if (!draft.exercises?.length) return;
+        Alert.alert(
+          "Unsaved workout found",
+          "Restore your previous workout data?",
+          [
+            { text: "Discard", style: "destructive" as const, onPress: () => { AsyncStorage.removeItem(`workout_draft_${sessionId}`); } },
+            {
+              text: "Restore",
+              onPress: () => {
+                setExercises(draft.exercises);
+                setElapsed(draft.elapsed);
+                if (draft.mood) setMood(draft.mood);
+                setNote(draft.note);
+              },
+            },
+          ],
+        );
+      } catch {}
+    }).catch(() => {});
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!restTimer || restTimer.remaining <= 0) {
+      setRestTimer(null);
+      return;
+    }
+    const id = setTimeout(() => {
+      setRestTimer((prev) => prev ? { ...prev, remaining: prev.remaining - 1 } : null);
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [restTimer]);
 
   useEffect(() => {
     if (!template.data || lookup.size === 0) return;
@@ -113,6 +187,16 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     setExercises(draft);
     setExpanded(draft[0]?.id ?? null);
   }, [lookup, template.data]);
+
+  const restSecsMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (template.data?.exercises) {
+      for (const ex of template.data.exercises) {
+        map.set(ex.exercise_id, ex.rest_seconds ?? 90);
+      }
+    }
+    return map;
+  }, [template.data]);
 
   useEffect(() => {
     if (template.data) return;
@@ -186,11 +270,23 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
     return successData(response).id;
   };
 
+  const clearDraft = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      await AsyncStorage.removeItem(`workout_draft_${sessionId}`);
+    } catch {}
+  }, [sessionId]);
+
   const toggleSet = (exerciseId: string, setId: string) => {
     const exercise = exercises.find((item) => item.id === exerciseId);
     const set = exercise?.sets.find((item) => item.id === setId);
     if (!exercise || !set) return;
     const shouldComplete = !set.done;
+    if (shouldComplete) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
     setError("");
 
     setExercises((current) =>
@@ -200,6 +296,11 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
           : ce,
       ),
     );
+
+    if (shouldComplete) {
+      const restSecs = restSecsMap.get(exercise.exerciseId) ?? 90;
+      if (restSecs > 0) setRestTimer({ exerciseId: exercise.exerciseId, remaining: restSecs, total: restSecs });
+    }
 
     persistSet(exercise, { ...set, done: shouldComplete }, shouldComplete)
       .then((serverId) => {
@@ -287,6 +388,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   };
 
   const confirmDiscard = async () => {
+    await clearDraft();
     if (sessionId) {
       try {
         await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
@@ -316,6 +418,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       setError("Session expired. Please log in again.");
       return;
     }
+    await clearDraft();
     setError("");
     try {
       await updateWorkoutSessionWorkoutSessionsSessionIdPatch(sessionId, {
@@ -768,6 +871,67 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
             </Pressable>
           </Pressable>
         </Modal>
+
+        {restTimer && (
+          <Modal visible transparent animationType="fade" onRequestClose={() => setRestTimer(null)}>
+            <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "center", alignItems: "center" }} onPress={() => setRestTimer(null)}>
+              <Pressable onPress={() => {}} style={{
+                backgroundColor: surface1Color,
+                borderRadius: radii.card,
+                padding: spacing.xl5,
+                alignItems: "center",
+                width: 280,
+                borderWidth: 1,
+                borderColor: borderColor,
+              }}>
+                <Text style={{ color: mutedColor, fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 1, marginBottom: spacing.xl }}>
+                  REST
+                </Text>
+                <View style={{ width: 130, height: 130, borderRadius: 65, alignItems: "center", justifyContent: "center", marginBottom: spacing.xl3 }}>
+                  <View style={{ position: "absolute", width: 130, height: 130, borderRadius: 65, borderWidth: 6, borderColor: borderColor }} />
+                  {(() => {
+                    const p = restTimer.total > 0 ? 1 - restTimer.remaining / restTimer.total : 0;
+                    const h = 130 / 2;
+                    const a = Math.min(p * 360, 360);
+                    return (
+                      <>
+                        <View style={{ position: "absolute", top: 0, left: h, width: h, height: 130, overflow: "hidden" }}>
+                          <View style={{
+                            position: "absolute", top: 0, left: 0, width: 130, height: 130, borderRadius: 65,
+                            borderWidth: 6, borderColor: "transparent", borderTopColor: accent, borderRightColor: accent,
+                            transform: [{ rotate: `${-90 + Math.min(a, 180)}deg` }],
+                          }} />
+                        </View>
+                        {a > 180 && (
+                          <View style={{ position: "absolute", top: 0, left: 0, width: h, height: 130, overflow: "hidden" }}>
+                            <View style={{
+                              position: "absolute", top: 0, left: 0, width: 130, height: 130, borderRadius: 65,
+                              borderWidth: 6, borderColor: "transparent", borderTopColor: accent, borderLeftColor: accent,
+                              transform: [{ rotate: `${-90 + a}deg` }],
+                            }} />
+                          </View>
+                        )}
+                      </>
+                    );
+                  })()}
+                  <Text style={{ color: textColor, fontSize: 38, fontWeight: "900" }}>
+                    {formatTime(restTimer.remaining)}
+                  </Text>
+                </View>
+                <Pressable onPress={() => setRestTimer(null)} style={{
+                  paddingHorizontal: spacing.xl4,
+                  paddingVertical: spacing.md,
+                  borderRadius: radii.input,
+                  backgroundColor: surface2Color,
+                  borderWidth: 1,
+                  borderColor: borderColor,
+                }}>
+                  <Text style={{ color: mutedColor, fontSize: 14, fontWeight: "700" }}>Skip</Text>
+                </Pressable>
+              </Pressable>
+            </Pressable>
+          </Modal>
+        )}
 
         {showDiscardConfirm && (
           <ConfirmDialog

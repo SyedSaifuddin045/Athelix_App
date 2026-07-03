@@ -59,7 +59,6 @@ export function successData<TResponse extends { status: number; data: unknown }>
 export type TemplateDraftExercise = TemplateExercise & {
   exerciseId: string;
   templateExerciseId?: number;
-  setCount: number;
 };
 
 export type WorkoutDraftSet = WorkoutSet & {
@@ -79,21 +78,26 @@ export function templateDraftFromDetail(
   return detail.exercises
     .slice()
     .sort((a, b) => a.order_index - b.order_index)
-    .map((item) => ({
-      id: String(item.id),
-      templateExerciseId: item.id,
-      exerciseId: item.exercise_id,
-      name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup) ?? item.exercise_id,
-      notes: item.notes ?? "",
-      setCount: Math.max(1, item.target_sets ?? 1),
-      sets: [
-        {
-          reps: item.target_reps ? String(item.target_reps) : "8",
-          rpe: item.target_rpe ? String(item.target_rpe) : "7",
-          rest: item.rest_seconds ? String(Math.round(item.rest_seconds / 60)) : "2",
-        },
-      ],
-    }));
+    .map((item) => {
+      const totalSets = Math.max(1, item.target_sets ?? 1);
+      return {
+        id: String(item.id),
+        templateExerciseId: item.id,
+        exerciseId: item.exercise_id,
+        name: item.exercise_name ?? nameForExercise(item.exercise_id, lookup) ?? item.exercise_id,
+        notes: item.notes ?? "",
+        sets: Array.from({ length: totalSets }, () => {
+          const restSecs = item.rest_seconds ? Math.round(item.rest_seconds) : 120;
+          const mins = Math.floor(restSecs / 60);
+          const secs = restSecs % 60;
+          return {
+            reps: item.target_reps ? String(item.target_reps) : "8",
+            rpe: item.target_rpe ? String(item.target_rpe) : "7",
+            rest: `${mins}:${String(secs).padStart(2, "0")}`,
+          };
+        }),
+      };
+    });
 }
 
 export function workoutDraftFromTemplate(

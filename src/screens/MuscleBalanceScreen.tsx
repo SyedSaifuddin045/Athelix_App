@@ -11,10 +11,11 @@ import { useMuscleBalanceQuery } from "../api/queries";
 import { MUSCLE_PERIODS } from "../data";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, EmptyCard, ErrorCard, LoadingCard } from "../components/ui/Card";
+import { Card, ErrorCard, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
-import { BackHeader } from "../components/ui/Button";
+import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { Tag } from "../components/ui/Indicators";
+import { AppIcon } from "../design-system/icons/AppIcon";
 import { muscleAccentColor } from "../utils/display";
 
 type Props = {
@@ -260,7 +261,15 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
           );
         })}
         {!report.isPending && items.length === 0 ? (
-          <EmptyCard title="No data yet" text="Complete sessions to see muscle balance." />
+          <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
+            <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No data yet</Text>
+            <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Complete workouts to see your muscle balance breakdown.</Text>
+            <PrimaryButton
+              label="Start Your First Workout"
+              onPress={() => navigation.navigate("StartWorkout", {})}
+              icon={<AppIcon name="dumbbell" size={16} color="#000000" />}
+            />
+          </View>
         ) : null}
       </View>
     </Screen>

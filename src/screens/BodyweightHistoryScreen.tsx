@@ -42,7 +42,7 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
   );
 
   const latest = entries[0]?.weight_kg ?? 0;
-  const previous = entries[entries.length - 1]?.weight_kg ?? latest;
+  const previous = entries[1]?.weight_kg ?? latest;
   const change = latest - previous;
 
   const createLog = useCreateBodyWeightLog({
@@ -85,14 +85,14 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
           </Text>
           <Text style={{ color: mutedColor, fontSize: 13 }}>kg</Text>
           {entries.length > 1 ? (
-            <Text style={{ color: change < 0 ? theme.colorGreen?.get() : theme.colorRed?.get(), fontSize: 11, fontWeight: "700" }}>
-              <AppIcon name={change < 0 ? "trending-down" : "trending-up"} size={12} color={change < 0 ? (theme.colorGreen?.get() ?? "#22C55E") : (theme.colorRed?.get() ?? "#EF4444")} />
+            <Text style={{ color: mutedColor, fontSize: 11, fontWeight: "700" }}>
+              <AppIcon name={change < 0 ? "trending-down" : "trending-up"} size={12} color={mutedColor} />
               {" "}{Math.abs(change).toFixed(1)} kg
             </Text>
           ) : null}
         </View>
         <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
-          {entries.length > 1 ? `vs. oldest entry (${previous} kg)` : "Add entries to track change"}
+          {entries.length > 1 ? `vs. previous entry (${previous} kg)` : "Add entries to track change"}
         </Text>
       </View>
 

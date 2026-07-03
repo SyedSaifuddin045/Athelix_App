@@ -8,9 +8,9 @@ import type { WorkoutSessionResponse } from "../api/model";
 import { useTheme } from "@tamagui/core";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, LoadingCard, ErrorCard, EmptyCard } from "../components/ui/Card";
+import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
-import { BackHeader } from "../components/ui/Button";
+import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { Tag, SectionEyebrow } from "../components/ui/Indicators";
 import { CompactStatCard, MetaInline } from "../components/ui/Stats";
 import { AppIcon } from "../design-system/icons/AppIcon";
@@ -99,7 +99,15 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
           </View>
         ))}
         {!sessions.isPending && (sessions.data?.length ?? 0) === 0 ? (
-          <EmptyCard title="No workouts yet" text="Start a workout to populate your history." />
+          <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
+            <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No workouts yet</Text>
+            <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Start a workout to populate your history.</Text>
+            <PrimaryButton
+              label="Start Your First Workout"
+              onPress={() => navigation.navigate("StartWorkout", {})}
+              icon={<AppIcon name="dumbbell" size={16} color="#000000" />}
+            />
+          </View>
         ) : null}
       </View>
     </Screen>

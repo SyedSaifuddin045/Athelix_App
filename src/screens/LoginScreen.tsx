@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from "react-native";
 import { useAuth, useSignIn, useSSO } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -112,6 +112,19 @@ export function LoginScreen({ navigation }: Props) {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("Enter email first");
+      return;
+    }
+    try {
+      await (signIn.create as any)({ strategy: "reset_password_email_code", identifier: email.trim() });
+      Alert.alert("Check your email", "Check email for reset code");
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
   if (isSignedIn) return null;
 
   return (
@@ -197,7 +210,7 @@ export function LoginScreen({ navigation }: Props) {
             </Pressable>
           </View>
         </View>
-        <Pressable>
+        <Pressable onPress={handleForgotPassword}>
           <Text style={{ color: accent, fontSize: 12, fontWeight: "600" }}>Forgot password?</Text>
         </Pressable>
         {error ? (

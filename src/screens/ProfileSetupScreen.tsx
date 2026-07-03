@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { Alert, Platform, Pressable, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { usePostHog } from "posthog-react-native";
@@ -103,7 +103,16 @@ export function ProfileSetupScreen({ navigation }: Props) {
       <BackHeader
         title="Profile Setup"
         subtitle="Tell us about yourself"
-        onBack={() => navigation.goBack()}
+        onBack={() => {
+          Alert.alert(
+            "Skip Profile Setup?",
+            "You can complete your profile later in Settings. Some features may be limited until then.",
+            [
+              { text: "Stay", style: "cancel" },
+              { text: "Skip", onPress: () => navigation.replace("MainTabs") }
+            ]
+          );
+        }}
         right={
           <Pressable
             style={{ minHeight: 34, borderRadius: radii.tag, backgroundColor: accent, paddingHorizontal: spacing.xl, flexDirection: "row", alignItems: "center", gap: spacing.sm }}

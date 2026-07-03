@@ -24,7 +24,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Settin
 
 export function SettingsScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { isSignedIn: isAuthenticated = false } = useAuth();
+  const { isSignedIn: isAuthenticated = false, signOut } = useAuth();
   const posthog = usePostHog();
   const currentUser = useCurrentUserQuery(isAuthenticated);
   const [form, setForm] = useState({ username: "", email: "", newPassword: "", confirmPassword: "" });
@@ -174,7 +174,7 @@ export function SettingsScreen({ navigation }: Props) {
 
         <View>
           <SectionEyebrow>Notifications</SectionEyebrow>
-          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
+          <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg, opacity: 0.5 }}>
             {([
               ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
               ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
@@ -187,23 +187,17 @@ export function SettingsScreen({ navigation }: Props) {
                     <AppIcon
                       name="bell"
                       size={15}
-                      color={notifications[key] ? accent : faintColor}
+                      color={faintColor}
                     />
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{label}</Text>
                       <Text style={{ color: mutedColor, fontSize: 10 }}>{description}</Text>
+                      <Text style={{ color: mutedColor, fontSize: 9, marginTop: 2, fontStyle: "italic" }}>Coming soon</Text>
                     </View>
                   </View>
                   <Switch
-                    value={notifications[key]}
-                    onValueChange={() => {
-                      const newValue = !notifications[key];
-                      setNotifications((c) => ({ ...c, [key]: newValue }));
-                      posthog.capture(Events.NOTIFICATION_SETTING_CHANGED, {
-                        setting_name: key,
-                        new_value: newValue,
-                      });
-                    }}
+                    value={false}
+                    onValueChange={() => {}}
                     trackColor={{ false: borderColor, true: accent }}
                     thumbColor="#ffffff"
                   />
@@ -262,7 +256,22 @@ export function SettingsScreen({ navigation }: Props) {
           <SectionEyebrow color={redColor}>Danger Zone</SectionEyebrow>
           <Pressable
             onPress={() =>
-              Alert.alert("Delete Account", "This would permanently delete all data. This demo does not perform the action.")
+              Alert.alert("Delete Account", "This will permanently delete your account and all data. This cannot be undone.", [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      await apiFetch("/auth/delete-account", { method: "POST" });
+                      await signOut();
+                      navigation.replace("Login");
+                    } catch (err) {
+                      Alert.alert("Error", getApiErrorMessage(err));
+                    }
+                  },
+                },
+              ])
             }
           >
             <View

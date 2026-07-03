@@ -7,9 +7,9 @@ import { useOverviewQuery } from "../api/queries";
 import type { PersonalRecordResponse } from "../api/model";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
-import { Card, EmptyCard, LoadingCard } from "../components/ui/Card";
+import { Card, LoadingCard } from "../components/ui/Card";
 import { Screen } from "../components/ui/Layout";
-import { BackHeader } from "../components/ui/Button";
+import { BackHeader, PrimaryButton } from "../components/ui/Button";
 import { SectionEyebrow } from "../components/ui/Indicators";
 import { AppIcon } from "../design-system/icons/AppIcon";
 import { recordValue } from "../utils/mapping";
@@ -136,10 +136,15 @@ export function AchievementsScreen({ navigation }: Props) {
               ))}
             </View>
           ) : (
-            <EmptyCard
-              title="No achievements yet"
-              text="Complete workouts and hit new personal bests to earn achievements. They'll appear here!"
-            />
+            <View style={{ alignItems: "center", paddingVertical: 40, gap: 12 }}>
+              <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>No achievements yet</Text>
+              <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Complete workouts and hit new personal bests to earn achievements.</Text>
+              <PrimaryButton
+                label="Start Your First Workout"
+                onPress={() => navigation.navigate("StartWorkout", {})}
+                icon={<AppIcon name="dumbbell" size={16} color="#000000" />}
+              />
+            </View>
           )}
         </View>
       </View>
