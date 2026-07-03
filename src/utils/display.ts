@@ -40,6 +40,8 @@ const MUSCLE_COLORS: Record<string, string> = {
   core: "#EC4899",
   ab: "#EC4899",
   waist: "#EC4899",
+  calf: "#8B5CF6",
+  trap: "#3B82F6",
 };
 
 export function muscleAccentColor(muscle?: string | null): string | undefined {
