@@ -17,13 +17,13 @@ export const MUSCLE_PATH_INDICES = [
 // Visual mapping verified against Full_Body.svg in browser
 // Only paths the user identified by index — everything else renders white
 export const MUSCLE_GROUP_PATH_MAP: Record<string, number[]> = {
-  Chest: [52, 53],
-  Back: [16, 4, 79, 77],
-  Shoulders: [74, 76, 20, 21, 41, 14],
+  Chest: [52, 53,101],
+  Back: [4,27,28],
+  Shoulders: [74, 76, 20, 21, 41, 29,16,14],
   Biceps: [65, 66],
   Triceps: [22, 23],
   Forearms: [68, 69, 82, 94, 34, 35, 30, 37],
-  Abs: [91, 87, 83, 86, 85, 84, 81, 80, 95, 96],
+  Abs: [91, 87, 83, 86, 85, 84, 81, 80, 95, 96,79,77],
   Quads: [62, 55, 56, 57, 75, 78],
   Hamstrings: [7, 19, 8, 18],
   Glutes: [5, 6],

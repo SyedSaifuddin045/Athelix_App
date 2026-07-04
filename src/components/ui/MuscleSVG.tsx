@@ -12,6 +12,7 @@ type MuscleDataItem = {
   name: string;
   score: number;
   color: string;
+  isActive: boolean;
 };
 
 type MuscleSVGProps = {
@@ -31,10 +32,12 @@ function getPathFill(
   if (!def.isMuscle) return def.fill;
 
   const muscleName = getMuscleForPath(pathIndex);
-  if (!muscleName) return "rgba(255,255,255,0.45)";
+  if (!muscleName) return "#E8E8E8";
 
   const item = dataMap.get(muscleName);
-  if (!item) return "rgba(255,255,255,0.45)";
+  if (!item) return "#E8E8E8";
+
+  if (!item.isActive) return "#E8E8E8";
 
   return item.color;
 }
@@ -50,12 +53,14 @@ function getPathOpacity(
   const muscleName = getMuscleForPath(pathIndex);
   if (!muscleName) return 1;
 
+  const item = dataMap.get(muscleName);
+  if (!item) return 1;
+
+  if (!item.isActive) return 1;
+
   if (selectedMuscle) {
     return muscleName === selectedMuscle ? 1 : 0.2;
   }
-
-  const item = dataMap.get(muscleName);
-  if (!item) return 0.06;
 
   // Heatmap: scale opacity from 0.3 to 1.0 based on score
   return 0.3 + (item.score / 100) * 0.7;

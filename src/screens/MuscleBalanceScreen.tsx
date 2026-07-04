@@ -222,8 +222,10 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
       items.map((item) => ({
         name: item.muscle_group,
         score: item.score,
-        color:
-          muscleAccentColor(item.muscle_group) ?? "rgba(255,255,255,0.2)",
+        isActive: item.weekly_sets > 0,
+        color: item.weekly_sets > 0
+          ? (muscleAccentColor(item.muscle_group) ?? "#E8E8E8")
+          : "#E8E8E8",
       })),
     [items],
   );
