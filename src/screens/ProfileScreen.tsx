@@ -96,7 +96,7 @@ export function ProfileScreen({ navigation }: Props) {
               borderWidth: 2,
               borderColor: screenColor,
             }}
-            onPress={() => navigation.navigate("ProfileSetup")}
+            onPress={() => navigation.navigate("ProfileSetup", { mode: "edit" })}
           >
             <AppIcon name="pencil" size={13} color={accent} />
           </Pressable>
@@ -153,7 +153,11 @@ export function ProfileScreen({ navigation }: Props) {
                       paddingVertical: spacing.xl2,
                     }}
                     onPress={() => {
-                      (navigation.navigate as any)(item.route);
+                      if (item.route === "ProfileSetup") {
+                        navigation.navigate("ProfileSetup", { mode: "edit" });
+                      } else {
+                        (navigation.navigate as any)(item.route);
+                      }
                     }}
                   >
                     <View

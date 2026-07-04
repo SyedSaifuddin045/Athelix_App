@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Platform, Pressable, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/core";
 import type { RootStackParamList } from "../types/navigation";
 import { usePostHog } from "posthog-react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
@@ -20,9 +21,12 @@ import { getApiErrorMessage } from "../api/client";
 import { numberOrNull } from "../utils/validation";
 import { Events } from "../analytics/events";
 
-type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "ProfileSetup"> };
+type Props = {
+  navigation: NativeStackNavigationProp<RootStackParamList, "ProfileSetup">;
+  route: RouteProp<RootStackParamList, "ProfileSetup">;
+};
 
-export function ProfileSetupScreen({ navigation }: Props) {
+export function ProfileSetupScreen({ navigation, route }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const posthog = usePostHog();
   const profileQuery = useProfileQuery(isAuthenticated);
@@ -36,6 +40,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
     unit: "metric",
     goal: "",
   });
+  const mode = route.params?.mode ?? "setup";
   const [error, setError] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [heightFeet, setHeightFeet] = useState("");
@@ -121,7 +126,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
       if (form.goal) superProps.primary_goal = form.goal;
       superProps.preferred_unit = form.unit;
       posthog.register(superProps);
-      navigation.replace("MainTabs");
+      if (mode === "edit") { navigation.goBack(); } else { navigation.replace("MainTabs"); }
     },
     onError: (err) => setError(getApiErrorMessage(err)),
   });
@@ -137,7 +142,7 @@ export function ProfileSetupScreen({ navigation }: Props) {
             "You can complete your profile later in Settings. Some features may be limited until then.",
             [
               { text: "Stay", style: "cancel" },
-              { text: "Skip", onPress: () => navigation.replace("MainTabs") }
+              { text: "Skip", onPress: () => { if (mode === "edit") { navigation.goBack(); } else { navigation.replace("MainTabs"); } } }
             ]
           );
         }}

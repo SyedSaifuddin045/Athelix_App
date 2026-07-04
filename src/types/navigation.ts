@@ -5,7 +5,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Login: undefined;
   Register: undefined;
-  ProfileSetup: undefined;
+  ProfileSetup: { mode?: "setup" | "edit" } | undefined;
   MainTabs: undefined;
   ExerciseDetail: { id: string };
   TemplateList: undefined;
