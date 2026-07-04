@@ -31,10 +31,10 @@ function getPathFill(
   if (!def.isMuscle) return def.fill;
 
   const muscleName = getMuscleForPath(pathIndex);
-  if (!muscleName) return "rgba(255,255,255,0.06)";
+  if (!muscleName) return "rgba(255,255,255,0.45)";
 
   const item = dataMap.get(muscleName);
-  if (!item) return "rgba(255,255,255,0.06)";
+  if (!item) return "rgba(255,255,255,0.45)";
 
   return item.color;
 }
@@ -88,6 +88,9 @@ export function MuscleSVG({ muscleData, selectedMuscle, onMuscleTap, width }: Mu
 
         {PATHS.map((def, index) => {
           if (!def.isMuscle) {
+            if (def.isBackground) {
+              return <Path key={def.id} d={def.d} fill="transparent" opacity={0} />;
+            }
             return <Path key={def.id} d={def.d} fill={def.fill} opacity={1} />;
           }
 

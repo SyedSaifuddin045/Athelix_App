@@ -14,22 +14,21 @@ export const MUSCLE_PATH_INDICES = [
   107, 108,
 ];
 
-// Placeholder — map muscle group name (as returned by API) to SVG path indices
-// Initial estimate based on path coordinate analysis.
-// 🎯 VISUALLY VERIFY: open assets/images/Full_Body.svg in browser and adjust.
+// Visual mapping verified against Full_Body.svg in browser
+// Only paths the user identified by index — everything else renders white
 export const MUSCLE_GROUP_PATH_MAP: Record<string, number[]> = {
-  Chest: [4, 86, 87, 101, 53, 66, 77],
-  Back: [14, 27, 67, 68, 69, 16],
-  Shoulders: [52, 64, 76, 17, 20, 41, 22],
-  Biceps: [65, 79, 83, 91, 21, 29],
-  Triceps: [80, 84, 85, 95, 23, 28, 38],
-  Forearms: [74, 81, 102, 107, 108, 5, 6, 30, 37, 46, 47],
-  Abs: [34, 35, 39, 45, 50, 82, 94, 96, 100, 103, 105],
-  Quads: [58, 59, 63, 11, 12, 25, 26],
-  Hamstrings: [72, 73, 31, 32, 33],
-  Glutes: [7, 8, 18, 19, 36, 40, 55, 56, 57, 62, 75, 78, 92, 93],
-  Calves: [89, 97, 98, 42, 43, 44, 48, 49],
-  Traps: [10, 54],
+  Chest: [52, 53],
+  Back: [16, 4, 79, 77],
+  Shoulders: [74, 76, 20, 21, 41, 14],
+  Biceps: [65, 66],
+  Triceps: [22, 23],
+  Forearms: [68, 69, 82, 94, 34, 35, 30, 37],
+  Abs: [91, 87, 83, 86, 85, 84, 81, 80, 95, 96],
+  Quads: [62, 55, 56, 57, 75, 78],
+  Hamstrings: [7, 19, 8, 18],
+  Glutes: [5, 6],
+  Calves: [89, 98, 97, 59, 25, 26, 11, 12, 32, 44, 42, 43, 63, 58, 33, 31, 49, 48],
+  Traps: [17, 64],
 };
 
 export function getMusclePaths(muscleGroup: string): number[] {
