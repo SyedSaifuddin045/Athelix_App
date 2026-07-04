@@ -14,6 +14,7 @@ import { tokenCache } from "./src/utils/timedTokenCache";
 import { queryClient } from "./src/api/queryClient";
 import { AppContent } from "./src/navigation/AppContent";
 import { ErrorBoundary } from "./src/components/ui/ErrorBoundary";
+import { configureNotificationHandler } from "./src/utils/notifications";
 import { getPostHogConfig } from "./src/analytics/posthog";
 import { TamaguiAppProvider } from "./src/tamagui/provider";
 
@@ -36,6 +37,8 @@ Sentry.init({
   replaysSessionSampleRate: 0.1,
   integrations: [Sentry.mobileReplayIntegration()],
 });
+
+configureNotificationHandler();
 
 function App() {
   return (

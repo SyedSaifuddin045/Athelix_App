@@ -13,6 +13,12 @@ jest.mock("@clerk/expo", () => ({
   ClerkProvider: "ClerkProvider",
 }));
 
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  getItem: jest.fn(() => Promise.resolve(null)),
+  setItem: jest.fn(() => Promise.resolve()),
+  removeItem: jest.fn(() => Promise.resolve()),
+}));
+
 jest.mock("posthog-react-native", () => ({
   usePostHog: () => mockUsePostHog(),
 }));

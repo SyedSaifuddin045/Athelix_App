@@ -19,6 +19,8 @@ import { AppIcon } from "../design-system/icons/AppIcon";
 import { apiFetch, ApiError, getApiErrorMessage } from "../api/client";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
+import { requestNotificationPermission, getPushToken, getSavedPushToken } from "../utils/notifications";
+import * as Notifications from "expo-notifications";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Settings"> };
 
@@ -32,6 +34,12 @@ export function SettingsScreen({ navigation }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [usernameError, setUsernameError] = useState("");
+  const [pushToken, setPushToken] = useState<string | null>(null);
+  const [enabledNotifications, setEnabledNotifications] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    getSavedPushToken().then(setPushToken);
+  }, []);
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
@@ -168,7 +176,7 @@ export function SettingsScreen({ navigation }: Props) {
 
           <View>
             <SectionEyebrow>Notifications</SectionEyebrow>
-            <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg, opacity: 0.5 }}>
+            <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
               {([
                 ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
                 ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
@@ -186,14 +194,33 @@ export function SettingsScreen({ navigation }: Props) {
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{label}</Text>
                         <Text style={{ color: mutedColor, fontSize: 10 }}>{description}</Text>
-                        <Text style={{ color: mutedColor, fontSize: 9, marginTop: 2, fontStyle: "italic" }}>Coming soon</Text>
                       </View>
                     </View>
                     <Switch
-                      value={false}
-                      onValueChange={() => {
-                        posthog.capture(Events.NOTIFICATION_SETTING_CHANGED, { setting: key, enabled: false, reason: "coming_soon" });
-                        Alert.alert("Coming Soon", `${label} will be available in a future update.`);
+                      value={enabledNotifications[key] ?? false}
+                      onValueChange={async (newValue) => {
+                        // Optimistic toggle — instant visual feedback
+                        setEnabledNotifications((c) => ({ ...c, [key]: newValue }));
+
+                        if (newValue && !pushToken) {
+                          const granted = await requestNotificationPermission();
+                          if (granted) {
+                            const token = await getPushToken();
+                            if (token) setPushToken(token);
+                          } else {
+                            // Permission denied — revert toggle
+                            setEnabledNotifications((c) => ({ ...c, [key]: false }));
+                            const permStatus = await Notifications.getPermissionsAsync();
+                            if (permStatus.status === "denied") {
+                              Alert.alert(
+                                "Enable Notifications",
+                                "To enable notifications, go to Settings > Athelix and allow notifications."
+                              );
+                            }
+                            return;
+                          }
+                        }
+                        posthog.capture(Events.NOTIFICATION_SETTING_CHANGED, { setting: key, enabled: newValue });
                       }}
                       trackColor={{ false: borderColor, true: accent }}
                       thumbColor="#ffffff"
