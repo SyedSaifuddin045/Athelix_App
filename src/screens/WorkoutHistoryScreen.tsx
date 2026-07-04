@@ -115,7 +115,7 @@ const SessionCard = memo(function SessionCard({
   const moodIcon = session.mood ? MOOD_ICONS[session.mood] : null;
   return (
     <Pressable onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
-      <Card elevated style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg }}>
+      <Card elevated style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg, marginBottom: spacing.md }}>
         <View style={{ width: 44, height: 44, borderRadius: radii.iconWrap, backgroundColor: surface2Color, alignItems: "center", justifyContent: "center" }}>
           {moodIcon ? (
             <AppIcon name={moodIcon} size={20} color={accent} />
@@ -233,7 +233,11 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
   );
 
   const renderSectionHeader = useCallback(
-    ({ section }: { section: { title: string } }) => <SectionEyebrow>{section.title}</SectionEyebrow>,
+    ({ section }: { section: { title: string } }) => (
+      <View style={{ paddingTop: spacing.xl3, paddingBottom: spacing.md }}>
+        <SectionEyebrow>{section.title}</SectionEyebrow>
+      </View>
+    ),
     [],
   );
 
