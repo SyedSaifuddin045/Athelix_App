@@ -76,7 +76,7 @@ export function SessionDetailScreen({ navigation, route }: Props) {
     try {
       await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
       queryClient.removeQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       setShowDeleteConfirm(false);
       navigation.goBack();
@@ -108,7 +108,7 @@ export function SessionDetailScreen({ navigation, route }: Props) {
         notes: editNotes || null,
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       setShowEdit(false);
     } catch (err) {
       Alert.alert("Error", getApiErrorMessage(err));

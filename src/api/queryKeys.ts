@@ -11,7 +11,7 @@ export const queryKeys = {
   exerciseDetail: (id?: string) => ["exercises", id] as const,
   templates: ["workout-templates"] as const,
   templateDetail: (id?: number | null) => ["workout-templates", id] as const,
-  sessions: ["workout-sessions"] as const,
+  sessions: (params?: unknown) => ["workout-sessions", params ?? {}] as const,
   sessionDetail: (id?: number | null) => ["workout-sessions", id] as const,
   personalRecords: (params?: unknown) => ["personal-records", params ?? {}] as const,
   exerciseProgress: (id?: string, params?: unknown) => ["progress", id, params ?? {}] as const,

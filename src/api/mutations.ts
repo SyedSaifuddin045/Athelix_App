@@ -124,7 +124,7 @@ export function useStartSession(options?: { onSuccess?: (data: WorkoutSessionRes
       return response.data as WorkoutSessionResponse;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       options?.onSuccess?.(data);
     },
   });

@@ -221,7 +221,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
       };
       await createExerciseSetWorkoutSessionsSessionIdSetsPost(session.id, setPayload);
 
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
 
       navigation.replace("SessionDetail", { id: String(session.id) });

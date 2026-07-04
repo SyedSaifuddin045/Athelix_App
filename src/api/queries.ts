@@ -194,11 +194,12 @@ export function useTemplateDetailQuery(id: number | null | undefined, enabled: b
   });
 }
 
-export function useSessionsQuery(enabled: boolean) {
+export function useSessionsQuery(enabled: boolean, params?: Record<string, unknown>) {
   return useQuery({
-    queryKey: queryKeys.sessions,
+    queryKey: queryKeys.sessions(params),
     queryFn: async () => dataOf(await listWorkoutSessionsWorkoutSessionsGet()),
     enabled,
+    staleTime: 30_000,
   });
 }
 

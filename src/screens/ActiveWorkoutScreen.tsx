@@ -484,7 +484,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       try {
         await deleteWorkoutSessionWorkoutSessionsSessionIdDelete(sessionId);
         queryClient.removeQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
-        queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       } catch (err) {
         Alert.alert("Error", getApiErrorMessage(err));
         return;
@@ -518,7 +518,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
         mood,
         notes: note || null,
       });
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       queryClient.invalidateQueries({ queryKey: queryKeys.sessionDetail(sessionId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.overview });
       posthog.capture(Events.WORKOUT_COMPLETED, {
