@@ -84,6 +84,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";
   const surfaceHover = theme.surfaceHover?.get() ?? "rgba(255,255,255,0.06)";
+  const compareBlue = "#3B82F6";
 
   const e1rmChartData = progress.data?.e1rm_history?.map((p) => ({
     value: p.default_e1rm ?? 0,
@@ -94,6 +95,27 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
     value: w.volume_load,
   }));
   const [starting, setStarting] = useState(false);
+
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareId, setCompareId] = useState<string | undefined>();
+  const [comparePickerOpen, setComparePickerOpen] = useState(false);
+
+  const compareProgress = useExerciseProgressQuery(
+    compareId,
+    weeks ? { weeks } : {},
+    isAuthenticated && compareMode && !!compareId,
+  );
+  const compareE1rmData = compareProgress.data?.e1rm_history?.map((p) => ({
+    value: p.default_e1rm ?? 0,
+    label: formatShortDate(p.performed_at),
+  }));
+  const chartSeries = compareMode && compareE1rmData && compareE1rmData.length > 0 && e1rmChartData && e1rmChartData.length > 0
+    ? [
+        { data: e1rmChartData, color: accent, label: nameForExercise(selectedId!, lookup) ?? selectedId! },
+        { data: compareE1rmData, color: compareBlue, label: nameForExercise(compareId!, lookup) ?? compareId! },
+      ]
+    : undefined;
+  const compareName = compareId ? (nameForExercise(compareId, lookup) ?? compareId) : "";
 
   async function handleStartWorkout() {
     if (!selectedId) return;
@@ -154,12 +176,105 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
         </View>
       ) : null}
 
+      <ExercisePicker
+        variant="pick"
+        visible={comparePickerOpen}
+        title="Compare with"
+        enabled={isAuthenticated}
+        onSelect={(exercise) => {
+          setCompareId(exercise.id);
+          setComparePickerOpen(false);
+        }}
+        onClose={() => setComparePickerOpen(false)}
+      />
+
       {selectedId ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.lg, marginTop: spacing.xl3 }}>
           <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: accent }} />
           <Text style={{ color: textColor, fontSize: 20, fontWeight: "900", flex: 1 }} numberOfLines={1}>
             {nameForExercise(selectedId, lookup) ?? selectedId}
           </Text>
+          {!compareMode ? (
+            <Pressable
+              onPress={() => setCompareMode(true)}
+              style={{
+                height: 32,
+                borderRadius: radii.tag,
+                borderWidth: 1,
+                borderColor: `${compareBlue}4D`,
+                backgroundColor: `${compareBlue}1F`,
+                paddingHorizontal: spacing.md,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: spacing.xxs,
+              }}
+            >
+              <AppIcon name="layers" size={14} color={compareBlue} />
+              <Text style={{ color: compareBlue, fontSize: 10, fontWeight: "700" }}>Compare</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+
+      {compareMode && selectedId ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md, marginTop: spacing.lg }}>
+          {compareId ? (
+            <>
+              <View style={{ width: 3, height: 20, borderRadius: 2, backgroundColor: compareBlue }} />
+              <Text style={{ color: mutedColor, fontSize: 13, flex: 1 }} numberOfLines={1}>
+                Comparing with <Text style={{ color: compareBlue, fontWeight: "700" }}>{compareName}</Text>
+              </Text>
+              <Pressable
+                onPress={() => setCompareId(undefined)}
+                style={{
+                  height: 28,
+                  borderRadius: radii.tag,
+                  borderWidth: 1,
+                  borderColor,
+                  paddingHorizontal: spacing.sm,
+                  justifyContent: "center",
+                }}
+              >
+                <Text style={{ color: mutedColor, fontSize: 9, fontWeight: "600" }}>Change</Text>
+              </Pressable>
+            </>
+          ) : (
+            <>
+              <Text style={{ color: mutedColor, fontSize: 13 }}>Compare with:</Text>
+              <Pressable
+                onPress={() => setComparePickerOpen(true)}
+                style={{
+                  flex: 1,
+                  height: 36,
+                  borderRadius: radii.card,
+                  borderWidth: 1,
+                  borderColor,
+                  paddingHorizontal: spacing.md,
+                  justifyContent: "center",
+                  backgroundColor: surfaceHover,
+                }}
+              >
+                <Text style={{ color: mutedColor, fontSize: 13 }}>Select exercise...</Text>
+              </Pressable>
+            </>
+          )}
+          <Pressable
+            onPress={() => {
+              setCompareMode(false);
+              setCompareId(undefined);
+            }}
+            style={{
+              height: 28,
+              borderRadius: radii.tag,
+              borderWidth: 1,
+              borderColor: "rgba(239,68,68,0.3)",
+              backgroundColor: "rgba(239,68,68,0.12)",
+              paddingHorizontal: spacing.sm,
+              justifyContent: "center",
+            }}
+          >
+            <Text style={{ color: "#EF4444", fontSize: 9, fontWeight: "700" }}>Stop</Text>
+          </Pressable>
         </View>
       ) : null}
 
@@ -266,7 +381,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
                   <Card elevated>
                     <SectionEyebrow>e1RM History</SectionEyebrow>
                     <View style={{ marginTop: spacing.xl }}>
-                      <TrendChart segments={[e1rmChartData!]} height={120} color={accent} />
+                      <TrendChart segments={[e1rmChartData!]} height={120} color={accent} series={chartSeries} />
                     </View>
                   </Card>
                 ) : null}

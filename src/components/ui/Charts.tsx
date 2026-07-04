@@ -54,15 +54,109 @@ export function TrendChart({
   segments,
   height = 100,
   color: colorProp,
+  series,
 }: {
   segments: { value: number; label?: string }[][];
   height?: number;
   color?: string;
+  series?: { data: { value: number; label?: string }[]; color: string; label: string }[];
 }) {
   const theme = useTheme();
   const color = colorProp ?? theme.accent?.get() ?? "#FF5A36";
-  if (!segments.length) return null;
   const [chartWidth, setChartWidth] = useState(0);
+
+  if (series && series.length >= 2) {
+    const allValues = series.flatMap((s) => s.data.map((d) => d.value));
+    const min = Math.min(...allValues);
+    const max = Math.max(...allValues);
+    const range = max - min || 1;
+    const pad = 16;
+    const svgHeight = height + 24;
+
+    const yPos = (value: number) => height - ((value - min) / range) * height * 0.8 - height * 0.1;
+
+    const xPositions = series.map((s) => {
+      const total = s.data.length;
+      return s.data.map((_, i) => {
+        if (total <= 1) return chartWidth / 2;
+        const t = i / (total - 1);
+        return pad + t * (chartWidth - 2 * pad);
+      });
+    });
+
+    return (
+      <View>
+        <View style={{ flexDirection: "row", gap: spacing.lg, marginBottom: spacing.sm }}>
+          {series.map((s, i) => (
+            <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: spacing.xxs }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: s.color }} />
+              <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 10 }}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+        <View style={[{ position: "relative" }, { height: svgHeight }]} onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}>
+          {chartWidth > 0 && (
+            <Svg width="100%" height={svgHeight} viewBox={`0 0 ${chartWidth} ${svgHeight}`}>
+              {[0.25, 0.5, 0.75].map((f, i) => (
+                <Line
+                  key={i}
+                  x1={pad}
+                  y1={height * (1 - f)}
+                  x2={chartWidth - pad}
+                  y2={height * (1 - f)}
+                  stroke="rgba(255,255,255,0.05)"
+                  strokeWidth={1}
+                />
+              ))}
+              {series.map((s, si) => {
+                const xs = xPositions[si];
+                const pts = s.data.map((d, i) => `${xs[i]},${yPos(d.value)}`).join(" ");
+                return (
+                  <Polyline
+                    key={si}
+                    points={pts}
+                    fill="none"
+                    stroke={s.color}
+                    strokeWidth={2}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                );
+              })}
+              {series.map((s, si) => {
+                const xs = xPositions[si];
+                return s.data.map((d, i) => (
+                  <Circle
+                    key={`${si}-${i}`}
+                    cx={xs[i]}
+                    cy={yPos(d.value)}
+                    r={4}
+                    fill={s.color}
+                    stroke={theme.backgroundFocus?.get()}
+                    strokeWidth={2}
+                  />
+                ));
+              })}
+              {series[0].data.map((d, i) => (
+                <SvgText
+                  key={i}
+                  x={xPositions[0][i]}
+                  y={height + 12}
+                  fill="rgba(255,255,255,0.3)"
+                  fontSize={9}
+                  textAnchor="middle"
+                >
+                  {d.label ?? ""}
+                </SvgText>
+              ))}
+            </Svg>
+          )}
+        </View>
+      </View>
+    );
+  }
+
+  if (!segments.length) return null;
 
   const allValues = segments.flat().map((s) => s.value);
   const min = Math.min(...allValues);
