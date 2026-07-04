@@ -49,7 +49,7 @@ export function SplashScreen({ navigation }: Props) {
         const done = await AsyncStorage.getItem("onboarding_complete");
         navigation.replace(done === "true" ? "Login" : "Onboarding");
       }
-    }, 450);
+    }, 150);
     return () => clearTimeout(timer);
   }, [ready, isSignedIn, navigation]);
 

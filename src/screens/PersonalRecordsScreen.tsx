@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Animated, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
@@ -19,6 +19,71 @@ import { muscleAccentColor } from "../utils/display";
 
 function nameForExercise(id: string, lookup: Map<string, ExerciseResponse>) {
   return lookup.get(id)?.name ?? null;
+}
+
+const SKELETON_COLOR = "rgba(255,255,255,0.1)";
+
+function PersonalRecordsSkeleton() {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  const B = ({ w, h, r = 8 }: { w?: number | string; h: number; r?: number }) => (
+    <Animated.View style={{ opacity, width: w as any, height: h, borderRadius: r, backgroundColor: SKELETON_COLOR }} />
+  );
+
+  return (
+    <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
+      {/* Description card */}
+      <View style={{ backgroundColor: SKELETON_COLOR, borderRadius: radii.modal, padding: spacing.xl3 }}>
+        <B w="80%" h={13} />
+      </View>
+
+      {/* Search bar */}
+      <B w="100%" h={50} r={radii.input} />
+
+      {/* Filter pills */}
+      <View style={{ flexDirection: "row", gap: 6 }}>
+        {[1, 2, 3, 4].map((i) => (
+          <B key={i} w={60} h={26} r={8} />
+        ))}
+      </View>
+
+      {/* PR cards */}
+      {[1, 2, 3].map((card) => (
+        <View key={card} style={{ backgroundColor: SKELETON_COLOR, borderRadius: radii.modal }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, padding: spacing.xl3, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" }}>
+            <B w={3} h={32} />
+            <B w="60%" h={13} />
+            <B w={26} h={13} />
+          </View>
+          <View style={{ padding: spacing.xl3, gap: spacing.lg }}>
+            {[1, 2].map((r) => (
+              <View key={r} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                  <B w={34} h={34} r={10} />
+                  <View style={{ gap: 4 }}>
+                    <B w={80} h={10} />
+                    <B w={60} h={8} />
+                  </View>
+                </View>
+                <B w={50} h={16} />
+              </View>
+            ))}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 }
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "PersonalRecords"> };
@@ -95,6 +160,8 @@ export function PersonalRecordsScreen({ navigation }: Props) {
           </Pressable>
         ))}
       </View>
+
+      {records.isPending ? <PersonalRecordsSkeleton /> : null}
 
       {records.isError ? <ErrorCard error={records.error} onRetry={() => records.refetch()} /> : null}
 

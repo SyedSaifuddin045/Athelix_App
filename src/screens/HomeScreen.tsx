@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { Pressable, Text, View, ActivityIndicator, ScrollView } from "react-native";
+import { useEffect, useMemo, useRef } from "react";
+import { Animated, Pressable, Text, View, ScrollView } from "react-native";
 import { useAuth } from "@clerk/expo";
 import { useTheme } from "@tamagui/core";
 import type { CompositeNavigationProp } from "@react-navigation/native";
@@ -7,6 +7,9 @@ import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList, TabParamList } from "../types/navigation";
 import { useOverviewQuery, useExercisesQuery } from "../api/queries";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../api/queryKeys";
+import { listWorkoutSessionsWorkoutSessionsGet } from "../api/endpoints/workout-sessions/workout-sessions";
 import { displayName, initialsFor, workoutTitle, nameForExercise } from "../utils/display";
 import { exerciseLookup } from "../utils/mapping";
 import { formatShortDate, formatTimeLabel, formatVolume } from "../utils/format";
@@ -28,6 +31,132 @@ type Props = {
     NativeStackNavigationProp<RootStackParamList>
   >;
 };
+
+const SKELETON_COLOR = "rgba(255,255,255,0.1)";
+
+function HomeScreenSkeleton() {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  const B = ({ w, h, r = 8 }: { w?: number | string; h: number; r?: number }) => (
+    <Animated.View style={{ opacity, width: w as any, height: h, borderRadius: r, backgroundColor: SKELETON_COLOR }} />
+  );
+
+  return (
+    <View style={{ gap: spacing.xl2 }}>
+      {/* Header skeleton */}
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 8, paddingBottom: spacing.xl }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <B w={40} h={40} r={20} />
+          <View style={{ gap: 4 }}>
+            <B w={90} h={9} />
+            <B w={120} h={14} />
+          </View>
+        </View>
+        <B w={40} h={40} r={20} />
+      </View>
+
+      {/* Mesocycle card skeleton */}
+      <View style={{ backgroundColor: SKELETON_COLOR, borderRadius: radii.modal, padding: spacing.xl3, gap: spacing.sm }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <B w={36} h={36} r={10} />
+          <View style={{ gap: 6, flex: 1 }}>
+            <B w={100} h={10} />
+            <B w={160} h={14} />
+          </View>
+        </View>
+      </View>
+
+      {/* This Week card skeleton */}
+      <View style={{ backgroundColor: SKELETON_COLOR, borderRadius: radii.modal, padding: spacing.xl3, gap: spacing.xl3 }}>
+        <B w={80} h={13} />
+        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: spacing.xs }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <View key={i} style={{ flex: 1, alignItems: "center", gap: 4 }}>
+              <B w={20} h={14} />
+              <B w={22} h={40} r={6} />
+              <B w={24} h={8} />
+            </View>
+          ))}
+        </View>
+        <B h={1} />
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ alignItems: "center", gap: 4, flex: 1 }}>
+            <B w={14} h={14} r={7} />
+            <B w={28} h={10} />
+            <B w={50} h={9} />
+          </View>
+          <B w={1} h={32} />
+          <View style={{ alignItems: "center", gap: 4, flex: 1 }}>
+            <B w={14} h={14} r={7} />
+            <B w={28} h={10} />
+            <B w={50} h={9} />
+          </View>
+          <B w={1} h={32} />
+          <View style={{ alignItems: "center", gap: 4, flex: 1 }}>
+            <B w={14} h={14} r={7} />
+            <B w={28} h={10} />
+            <B w={50} h={9} />
+          </View>
+        </View>
+      </View>
+
+      {/* Bodyweight card skeleton */}
+      <View style={{ backgroundColor: SKELETON_COLOR, borderRadius: radii.modal, padding: spacing.xl3 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <B w={34} h={34} r={10} />
+          <View style={{ gap: 4, flex: 1 }}>
+            <B w={100} h={9} />
+            <B w={60} h={18} />
+          </View>
+        </View>
+      </View>
+
+      {/* Quick Cardio skeleton */}
+      <View style={{ gap: spacing.lg }}>
+        <B w={80} h={13} />
+        <View style={{ flexDirection: "row", gap: spacing.md }}>
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} style={{ width: 80, height: 100, backgroundColor: SKELETON_COLOR, borderRadius: radii.card, alignItems: "center", justifyContent: "center", gap: spacing.sm }}>
+              <B w={40} h={40} r={20} />
+              <B w={50} h={10} />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Last Workout card skeleton */}
+      <View style={{ gap: spacing.lg }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <B w={90} h={13} />
+          <B w={50} h={12} />
+        </View>
+        <View style={{ backgroundColor: SKELETON_COLOR, borderRadius: radii.modal, padding: spacing.xl3, gap: spacing.md }}>
+          <B w="60%" h={15} />
+          <B w="40%" h={10} />
+          <View style={{ flexDirection: "row", gap: 10 }}>
+            <B w={60} h={12} />
+            <B w={50} h={12} />
+            <B w={55} h={12} />
+          </View>
+        </View>
+      </View>
+
+      {/* Start Workout button skeleton */}
+      <B w="100%" h={52} r={radii.modal} />
+    </View>
+  );
+}
 
 export function HomeScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
@@ -61,6 +190,17 @@ export function HomeScreen({ navigation }: Props) {
     if (data && !data.has_profile) navigation.navigate("ProfileSetup");
   }, [data, navigation]);
 
+  // Pre-fetch workout sessions for faster WorkoutHistory navigation
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    queryClient.prefetchQuery({
+      queryKey: queryKeys.sessions(),
+      queryFn: async () => (await listWorkoutSessionsWorkoutSessionsGet()).data,
+      staleTime: 30_000,
+    });
+  }, [isAuthenticated, queryClient]);
+
   if (overview.isError) {
     return (
       <Screen>
@@ -87,9 +227,7 @@ export function HomeScreen({ navigation }: Props) {
       </View>
 
       {overview.isPending ? (
-        <View style={{ alignItems: "center", paddingVertical: 60 }}>
-          <ActivityIndicator color={accent} size="small" />
-        </View>
+        <HomeScreenSkeleton />
       ) : (
         <>
         <Pressable
