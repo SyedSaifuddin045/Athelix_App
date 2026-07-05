@@ -41,6 +41,7 @@ import { ExerciseProgressScreen } from "../screens/ExerciseProgressScreen";
 import { MuscleBalanceScreen } from "../screens/MuscleBalanceScreen";
 import { BodyweightHistoryScreen } from "../screens/BodyweightHistoryScreen";
 import { QuickCardioScreen } from "../screens/QuickCardioScreen";
+import { NotificationSettingsScreen } from "../screens/NotificationSettingsScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { getTokenWithTimeout, setRefreshTokenHandler, updateClerkToken } from "../api/client";
 
@@ -186,6 +187,7 @@ export function AppNavigator() {
         <RootStack.Screen name="BodyweightHistory" component={BodyweightHistoryScreen} />
         <RootStack.Screen name="QuickCardio" component={QuickCardioScreen} />
         <RootStack.Screen name="Settings" component={SettingsScreen} />
+        <RootStack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
       </RootStack.Navigator>
     </AuthGate>
   );

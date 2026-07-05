@@ -231,6 +231,30 @@ export function SettingsScreen({ navigation }: Props) {
                   ) : null}
                 </View>
               ))}
+              <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
+              <Pressable
+                onPress={() => navigation.navigate("NotificationSettings")}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingHorizontal: spacing.xl3,
+                  paddingVertical: spacing.xl2,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, flex: 1 }}>
+                  <AppIcon name="bell" size={15} color={accent} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>
+                      Push Notification Preferences
+                    </Text>
+                    <Text style={{ color: mutedColor, fontSize: 10 }}>
+                      Morning motivation, inactivity nudges & milestones
+                    </Text>
+                  </View>
+                </View>
+                <AppIcon name="chevron-right" size={14} color={faintColor} />
+              </Pressable>
             </Card>
           </View>
 
