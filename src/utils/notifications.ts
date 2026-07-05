@@ -1,8 +1,5 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-
-const PUSH_TOKEN_KEY = "expo_push_token";
 
 export function configureNotificationHandler() {
   Notifications.setNotificationHandler({
@@ -30,15 +27,10 @@ export async function requestNotificationPermission(): Promise<boolean> {
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     if (existingStatus === "granted") return true;
-    // Already denied → can't re-prompt on iOS, must go to Settings
     if (existingStatus === "denied") return false;
 
     const { status } = await Notifications.requestPermissionsAsync({
-      ios: {
-        allowAlert: true,
-        allowBadge: true,
-        allowSound: true,
-      },
+      ios: { allowAlert: true, allowBadge: true, allowSound: true },
     });
     return status === "granted";
   } catch {
@@ -46,34 +38,25 @@ export async function requestNotificationPermission(): Promise<boolean> {
   }
 }
 
-/** Get or refresh the Expo push token. Can fail if APNs not ready. */
-export async function getPushToken(): Promise<string | null> {
+/** Get the raw platform push token (FCM on Android, APNs on iOS).
+ *  Uses getDevicePushTokenAsync() for direct FCM/APNs tokens
+ *  instead of Expo push tokens. */
+export async function getDevicePushToken(): Promise<string | null> {
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync();
-    const token = tokenData.data;
-    await AsyncStorage.setItem(PUSH_TOKEN_KEY, token);
-    return token;
+    const tokenData = await Notifications.getDevicePushTokenAsync();
+    return tokenData.data;
   } catch {
     return null;
   }
 }
 
-export async function getSavedPushToken(): Promise<string | null> {
-  try {
-    return await AsyncStorage.getItem(PUSH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-/** Register for push notifications: request permission + fetch token.
- *  Permission success is the gate — token fetch failure still returns granted. */
-export async function registerForPushNotifications(): Promise<{ granted: boolean; token: string | null }> {
+/** Register for push notifications: request permission + fetch raw device token. */
+export async function registerForPushNotifications(): Promise<{
+  granted: boolean;
+  token: string | null;
+}> {
   const granted = await requestNotificationPermission();
-  if (!granted) {
-    await AsyncStorage.removeItem(PUSH_TOKEN_KEY);
-    return { granted: false, token: null };
-  }
-  const token = await getPushToken();
+  if (!granted) return { granted: false, token: null };
+  const token = await getDevicePushToken();
   return { granted: true, token };
 }

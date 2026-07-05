@@ -19,7 +19,7 @@ import { AppIcon } from "../design-system/icons/AppIcon";
 import { apiFetch, ApiError, getApiErrorMessage } from "../api/client";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
-import { requestNotificationPermission, getPushToken, getSavedPushToken } from "../utils/notifications";
+import { requestNotificationPermission, getDevicePushToken } from "../utils/notifications";
 import * as Notifications from "expo-notifications";
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Settings"> };
@@ -38,7 +38,7 @@ export function SettingsScreen({ navigation }: Props) {
   const [enabledNotifications, setEnabledNotifications] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    getSavedPushToken().then(setPushToken);
+    getDevicePushToken().then(setPushToken);
   }, []);
 
   const accent = theme.accent?.get() ?? "#FF5A36";
@@ -205,7 +205,7 @@ export function SettingsScreen({ navigation }: Props) {
                         if (newValue && !pushToken) {
                           const granted = await requestNotificationPermission();
                           if (granted) {
-                            const token = await getPushToken();
+                            const token = await getDevicePushToken();
                             if (token) setPushToken(token);
                           } else {
                             // Permission denied — revert toggle
