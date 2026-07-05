@@ -1,6 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
-import { ApiError } from "./client";
+import { ApiError, apiFetch } from "./client";
 import { getMuscleBalanceReportAnalyticsMuscleBalanceGet } from "./endpoints/analytics/analytics";
 import { getMeAuthMeGet } from "./endpoints/auth/auth";
 import {
@@ -265,5 +265,18 @@ export function useMesocycleAnalyticsQuery(
     queryKey: queryKeys.mesocycleAnalytics(id, params),
     queryFn: async () => dataOf(await getMesocycleAnalyticsMesocyclesMesocycleIdAnalyticsGet(id ?? 0, params)),
     enabled: enabled && !!id,
+  });
+}
+
+export function useNotificationSettingsQuery(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.notificationSettings,
+    queryFn: async () => {
+      const resp = await apiFetch("/devices/settings", { method: "GET" });
+      if (!resp.ok) return null;
+      return resp.json();
+    },
+    enabled,
+    staleTime: 30000,
   });
 }

@@ -21,6 +21,7 @@ import type {
   WorkoutSessionCreate,
   WorkoutSessionResponse,
 } from "./model";
+import { ApiError, apiFetch } from "./client";
 import { queryKeys } from "./queryKeys";
 
 export function useDeleteTemplate(options?: { onSuccess?: () => void }) {
@@ -126,6 +127,28 @@ export function useStartSession(options?: { onSuccess?: (data: WorkoutSessionRes
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.sessions() });
       options?.onSuccess?.(data);
+    },
+  });
+}
+
+export function useUpdateNotificationSettings(options?: { onSuccess?: () => void }) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      const resp = await apiFetch("/devices/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!resp.ok) {
+        const errBody = await resp.json().catch(() => ({}));
+        throw new ApiError(errBody.detail ?? "Failed to update settings", resp.status);
+      }
+      return resp.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings });
+      options?.onSuccess?.();
     },
   });
 }
