@@ -22,6 +22,7 @@ export type RootStackParamList = {
   MuscleBalance: { mesocycleId?: number } | undefined;
   BodyweightHistory: undefined;
   Settings: undefined;
+  NotificationSettings: undefined;
   QuickCardio: { activityType: CardioActivityType };
 };
 

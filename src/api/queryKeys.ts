@@ -16,6 +16,7 @@ export const queryKeys = {
   personalRecords: (params?: unknown) => ["personal-records", params ?? {}] as const,
   exerciseProgress: (id?: string, params?: unknown) => ["progress", id, params ?? {}] as const,
   muscleBalance: (params?: unknown) => ["analytics", "muscle-balance", params ?? {}] as const,
+  notificationSettings: ["notifications", "settings"] as const,
   mesocycles: ["mesocycles"] as const,
   mesocycleDetail: (id?: number | null) => ["mesocycles", id] as const,
   mesocycleAnalytics: (id?: number | null, params?: unknown) => ["mesocycles", id, "analytics", params ?? {}] as const,
