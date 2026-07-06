@@ -1,14 +1,16 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Switch,
   Text,
   View,
 } from "react-native";
+import * as Notifications from "expo-notifications";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "@tamagui/core";
 import type { RootStackParamList } from "../types/navigation";
@@ -53,6 +55,17 @@ export function NotificationSettingsScreen({ navigation }: Props) {
   const [hourPickerOpen, setHourPickerOpen] = useState(false);
   const [pendingHour, setPendingHour] = useState(settings?.preferred_send_hour ?? 8);
 
+  // Proactively request permission on screen mount if any toggle is enabled
+  useEffect(() => {
+    if (!settings) return;
+    const anyEnabled = TOGGLES.some((t) => (settings as any)[t.key]);
+    if (anyEnabled) {
+      ensurePermission();
+    }
+    // Intentional: only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!settings]);
+
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
   const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
@@ -61,11 +74,31 @@ export function NotificationSettingsScreen({ navigation }: Props) {
   const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
   const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
 
+  const hasRequestedPermission = useRef(false);
+
+  const ensurePermission = useCallback(async (): Promise<boolean> => {
+    if (Platform.OS !== "android") return true;
+    if (hasRequestedPermission.current) return true;
+    const { status } = await Notifications.requestPermissionsAsync();
+    hasRequestedPermission.current = true;
+    if (status === "granted") return true;
+    Alert.alert(
+      "Permission Required",
+      "Please enable notifications in your device Settings to receive alerts.",
+    );
+    return false;
+  }, []);
+
   const handleToggle = useCallback(
-    (key: string, value: boolean) => {
+    async (key: string, value: boolean) => {
+      // Request permission before enabling any notification type
+      if (value) {
+        const granted = await ensurePermission();
+        if (!granted) return;
+      }
       updateMutation.mutate({ [key]: value });
     },
-    [updateMutation],
+    [updateMutation, ensurePermission],
   );
 
   const handleUpdateSettings = useCallback(

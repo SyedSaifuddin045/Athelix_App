@@ -146,8 +146,26 @@ export function useUpdateNotificationSettings(options?: { onSuccess?: () => void
       }
       return resp.json();
     },
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.notificationSettings });
+      const previous = queryClient.getQueryData(queryKeys.notificationSettings);
+      queryClient.setQueryData(queryKeys.notificationSettings, (old: unknown) => {
+        if (old && typeof old === "object" && !Array.isArray(old)) {
+          return { ...(old as Record<string, unknown>), ...data };
+        }
+        return data;
+      });
+      return { previous };
+    },
+    onError: (_err, _data, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.notificationSettings, context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notificationSettings });
+    },
+    onSuccess: () => {
       options?.onSuccess?.();
     },
   });
