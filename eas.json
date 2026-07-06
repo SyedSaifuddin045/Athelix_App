@@ -48,6 +48,11 @@
         "track": "internal"
       }
     },
+    "closedAlpha": {
+      "android": {
+        "track": "alpha"
+      }
+    },
     "production": {}
   }
 }
