@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { useAuth } from "@clerk/expo";
 
 import { registerForPushNotifications } from "../utils/notifications";
 import { apiFetch } from "../api/client";
@@ -35,25 +36,29 @@ async function unregisterDeviceToken(token: string): Promise<void> {
 }
 
 /**
- * Registers push notification permission + device token on mount.
+ * Registers push notification permission + device token once Clerk is ready.
  * Handles token refresh events from expo-notifications.
  */
 export function useNotificationRegistration(): void {
+  const { isLoaded, isSignedIn } = useAuth();
   const tokenRef = useRef<string | null>(null);
 
+  const register = useCallback(async () => {
+    const { granted, token } = await registerForPushNotifications();
+    if (!granted || !token) return;
+
+    tokenRef.current = token;
+    await registerDeviceToken(token);
+  }, []);
+
+  // Register once Clerk confirms signed-in session
   useEffect(() => {
-    let mounted = true;
+    if (!isLoaded || !isSignedIn) return;
+    register();
+  }, [isLoaded, isSignedIn, register]);
 
-    async function init() {
-      const { granted, token } = await registerForPushNotifications();
-      if (!granted || !token || !mounted) return;
-
-      tokenRef.current = token;
-      await registerDeviceToken(token);
-    }
-
-    init();
-
+  // Listen for token refresh (independent of auth state)
+  useEffect(() => {
     const sub = Notifications.addPushTokenListener(async (tokenData) => {
       const newToken = tokenData.data;
       if (newToken && newToken !== tokenRef.current) {
@@ -65,9 +70,6 @@ export function useNotificationRegistration(): void {
       }
     });
 
-    return () => {
-      mounted = false;
-      sub.remove();
-    };
+    return () => sub.remove();
   }, []);
 }
