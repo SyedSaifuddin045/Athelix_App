@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Push Notification Architecture — Athelix</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@5.0.0/dist/daisyui.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    document.documentElement.setAttribute('data-theme', 'dark');
+    // Override DaisyUI dark theme with Athelix brand
+    const style = document.createElement('style');
+    style.textContent = `
+      :root {
+        --color-primary: #FF5A36;
+        --color-primary-content: #ffffff;
+        --color-base-100: #111111;
+        --color-base-200: #1a1a1a;
+        --color-base-300: #222222;
+        --color-base-content: #e0e0e0;
+        --color-neutral: #2a2a2a;
+        --color-neutral-content: #cccccc;
+        --color-info: #3b82f6;
+        --color-success: #22c55e;
+        --color-warning: #f59e0b;
+        --color-error: #ef4444;
+        --radius-box: 0.75rem;
+      }
+      body {
+        background: #0a0a0a;
+        color: #e0e0e0;
+      }
+      .card {
+        background: #111111 !important;
+        border: 1px solid rgba(255,255,255,0.06);
+      }
+      .badge-fcm {
+        background: rgba(255, 90, 54, 0.15);
+        color: #FF5A36;
+        border: 1px solid rgba(255, 90, 54, 0.3);
+      }
+      .badge-apns {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+      }
+      .badge-db {
+        background: rgba(34, 197, 94, 0.15);
+        color: #22c55e;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+      }
+      .mermaid-wrapper {
+        background: #0d0d0d;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        border: 1px solid rgba(255,255,255,0.08);
+        overflow-x: auto;
+      }
+      .mermaid-wrapper svg {
+        max-width: 100%;
+        height: auto;
+      }
+      .step-card {
+        background: linear-gradient(135deg, rgba(255,90,54,0.05) 0%, rgba(255,90,54,0.02) 100%);
+        border-left: 3px solid #FF5A36;
+      }
+      .section-title {
+        display: inline-block;
+        padding-bottom: 6px;
+        border-bottom: 2px solid transparent;
+        background-image: linear-gradient(90deg, #FF5A36, transparent);
+        background-repeat: no-repeat;
+        background-position: left bottom;
+        background-size: 100% 2px;
+      }
+      .glow-text {
+        text-shadow: 0 0 40px rgba(255, 90, 54, 0.15);
+      }
+    `;
+    document.head.appendChild(style);
+
+    mermaid.initialize({
+      theme: 'dark',
+      themeVariables: {
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontSize: '14px',
+        primaryColor: '#FF5A36',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#FF5A36',
+        lineColor: '#FF5A36',
+        secondaryColor: '#1a1a1a',
+        tertiaryColor: '#222222',
+        clusterBkg: '#0d0d0d',
+        clusterBorder: '#2a2a2a',
+        nodeBorder: '#333333',
+        nodeTextColor: '#e0e0e0',
+        edgeLabelBackground: '#111111',
+        edgeLabelColor: '#aaaaaa',
+        mainBkg: '#0d0d0d',
+      },
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis',
+        padding: 16,
+      },
+      sequence: {
+        useMaxWidth: true,
+      },
+    });
+  </script>
+</head>
+<body class="min-h-screen">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <header class="mb-10 text-center">
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[#FF5A36] to-[#ff3d1a] flex items-center justify-center text-white font-bold text-lg">A</div>
+        <h1 class="text-3xl font-bold glow-text text-white">Push Notification Architecture</h1>
+      </div>
+      <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+        How push notifications flow from backend services to mobile devices
+        through a provider-agnostic, clean architecture pattern
+      </p>
+      <div class="flex flex-wrap justify-center gap-3 mt-4">
+        <span class="badge badge-fcm px-3 py-2 text-xs">FCM Provider</span>
+        <span class="badge badge-apns px-3 py-2 text-xs">APNs Provider (stub)</span>
+        <span class="badge badge-db px-3 py-2 text-xs">PostgreSQL</span>
+        <span class="badge badge-neutral px-3 py-2 text-xs text-gray-300 border-gray-600">FastAPI</span>
+        <span class="badge badge-neutral px-3 py-2 text-xs text-gray-300 border-gray-600">React Native</span>
+      </div>
+    </header>
+
+    <!-- The Core Diagram -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-4 section-title">System Overview</h2>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+flowchart TB
+    subgraph Mobile["📱 Mobile App"]
+        direction TB
+        A["App Launch"] --> B["Request Permission"]
+        B --> C["getDevicePushTokenAsync()"]
+        C --> D["Raw FCM Token"]
+        D --> E["POST /devices/register"]
+        
+        F["Push Received"] --> G["Notification Tap"]
+        G --> H{"Data has screen?"}
+        H -->|"session"| I["Navigate: SessionDetail"]
+        H -->|"template"| J["Navigate: TemplateBuilder"]
+        H -->|"workout"| K["Navigate: StartWorkout"]
+        H -->|"mesocycle"| L["Navigate: MesocycleDetail"]
+        H -->|"none"| M["Default app open"]
+    end
+
+    subgraph API["⚙️ API Server"]
+        direction TB
+        N["POST /devices/register"] --> O["NotificationRepository<br/>upsert_device()"]
+        O --> P[("PostgreSQL<br/>devices table")]
+        
+        Q["Business Logic Event"] --> R["NotificationService<br/>send_to_user()"]
+        R --> S["get_active_devices()"]
+        S --> T{"Devices found?"}
+        T -->|"No"| U["Return empty result"]
+        T -->|"Yes"| V["For each device"]
+        
+        V --> W{"Platform?"}
+        W -->|"android"| X["FCMProvider.send()"]
+        W -->|"ios"| Y["APNsProvider.send()"]
+        Y --> Z["⚠️ Not implemented<br/>(ready for future)"]
+        
+        X --> AA{"FCM Response"}
+        AA -->|"Success"| AB["Log to<br/>notification_history"]
+        AA -->|"NotRegistered"| AC["Delete device<br/>auto-cleanup"]
+        AA -->|"InvalidToken"| AC
+        
+        AB --> AD["Return SendResult"]
+        AC --> AD
+    end
+
+    subgraph Firebase["☁️ Firebase Cloud Messaging"]
+        AE["FCM HTTP v1 API"] --> AF["📲 Android Device"]
+    end
+
+    subgraph Future["🔮 Future: Apple Push Notification service"]
+        AG["api.push.apple.com<br/>HTTP/2"] --> AH["📱 iOS Device"]
+    end
+
+    X --> AE
+    Y -.-> AG
+
+    style Mobile fill:#1a1a1a,stroke:#FF5A36,stroke-width:2px,color:#fff
+    style API fill:#1a1a1a,stroke:#3b82f6,stroke-width:2px,color:#fff
+    style Firebase fill:#1a1a1a,stroke:#22c55e,stroke-width:2px,color:#fff
+    style Future fill:#1a1a1a,stroke:#6b7280,stroke-width:1px,color:#9ca3af,stroke-dasharray: 5 5
+        </div>
+      </div>
+    </section>
+
+    <!-- Step-by-step breakdown -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-6 section-title">How It Works — Step by Step</h2>
+      
+      <div class="grid gap-4">
+        <!-- Step 1 -->
+        <div class="card p-5 step-card">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-[#FF5A36] flex items-center justify-center text-white font-bold text-sm shrink-0">1</div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Device Registration</h3>
+              <p class="text-gray-400 text-sm">When a user opens the app, it requests OS notification permission, then calls <code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">getDevicePushTokenAsync()</code> to obtain the raw FCM token from Google Play Services. This token is registered with the backend via <code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">POST /devices/register</code> along with platform, device name, and app version.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="card p-5 step-card">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-[#FF5A36] flex items-center justify-center text-white font-bold text-sm shrink-0">2</div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Token Persistence</h3>
+              <p class="text-gray-400 text-sm">The backend <code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">NotificationRepository</code> upserts device records by <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">(user_id, push_token)</code>. Same user + same token updates <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">last_seen</code>. Same user + new token creates a fresh record. One user can own many devices — tokens are <strong>not</strong> stored on the User table.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="card p-5 step-card">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-[#FF5A36] flex items-center justify-center text-white font-bold text-sm shrink-0">3</div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Token Refresh Handling</h3>
+              <p class="text-gray-400 text-sm">FCM tokens can change (app update, device restore). The app listens for <code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">PushTokenListener</code> events. When a token changes, the old token is unregistered (<code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">POST /devices/unregister</code>) and the new one is registered — preventing stale token accumulation.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="card p-5 step-card">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-[#FF5A36] flex items-center justify-center text-white font-bold text-sm shrink-0">4</div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Sending Notifications</h3>
+              <p class="text-gray-400 text-sm">Business logic calls a single method: <code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">NotificationService.send_to_user(user_id, title, body, data)</code>. The service:</p>
+              <ul class="text-gray-400 text-sm mt-2 space-y-1 list-disc list-inside">
+                <li>Queries all active device tokens for the user</li>
+                <li>Routes to the correct provider by platform (<code class="text-green-400 bg-black/30 px-1 rounded text-xs">android</code> → FCM, <code class="text-blue-400 bg-black/30 px-1 rounded text-xs">ios</code> → APNs)</li>
+                <li>Logs every send attempt to <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">notification_history</code> with status and errors</li>
+                <li>Auto-deletes tokens that FCM reports as unregistered or invalid</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="card p-5 step-card">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-[#FF5A36] flex items-center justify-center text-white font-bold text-sm shrink-0">5</div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">FCM Delivery</h3>
+              <p class="text-gray-400 text-sm">The <code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">FCMProvider</code> constructs a Firebase <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">messaging.Message</code> with title, body, and data payload, then calls <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">messaging.send()</code>. The HTTP v1 API delivers the notification to the Android device via Google Play Services.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="card p-5 step-card">
+          <div class="flex items-start gap-4">
+            <div class="w-8 h-8 rounded-lg bg-[#FF5A36] flex items-center justify-center text-white font-bold text-sm shrink-0">6</div>
+            <div>
+              <h3 class="text-white font-semibold mb-1">Deep Link Navigation</h3>
+              <p class="text-gray-400 text-sm">When a user taps a notification, the <code class="text-[#FF5A36] bg-black/30 px-1 rounded text-xs">useNotificationTapHandler</code> hook reads the <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">data</code> payload from the notification. The <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">screen</code> field determines which screen to navigate to, with params like <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">sessionId</code>, <code class="text-gray-300 bg-black/30 px-1 rounded text-xs">templateId</code>, etc. This works from foreground, background, and killed states.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Provider Pattern Detail -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-6 section-title">The Provider Pattern</h2>
+      
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="card p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-6 h-6 rounded bg-[#FF5A36]/20 flex items-center justify-center text-[#FF5A36] text-xs font-bold">A</div>
+            <h3 class="text-white font-semibold text-sm">Abstract Provider</h3>
+          </div>
+          <pre class="text-xs text-gray-400 bg-black/40 p-3 rounded-lg overflow-x-auto"><code>class NotificationProvider(ABC):
+    @abstractmethod
+    async def send(
+        token, title, body, data
+    ) -> ProviderResult:
+        ...</code></pre>
+          <p class="text-gray-400 text-xs mt-2">Single interface. Any provider — FCM, APNs, or future — implements this one method.</p>
+        </div>
+
+        <div class="card p-5">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-6 h-6 rounded bg-[#FF5A36]/20 flex items-center justify-center text-[#FF5A36] text-xs font-bold">B</div>
+            <h3 class="text-white font-semibold text-sm">FCM Provider <span class="badge badge-fcm text-[10px] px-1.5 py-0.5">Live</span></h3>
+          </div>
+          <pre class="text-xs text-gray-400 bg-black/40 p-3 rounded-lg overflow-x-auto"><code>class FCMProvider:
+    async def send(...):
+        message = Message(
+            notification=Notification(title, body),
+            data=payload,
+            token=token,
+        )
+        response = messaging.send(message)</code></pre>
+          <p class="text-gray-400 text-xs mt-2">Uses Firebase Admin SDK. Handles UnregisteredError, InvalidArgumentError automatically.</p>
+        </div>
+
+        <div class="card p-5 opacity-80">
+          <div class="flex items-center gap-2 mb-3">
+            <div class="w-6 h-6 rounded bg-blue-500/20 flex items-center justify-center text-blue-400 text-xs font-bold">C</div>
+            <h3 class="text-white font-semibold text-sm">APNs Provider <span class="badge badge-apns text-[10px] px-1.5 py-0.5">Stub</span></h3>
+          </div>
+          <pre class="text-xs text-gray-400 bg-black/40 p-3 rounded-lg overflow-x-auto"><code>class APNsProvider:
+    async def send(...):
+        raise NotImplementedError(
+            "APNs not yet implemented"
+        )</code></pre>
+          <p class="text-gray-400 text-xs mt-2">Placeholder for iOS. Implement send() using Apple's HTTP/2 API — no business logic changes needed.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- API Endpoints -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-6 section-title">API Endpoints</h2>
+      
+      <div class="overflow-x-auto">
+        <table class="table w-full">
+          <thead>
+            <tr class="border-gray-800 text-gray-400">
+              <th class="text-left text-xs uppercase tracking-wider">Method</th>
+              <th class="text-left text-xs uppercase tracking-wider">Path</th>
+              <th class="text-left text-xs uppercase tracking-wider">Auth</th>
+              <th class="text-left text-xs uppercase tracking-wider">Purpose</th>
+              <th class="text-left text-xs uppercase tracking-wider">Response</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            <tr class="border-gray-800 hover:bg-white/[0.02]">
+              <td class="py-3"><span class="text-green-400 font-mono font-bold">POST</span></td>
+              <td class="py-3 font-mono text-gray-200">/devices/register</td>
+              <td class="py-3"><span class="text-gray-400">JWT</span></td>
+              <td class="py-3 text-gray-300">Register or update device token</td>
+              <td class="py-3"><span class="text-green-400">201</span> Created</td>
+            </tr>
+            <tr class="border-gray-800 hover:bg-white/[0.02]">
+              <td class="py-3"><span class="text-yellow-400 font-mono font-bold">POST</span></td>
+              <td class="py-3 font-mono text-gray-200">/devices/unregister</td>
+              <td class="py-3"><span class="text-gray-400">JWT</span></td>
+              <td class="py-3 text-gray-300">Remove device token</td>
+              <td class="py-3"><span class="text-yellow-400">204</span> No Content</td>
+            </tr>
+            <tr class="border-gray-800 hover:bg-white/[0.02]">
+              <td class="py-3"><span class="text-blue-400 font-mono font-bold">GET</span></td>
+              <td class="py-3 font-mono text-gray-200">/devices</td>
+              <td class="py-3"><span class="text-gray-400">JWT</span></td>
+              <td class="py-3 text-gray-300">List user's registered devices</td>
+              <td class="py-3"><span class="text-blue-400">200</span> OK</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Data Flow Sequence -->
+    <section class="mb-10">
+      <h2 class="text-xl font-semibold text-white mb-6 section-title">Full Data Flow</h2>
+      <div class="mermaid-wrapper">
+        <div class="mermaid">
+sequenceDiagram
+    participant App as 📱 Mobile App
+    participant API as ⚙️ API Server
+    participant DB as 🗄️ PostgreSQL
+    participant FCM as ☁️ Firebase FCM
+    participant Device as 📲 Android Device
+
+    App->>App: Request notification permission
+    App->>App: getDevicePushTokenAsync()
+    App->>API: POST /devices/register {platform, token}
+    API->>DB: upsert_device(user_id, token)
+    DB-->>API: Device record
+    API-->>App: 201 Created
+
+    Note over App,Device: Later: Business event triggers notification
+
+    API->>DB: get_active_devices(user_id)
+    DB-->>API: [Device records]
+    API->>API: Select provider by platform
+    API->>FCM: messaging.send(token, title, body, data)
+    alt Success
+        FCM-->>Device: Push notification delivered
+        FCM-->>API: Success response
+        API->>DB: save_history(status="sent")
+    else Token invalid
+        FCM-->>API: UnregisteredError
+        API->>DB: delete_device(device.id)
+        API->>DB: save_history(status="failed", error="NotRegistered")
+    end
+
+    Note over App,Device: User taps notification
+
+    Device-->>App: Notification opened
+    App->>App: useNotificationTapHandler
+    App->>App: Parse data.screen + params
+    App->>App: Navigate to screen
+        </div>
+      </div>
+    </section>
+
+    <!-- Design Principles -->
+    <section>
+      <h2 class="text-xl font-semibold text-white mb-6 section-title">Design Principles</h2>
+      
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="card p-4">
+          <h3 class="text-white font-semibold text-sm mb-2">🔌 Provider Agnostic</h3>
+          <p class="text-gray-400 text-xs">Business logic never calls Firebase directly. The abstract <code class="text-[#FF5A36] bg-black/30 px-1 rounded">NotificationProvider</code> interface means you can swap FCM for any future provider by implementing one method.</p>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-white font-semibold text-sm mb-2">📋 Full Audit Trail</h3>
+          <p class="text-gray-400 text-xs">Every notification send is logged to <code class="text-[#FF5A36] bg-black/30 px-1 rounded">notification_history</code> with status, provider response, and error details — enabling debugging, analytics, and delivery tracking.</p>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-white font-semibold text-sm mb-2">🧹 Self-Cleaning</h3>
+          <p class="text-gray-400 text-xs">Invalid and unregistered tokens are automatically deleted from the database when FCM rejects them. No manual cleanup or cron jobs needed.</p>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-white font-semibold text-sm mb-2">⚡ Async Ready</h3>
+          <p class="text-gray-400 text-xs">All method signatures are async from day one. Trivially dispatchable to background workers (Celery, Arq, Dramatiq) without refactoring.</p>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-white font-semibold text-sm mb-2">📱 Multi-Device</h3>
+          <p class="text-gray-400 text-xs">One user can own many devices. Tokens are stored separately from the User table with proper foreign key constraints and cascade delete.</p>
+        </div>
+        <div class="card p-4">
+          <h3 class="text-white font-semibold text-sm mb-2">🔐 Zero Vendor Lock-In</h3>
+          <p class="text-gray-400 text-xs">Uses raw FCM tokens via <code class="text-[#FF5A36] bg-black/30 px-1 rounded">getDevicePushTokenAsync()</code> instead of Expo push tokens. You own your token infrastructure.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-12 pt-6 border-t border-gray-800 text-center text-gray-500 text-xs">
+      <p>Athelix Push Notification Architecture · Built with FastAPI + React Native (Expo) · Firebase Cloud Messaging</p>
+    </footer>
+  </div>
+</body>
+</html>

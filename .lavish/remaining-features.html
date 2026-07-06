@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athelix — Remaining Features</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --surface2: rgba(255,255,255,0.04);
+    --surface3: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.08);
+    --border-hover: rgba(255,255,255,0.15);
+    --text: #f5f5f5;
+    --muted: rgba(255,255,255,0.45);
+    --faint: rgba(255,255,255,0.25);
+    --accent: #FF5A36;
+    --accent-glow: rgba(255,90,54,0.15);
+    --green: #22C55E;
+    --blue: #3B82F6;
+    --amber: #F59E0B;
+    --purple: #A855F7;
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 24px;
+    font-weight: 800;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 32px;
+  }
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 20px;
+    transition: border-color 0.15s;
+  }
+  .feature-card:focus-within {
+    border-color: rgba(255,90,54,0.3);
+  }
+  .feature-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .feature-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .feature-title {
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .feature-desc {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+  .current-state {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .current-state strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .option:hover {
+    border-color: var(--border-hover);
+    background: var(--surface3);
+  }
+  .option.selected {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+  .option input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--muted);
+    border-radius: 50%;
+    margin-top: 1px;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.15s;
+  }
+  .option input[type="radio"]:checked {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  .option input[type="radio"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #000;
+  }
+  .option-label {
+    flex: 1;
+  }
+  .option-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .option-desc {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .option-effort {
+    font-size: 11px;
+    color: var(--faint);
+    margin-top: 4px;
+  }
+  .queue-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 8px 20px;
+    border-radius: 20px;
+    background: var(--accent);
+    color: #000;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .queue-btn:hover { opacity: 0.85; }
+  .queue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .queue-btn svg { width: 14px; height: 14px; }
+
+  .queued-notice {
+    display: none;
+    margin-top: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .queued-notice.visible { display: inline-flex; align-items: center; gap: 6px; }
+
+  .actions-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .send-btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: #000;
+    font-size: 15px;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    text-align: center;
+  }
+  .send-btn:hover { opacity: 0.85; }
+  .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .add-note {
+    flex: 1;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 13px;
+    border: 1px solid var(--border);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-note:focus {
+    border-color: var(--accent);
+  }
+  .add-note::placeholder { color: var(--faint); }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+  .complete-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .skip-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .done-section {
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+  .done-section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--muted);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .done-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 8px;
+  }
+  .done-item {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+  }
+  .done-item strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<h1>Remaining Features</h1>
+<p class="subtitle">Pick direction for each feature. Options marked with effort estimate.</p>
+
+<div class="done-section">
+  <h3>✓ Already Done This Session</h3>
+  <div class="done-grid">
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#10 Rest haptic</div>
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#11 Search/filters</div>
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#12 Warmup toggle</div>
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#13 Bulk edit sets</div>
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#14 Recent templates</div>
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#16 Plate calculator</div>
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#17 RPE chart</div>
+    <div class="done-item"><span class="status-dot" style="background:var(--green)"></span>#19 Swipe complete</div>
+  </div>
+</div>
+
+<!-- #15 Calendar View -->
+<form class="feature-card" data-lavish-question="feature-15" onsubmit="event.preventDefault(); queueChoice('feature-15', 'calendar')">
+  <div class="feature-header">
+    <div class="feature-badge" style="background:rgba(59,130,246,0.15);color:var(--blue)">15</div>
+    <span class="feature-title">Calendar View</span>
+    <span class="skip-badge">WorkoutHistoryScreen</span>
+  </div>
+  <p class="feature-desc">Add a calendar toggle to browse workouts by month instead of the current grouped list.</p>
+  <div class="current-state">
+    <strong>Current:</strong> Sessions grouped by date labels (Today, Yesterday, This Week, Last Week). Chronological list, scroll down.
+  </div>
+  <div class="options">
+    <label class="option" onclick="selectOption(this, 'calendar-grid')">
+      <input type="radio" name="feature-15" value="A">
+      <div class="option-label">
+        <div class="option-name">Monthly calendar grid</div>
+        <div class="option-desc">Calendar with dots on workout days. Tap day → show that day's sessions below. Familiar, visual.</div>
+        <div class="option-effort">~1-2 hrs &middot; SVG calendar grid + modal</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'calendar-picker')">
+      <input type="radio" name="feature-15" value="B">
+      <div class="option-label">
+        <div class="option-name">Month picker filter</div>
+        <div class="option-desc">Prev/next arrows to scroll months. List filters to show only that month's sessions. Simpler build.</div>
+        <div class="option-effort">~30 min &middot; date filter on existing list</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'calendar-skip')">
+      <input type="radio" name="feature-15" value="C">
+      <div class="option-label">
+        <div class="option-name">Skip — current is fine</div>
+        <div class="option-desc">Current grouping by date labels is sufficient for now.</div>
+        <div class="option-effort">0</div>
+      </div>
+    </label>
+  </div>
+  <button type="submit" class="queue-btn" id="queue-15">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Queue answer
+  </button>
+  <span class="queued-notice" id="queued-15">✓ Queued</span>
+</form>
+
+<!-- #20 Exercise Comparison -->
+<form class="feature-card" data-lavish-question="feature-20" onsubmit="event.preventDefault(); queueChoice('feature-20', 'compare')">
+  <div class="feature-header">
+    <div class="feature-badge" style="background:rgba(168,85,247,0.15);color:var(--purple)">20</div>
+    <span class="feature-title">Exercise Comparison</span>
+    <span class="skip-badge">ExerciseProgressScreen</span>
+  </div>
+  <p class="feature-desc">Compare two exercises side-by-side or overlaid on the same chart.</p>
+  <div class="current-state">
+    <strong>Current:</strong> Single exercise chart with period filter (1M/3M/6M/1Y). TrendChart + volume bars.
+  </div>
+  <div class="options">
+    <label class="option" onclick="selectOption(this, 'compare-overlay')">
+      <input type="radio" name="feature-20" value="A">
+      <div class="option-label">
+        <div class="option-name">Overlay on same chart</div>
+        <div class="option-desc">Two exercises selectable. Both weight/volume lines on same axes, color-coded. Dropdown to pick exercise 1 + exercise 2.</div>
+        <div class="option-effort">~2-3 hrs &middot; dual-line chart + picker UI</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'compare-sidebar')">
+      <input type="radio" name="feature-20" value="B">
+      <div class="option-label">
+        <div class="option-name">Side-by-side charts</div>
+        <div class="option-desc">Select 2 exercises. Their charts render side-by-side (scroll horizontal). Easier to implement, both charts clearly visible.</div>
+        <div class="option-effort">~1-2 hrs &middot; flex layout + dual chart render</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'compare-stats')">
+      <input type="radio" name="feature-20" value="C">
+      <div class="option-label">
+        <div class="option-name">Stats comparison (no chart)</div>
+        <div class="option-desc">Select 2 exercises. Show stat cards side-by-side: best set, total volume, PR date. No chart overlay.</div>
+        <div class="option-effort">~1 hr &middot; stat cards + picker</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'compare-skip')">
+      <input type="radio" name="feature-20" value="D">
+      <div class="option-label">
+        <div class="option-name">Skip for now</div>
+        <div class="option-desc">Defer to a later release.</div>
+        <div class="option-effort">0</div>
+      </div>
+    </label>
+  </div>
+  <button type="submit" class="queue-btn" id="queue-20">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Queue answer
+  </button>
+  <span class="queued-notice" id="queued-20">✓ Queued</span>
+</form>
+
+<!-- #21 Muscle Target Chart -->
+<form class="feature-card" data-lavish-question="feature-21" onsubmit="event.preventDefault(); queueChoice('feature-21', 'muscle-chart')">
+  <div class="feature-header">
+    <div class="feature-badge" style="background:rgba(245,158,11,0.15);color:var(--amber)">21</div>
+    <span class="feature-title">Muscle Target Chart</span>
+    <span class="skip-badge">MuscleBalanceScreen</span>
+  </div>
+  <p class="feature-desc">Visualize which muscles you're working and balance across groups.</p>
+  <div class="current-state">
+    <strong>Current:</strong> Horizontal volume bars per muscle group. Shows current volume vs average with a reference line.
+  </div>
+  <div class="options">
+    <label class="option" onclick="selectOption(this, 'muscle-body')">
+      <input type="radio" name="feature-21" value="A">
+      <div class="option-label">
+        <div class="option-name">Body diagram (front/back)</div>
+        <div class="option-desc">SVG body outline with highlighted muscle groups. Color intensity = volume. Tap a muscle → see exercises. Most visually impactful.</div>
+        <div class="option-effort">~4-6 hrs &middot; SVG body + hit zones</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'muscle-radar')">
+      <input type="radio" name="feature-21" value="B">
+      <div class="option-label">
+        <div class="option-name">Radar/spider chart</div>
+        <div class="option-desc">Radar chart with axes for each muscle group. Shows balance at a glance. Each axis = volume score.</div>
+        <div class="option-effort">~2-3 hrs &middot; SVG radar chart</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'muscle-targets')">
+      <input type="radio" name="feature-21" value="C">
+      <div class="option-label">
+        <div class="option-name">Add target markers to bars</div>
+        <div class="option-desc">Keep current volume bars. Add a target/recommended volume marker on each bar. Smaller effort, incremental improvement.</div>
+        <div class="option-effort">~30 min &middot; target line on existing bars</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'muscle-skip')">
+      <input type="radio" name="feature-21" value="D">
+      <div class="option-label">
+        <div class="option-name">Skip for now</div>
+        <div class="option-desc">Current bars are sufficient.</div>
+        <div class="option-effort">0</div>
+      </div>
+    </label>
+  </div>
+  <button type="submit" class="queue-btn" id="queue-21">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Queue answer
+  </button>
+  <span class="queued-notice" id="queued-21">✓ Queued</span>
+</form>
+
+<!-- #22 Push Notifications -->
+<form class="feature-card" data-lavish-question="feature-22" onsubmit="event.preventDefault(); queueChoice('feature-22', 'notifications')">
+  <div class="feature-header">
+    <div class="feature-badge" style="background:rgba(34,197,94,0.15);color:var(--green)">22</div>
+    <span class="feature-title">Push Notifications</span>
+    <span class="skip-badge">Infrastructure</span>
+  </div>
+  <p class="feature-desc">Remind users to work out, notify when rest timer expires in background, celebrate PRs.</p>
+  <div class="current-state">
+    <strong>Current:</strong> Toggle in SettingsScreen shows "Coming Soon" alert. No notification infrastructure.
+  </div>
+  <div class="options">
+    <label class="option" onclick="selectOption(this, 'notif-full')">
+      <input type="radio" name="feature-22" value="A">
+      <div class="option-label">
+        <div class="option-name">Full setup</div>
+        <div class="option-desc">Install expo-notifications, permission prompt UI, Expo push token registration, FCM project config, backend endpoint to send. Test notification on first launch.</div>
+        <div class="option-effort">~3-4 hrs &middot; expo-notifications + backend config + permissions</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'notif-scaffold')">
+      <input type="radio" name="feature-22" value="B">
+      <div class="option-label">
+        <div class="option-name">Scaffold frontend only</div>
+        <div class="option-desc">Install expo-notifications, permission UI, token registration to AsyncStorage. Settings toggle becomes functional (requests permission, saves token). Leave backend sending for later.</div>
+        <div class="option-effort">~1.5-2 hrs &middot; permissions + token storage</div>
+      </div>
+    </label>
+    <label class="option" onclick="selectOption(this, 'notif-skip')">
+      <input type="radio" name="feature-22" value="C">
+      <div class="option-label">
+        <div class="option-name">Defer entirely</div>
+        <div class="option-desc">Keep current "Coming Soon" state in Settings. No work.</div>
+        <div class="option-effort">0</div>
+      </div>
+    </label>
+  </div>
+  <button type="submit" class="queue-btn" id="queue-22">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Queue answer
+  </button>
+  <span class="queued-notice" id="queued-22">✓ Queued</span>
+</form>
+
+<div class="actions-bar">
+  <input id="note-input" class="add-note" placeholder="Add any notes or questions…" />
+  <button class="send-btn" id="send-all" onclick="sendAll()">Send decisions →</button>
+</div>
+
+<script>
+  const choices = {};
+
+  function selectOption(el, id) {
+    el.closest('.options').querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input[type="radio"]').checked = true;
+  }
+
+  function queueChoice(formId, feature) {
+    const form = document.querySelector(`[data-lavish-question="${formId}"]`);
+    const selected = form.querySelector('input[type="radio"]:checked');
+    if (!selected) return;
+
+    const label = form.querySelector('.option.selected .option-name')?.textContent?.trim() || selected.value;
+    choices[formId] = { feature, choice: label, value: selected.value };
+
+    const notice = document.getElementById(`queued-${formId.slice(-2)}`);
+    if (notice) {
+      notice.classList.add('visible');
+      setTimeout(() => notice.classList.remove('visible'), 2500);
+    }
+  }
+
+  function sendAll() {
+    const note = document.getElementById('note-input').value.trim();
+    let parts = [];
+    const featureNames = { 'feature-15': 'Calendar View', 'feature-20': 'Exercise Comparison', 'feature-21': 'Muscle Target Chart', 'feature-22': 'Push Notifications' };
+
+    for (const [id, data] of Object.entries(choices)) {
+      parts.push(`${featureNames[id] || id}: ${data.choice}`);
+    }
+
+    if (note) parts.push(`Note: ${note}`);
+
+    if (parts.length === 0 && !note) {
+      document.getElementById('send-all').textContent = 'Select at least one option first';
+      setTimeout(() => { document.getElementById('send-all').textContent = 'Send decisions →'; }, 2000);
+      return;
+    }
+
+    if (typeof window.lavish !== 'undefined' && window.lavish.queuePrompt) {
+      window.lavish.queuePrompt(parts.join('\n'), {
+        tag: 'feature-decisions',
+        data: { ...choices, note }
+      });
+      window.lavish.sendQueuedPrompts();
+    } else {
+      const msg = parts.join('\n');
+      document.getElementById('send-all').textContent = '✓ Sent';
+      document.getElementById('send-all').disabled = true;
+    }
+  }
+</script>
+
+</body>
+</html>

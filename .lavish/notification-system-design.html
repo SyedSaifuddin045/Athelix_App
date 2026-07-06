@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Athelix — Push Notification System Design</title>
+<style>
+  :root {
+    --root: #111111;
+    --surface: #1A1A1A;
+    --surface2: #242424;
+    --border: #2A2A2A;
+    --text: #FFFFFF;
+    --textMuted: #888888;
+    --accent: #FF5A36;
+    --accentDim: rgba(255,90,54,0.15);
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --error: #EF4444;
+    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+    --mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--root);
+    color: var(--text);
+    font-family: var(--font);
+    line-height: 1.6;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 64px; }
+  .header-badge {
+    display: inline-block;
+    background: var(--accentDim);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+  .header h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+  .header p { color: var(--textMuted); font-size: 16px; max-width: 600px; margin: 0 auto; }
+
+  /* Sections */
+  .section { margin-bottom: 56px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-number {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: var(--accent); color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; flex-shrink: 0;
+  }
+  .section-title { font-size: 22px; font-weight: 600; }
+  .section-subtitle { color: var(--textMuted); font-size: 14px; margin-top: 2px; }
+
+  /* Cards */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; margin-bottom: 16px;
+  }
+  .card-accent { border-left: 3px solid var(--accent); }
+  .card-success { border-left: 3px solid var(--success); }
+  .card-warning { border-left: 3px solid var(--warning); }
+
+  .card h3 { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+  .card p, .card li { color: var(--textMuted); font-size: 14px; line-height: 1.7; }
+  .card ul { padding-left: 20px; }
+  .card li { margin-bottom: 4px; }
+  .card li strong { color: var(--text); }
+
+  /* Tags */
+  .tag {
+    display: inline-block; font-size: 11px; font-weight: 600;
+    padding: 2px 8px; border-radius: 3px; letter-spacing: 0.3px;
+  }
+  .tag-green { background: rgba(34,197,94,0.15); color: var(--success); }
+  .tag-yellow { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .tag-red { background: rgba(239,68,68,0.15); color: var(--error); }
+  .tag-accent { background: var(--accentDim); color: var(--accent); }
+  .tag-gray { background: rgba(136,136,136,0.15); color: var(--textMuted); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px; min-width: 600px;
+  }
+  thead th {
+    text-align: left; padding: 10px 12px;
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.5px; color: var(--textMuted);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 10px 12px; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 13px;
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .type-cell { color: var(--accent); font-size: 12px; }
+  .key-cell { color: var(--text); font-weight: 500; }
+  .desc-cell { color: var(--textMuted); font-family: var(--font); font-size: 12px; }
+
+  /* Mermaid */
+  .mermaid-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; overflow-x: auto;
+    margin-bottom: 16px;
+  }
+
+  /* Code */
+  .code-block {
+    background: #0D0D0D; border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: 13px; line-height: 1.6;
+    margin-bottom: 16px; position: relative;
+  }
+  .code-block .code-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px; color: var(--textMuted);
+  }
+  .code-block .code-header .filepath { color: var(--accent); font-weight: 500; }
+  pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+  .kw { color: #FF7B72; }
+  .fn { color: #79C0FF; }
+  .str { color: #A5D6FF; }
+  .cm { color: #8B949E; }
+  .tp { color: #FFA657; }
+  .op { color: #79C0FF; }
+
+  /* Comparison Grid */
+  .comparison-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px; margin-bottom: 16px;
+  }
+  @media (max-width: 700px) { .comparison-grid { grid-template-columns: 1fr; } }
+  .comparison-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+  }
+  .comparison-card.recommended {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+    position: relative;
+  }
+  .comparison-card.recommended::before {
+    content: '★ Recommended';
+    position: absolute; top: -10px; right: 12px;
+    background: var(--accent); color: #000;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .comparison-card h4 { font-size: 14px; margin-bottom: 8px; }
+  .comparison-card .pros { color: var(--success); font-size: 12px; margin-bottom: 4px; }
+  .comparison-card .cons { color: var(--error); font-size: 12px; }
+  .comparison-card ul { padding-left: 16px; margin-top: 8px; }
+  .comparison-card li { font-size: 12px; color: var(--textMuted); margin-bottom: 3px; }
+
+  /* Flow diagram */
+  .flow {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: 4px; margin: 20px 0;
+  }
+  .flow-step {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 16px;
+    font-size: 12px; font-weight: 500; text-align: center;
+  }
+  .flow-step.accent { background: var(--accentDim); border-color: var(--accent); color: var(--accent); }
+  .flow-arrow { color: var(--textMuted); font-size: 18px; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 40px 0; }
+
+  /* File tree */
+  .file-tree {
+    font-family: var(--mono); font-size: 13px; line-height: 2;
+    padding: 16px 0;
+  }
+  .file-tree .dir { color: var(--text); }
+  .file-tree .file { color: var(--textMuted); }
+  .file-tree .indent { padding-left: 24px; }
+  .file-tree .indent2 { padding-left: 48px; }
+  .file-tree .highlight { color: var(--accent); }
+
+  /* Decision */
+  .decision-box {
+    background: var(--accentDim); border: 1px solid var(--accent);
+    border-radius: 12px; padding: 20px 24px; margin-bottom: 16px;
+  }
+  .decision-box h3 { color: var(--accent); font-size: 15px; }
+  .decision-box p { color: var(--text); font-size: 14px; }
+
+  /* Approval form */
+  .approval-area {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 32px; text-align: center;
+    margin-top: 24px;
+  }
+  .approval-area h3 { font-size: 18px; margin-bottom: 8px; }
+  .approval-area p { color: var(--textMuted); font-size: 14px; margin-bottom: 20px; }
+  .approval-btn {
+    display: inline-block;
+    background: var(--accent); color: #000;
+    font-weight: 600; font-size: 14px;
+    padding: 10px 28px; border-radius: 8px;
+    border: none; cursor: pointer;
+    margin: 4px 8px;
+  }
+  .approval-btn:hover { opacity: 0.9; }
+  .approval-btn.outline {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  /* Grid for two columns */
+  .grid-2 {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* Small text */
+  .small { font-size: 12px; color: var(--textMuted); }
+  .mt-2 { margin-top: 8px; }
+  .mt-4 { margin-top: 16px; }
+  .mb-2 { margin-bottom: 8px; }
+  .mb-4 { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">Architecture Design · v1</div>
+    <h1>Push Notification System</h1>
+    <p>Provider-agnostic, production-ready notification pipeline for Athelix</p>
+  </div>
+
+  <!-- Section 1: Architecture Overview -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <div>
+        <div class="section-title">Architecture Overview</div>
+        <div class="section-subtitle">System diagram — mobile + backend + Firebase</div>
+      </div>
+    </div>
+
+    <div class="mermaid-wrap">
+    <pre class="mermaid" style="background: transparent; text-align: center;">
+flowchart TB
+    subgraph Mobile["📱 Mobile App (React Native / Expo)"]
+        A["App Launches"]
+        B["Request Notification<br/>Permission"]
+        C["getDevicePushTokenAsync()<br/>→ Raw FCM Token"]
+        D["POST /devices/register<br/>{ platform, push_token, ... }"]
+        A --> B --> C --> D
+    end
+
+    subgraph Backend["⚡ FastAPI Backend"]
+        E["Router<br/>/devices/register"]
+        F["Repository<br/>save_device()"]
+        G["Business Logic<br/>calls notification_service.send()"]
+        H["NotificationService<br/>find devices → select provider → send"]
+        I["FCMProvider<br/>firebase-admin SDK"]
+        J["APNsProvider<br/>(stub — future)"]
+        E --> F
+        G --> H
+        H --> I
+        H --> J
+    end
+
+    subgraph Firebase["🔥 Firebase"]
+        K["FCM HTTP v1 API"]
+        L["Android Device"]
+    end
+
+    subgraph Storage["💾 PostgreSQL (app_schema)"]
+        M["devices table"]
+        N["notification_history table"]
+    end
+
+    D --> E
+    I --> K --> L
+    F --> M
+    H --> N
+
+    style Mobile fill:#1A1A1A,stroke:#333,color:#fff
+    style Backend fill:#1A1A1A,stroke:#FF5A36,color:#fff
+    style Firebase fill:#1A1A1A,stroke:#F59E0B,color:#fff
+    style Storage fill:#1A1A1A,stroke:#22C55E,color:#fff
+    </pre>
+    </div>
+
+    <div class="decision-box">
+      <h3>🔑 Key Design Decision</h3>
+      <p><strong>Business logic never touches Firebase.</strong> It calls <code>notification_service.send(user_id, title, body, data)</code> — provider selection, token lookup, and error handling happen inside the notification module.</p>
+    </div>
+  </div>
+
+  <!-- Section 2: Approach Comparison -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <div>
+        <div class="section-title">Approach Comparison</div>
+        <div class="section-subtitle">3 options evaluated against your requirements</div>
+      </div>
+    </div>
+
+    <div class="comparison-grid">
+      <div class="comparison-card recommended">
+        <h4>✅ Clean Provider Pattern</h4>
+        <div class="tag tag-accent mb-2">RECOMMENDED</div>
+        <p style="font-size: 12px; color: var(--textMuted); margin-bottom: 8px;">
+          Abstract provider interface + FCM impl + stub for APNs
+        </p>
+        <div class="pros">✓ Provider-agnostic<br>✓ iOS-ready now<br>✓ Testable in isolation<br>✓ Matches your spec</div>
+        <div class="cons" style="margin-top: 6px;">✗ More files upfront</div>
+      </div>
+
+      <div class="comparison-card">
+        <h4>⚠️ Direct FCM Only</h4>
+        <p style="font-size: 12px; color: var(--textMuted); margin-bottom: 8px;">
+          Single FCMNotificationService, no abstraction
+        </p>
+        <div class="pros">✓ Less code now</div>
+        <div class="cons">✗ Needs refactor for iOS<br>✗ Violates provider-agnostic goal</div>
+      </div>
+
+      <div class="comparison-card">
+        <h4>❌ Expo Push Backend</h4>
+        <p style="font-size: 12px; color: var(--textMuted); margin-bottom: 8px;">
+          Send via Expo Push API, keep Expo push tokens
+        </p>
+        <div class="pros">✓ Works with existing code</div>
+        <div class="cons">✗ Expo vendor lock-in<br>✗ No provider control<br>✗ Doesn't match FCM requirement</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Module Structure -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <div>
+        <div class="section-title">Module Structure</div>
+        <div class="section-subtitle">New <code>app/notifications/</code> package in backend</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="file-tree">
+        <div class="dir">📁 app/notifications/</div>
+        <div class="file indent">├── <span class="highlight">__init__.py</span></div>
+        <div class="file indent">├── <span class="highlight">models.py</span>        ← Device + NotificationHistory</div>
+        <div class="file indent">├── <span class="highlight">schemas.py</span>       ← Pydantic request/response</div>
+        <div class="file indent">├── <span class="highlight">repository.py</span>    ← DB access layer</div>
+        <div class="file indent">├── <span class="highlight">service.py</span>       ← NotificationService orchestrator</div>
+        <div class="file indent">├── <span class="highlight">router.py</span>        ← API endpoints</div>
+        <div class="file indent">├── <span class="highlight">exceptions.py</span>    ← Custom exceptions</div>
+        <div class="file indent">└── 📁 providers/</div>
+        <div class="file indent2">├── <span class="highlight">__init__.py</span></div>
+        <div class="file indent2">├── <span class="highlight">base.py</span>       ← Abstract NotificationProvider</div>
+        <div class="file indent2">├── <span class="highlight">fcm.py</span>        ← FCMProvider implementation</div>
+        <div class="file indent2">└── <span class="highlight">apns.py</span>       ← Stub for future iOS</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card card-accent">
+        <h3>📦 New Dependencies</h3>
+        <ul>
+          <li><strong>firebase-admin</strong> — Firebase SDK for Python</li>
+          <li><em>Already in pyproject.toml:</em> httpx, pydantic, sqlalchemy</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <h3>🔧 New Env Vars</h3>
+        <ul>
+          <li><code>FCM_PROJECT_ID</code> — <span class="tag tag-gray">athelix-6c1e9</span></li>
+          <li><code>FCM_CLIENT_EMAIL</code> — service account email</li>
+          <li><code>FCM_PRIVATE_KEY</code> — PEM private key</li>
+          <li><em>Alternative:</em> single <code>FCM_SERVICE_ACCOUNT_JSON</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Database Schema -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <div>
+        <div class="section-title">Database Schema</div>
+        <div class="section-subtitle">Two new tables in <code>app_schema</code></div>
+      </div>
+    </div>
+
+    <div class="card card-accent mb-4">
+      <h3>📋 Device</h3>
+      <p class="small mb-2">One user owns many devices. Tokens are NOT stored on the User table.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="key-cell">id</td><td class="type-cell">int PK</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">user_id</td><td class="type-cell">int FK → users.id</td><td class="desc-cell">CASCADE on delete</td></tr>
+            <tr><td class="key-cell">platform</td><td class="type-cell">str</td><td class="desc-cell"><span class="tag tag-gray">"android"</span> or <span class="tag tag-gray">"ios"</span></td></tr>
+            <tr><td class="key-cell">push_token</td><td class="type-cell">text</td><td class="desc-cell">FCM token (Android) or APNs token (iOS)</td></tr>
+            <tr><td class="key-cell">device_name</td><td class="type-cell">str?</td><td class="desc-cell">User-visible device name</td></tr>
+            <tr><td class="key-cell">app_version</td><td class="type-cell">str?</td><td class="desc-cell">Version at registration</td></tr>
+            <tr><td class="key-cell">created_at</td><td class="type-cell">timestamptz</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">updated_at</td><td class="type-cell">timestamptz</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">last_seen</td><td class="type-cell">timestamptz</td><td class="desc-cell">Updated on each register call</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card card-accent">
+      <h3>📋 NotificationHistory</h3>
+      <p class="small mb-2">Audit log for every notification sent</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Column</th><th>Type</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="key-cell">id</td><td class="type-cell">int PK</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">user_id</td><td class="type-cell">int FK → users.id</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">title</td><td class="type-cell">str?</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">body</td><td class="type-cell">str?</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">data</td><td class="type-cell">JSON?</td><td class="desc-cell">Deep link payload { screen, chatId, ... }</td></tr>
+            <tr><td class="key-cell">provider</td><td class="type-cell">str</td><td class="desc-cell"><span class="tag tag-gray">"fcm"</span> or <span class="tag tag-gray">"apns"</span></td></tr>
+            <tr><td class="key-cell">status</td><td class="type-cell">str</td><td class="desc-cell"><span class="tag tag-green">"sent"</span> / <span class="tag tag-red">"failed"</span></td></tr>
+            <tr><td class="key-cell">provider_response</td><td class="type-cell">text?</td><td class="desc-cell">Raw FCM response (message ID)</td></tr>
+            <tr><td class="key-cell">error</td><td class="type-cell">text?</td><td class="desc-cell">Error message if failed</td></tr>
+            <tr><td class="key-cell">created_at</td><td class="type-cell">timestamptz</td><td class="desc-cell"></td></tr>
+            <tr><td class="key-cell">sent_at</td><td class="type-cell">timestamptz?</td><td class="desc-cell">When FCM confirmed send</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Provider Interface -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <div>
+        <div class="section-title">Notification Provider Interface</div>
+        <div class="section-subtitle">Abstract base + FCM implementation + APNs stub</div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="filepath">app/notifications/providers/base.py</span>
+        <span class="tag tag-accent">Interface</span>
+      </div>
+      <pre><span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">dataclasses</span> <span class="kn">import</span> <span class="n">dataclass</span>
+
+
+<span class="nd">@dataclass</span>
+<span class="kr">class</span> <span class="nc">ProviderResult</span>:
+    <span class="n">success</span>: <span class="nb">bool</span>
+    <span class="n">provider_response</span>: <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">error</span>: <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="kr">class</span> <span class="nc">NotificationProvider</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">"""Abstract interface for push notification providers."""</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">token</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">title</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">body</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data</span>: <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-></span> <span class="n">ProviderResult</span><span class="p">:</span>
+        <span class="sd">"""Send push notification to the given device token."""</span>
+        <span class="k">...</span>
+    </pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="filepath">app/notifications/providers/fcm.py</span>
+        <span class="tag tag-accent">Implementation</span>
+      </div>
+      <pre><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">firebase_admin</span> <span class="kn">import</span> <span class="n">credentials</span><span class="p">,</span> <span class="n">initialize_app</span><span class="p">,</span> <span class="n">messaging</span>
+<span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">NotificationProvider</span><span class="p">,</span> <span class="n">ProviderResult</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="kr">class</span> <span class="nc">FCMProvider</span><span class="p">(</span><span class="n">NotificationProvider</span><span class="p">):</span>
+    <span class="sd">"""Send push notifications via Firebase Cloud Messaging."""</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">service_account_json</span>: <span class="nb">dict</span><span class="p">):</span>
+        <span class="n">cred</span> <span class="o">=</span> <span class="n">credentials</span><span class="o">.</span><span class="n">Certificate</span><span class="p">(</span><span class="n">service_account_json</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">initialize_app</span><span class="p">(</span><span class="n">credential</span><span class="o">=</span><span class="n">cred</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">token</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">title</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">body</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data</span>: <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-></span> <span class="n">ProviderResult</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">messaging</span><span class="o">.</span><span class="n">Message</span><span class="p">(</span>
+                <span class="n">notification</span><span class="o">=</span><span class="n">messaging</span><span class="o">.</span><span class="n">Notification</span><span class="p">(</span>
+                    <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">body</span>
+                <span class="p">),</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">messaging</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ProviderResult</span><span class="p">(</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">provider_response</span><span class="o">=</span><span class="n">response</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">messaging</span><span class="o">.</span><span class="n">UnregisteredError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Token unregistered: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ProviderResult</span><span class="p">(</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">error</span><span class="o">=</span><span class="s2">"NotRegistered"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="nb">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"FCM send failed: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ProviderResult</span><span class="p">(</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span>
+            <span class="p">)</span>
+    </pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="filepath">app/notifications/providers/apns.py</span>
+        <span class="tag tag-gray">Stub</span>
+      </div>
+      <pre><span class="sd">"""APNs provider — placeholder for future iOS implementation."""</span>
+
+<span class="kn">from</span> <span class="nn">.base</span> <span class="kn">import</span> <span class="n">NotificationProvider</span><span class="p">,</span> <span class="n">ProviderResult</span>
+
+
+<span class="kr">class</span> <span class="nc">APNsProvider</span><span class="p">(</span><span class="n">NotificationProvider</span><span class="p">):</span>
+    <span class="sd">"""Placeholder for Apple Push Notification service.
+    
+    Implement when iOS push support is needed:
+    1. Configure APNs key (p8) or certificate in env vars
+    2. Use h2/hyper to send to api.push.apple.com
+    3. Handle expiring tokens, feedback service
+    """</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="o">-></span> <span class="n">ProviderResult</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s2">"APNs not yet implemented"</span>
+        <span class="p">)</span>
+    </pre>
+    </div>
+  </div>
+
+  <!-- Section 6: NotificationService -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">6</div>
+      <div>
+        <div class="section-title">NotificationService Orchestrator</div>
+        <div class="section-subtitle">Finds devices, selects provider, sends, logs, cleans up</div>
+      </div>
+    </div>
+
+    <div class="flow mb-4">
+      <span class="flow-step accent">notification_service<br/>.send(user_id, ...)</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">repository<br/>.get_active_devices()</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step accent">FCMProvider for<br/>android</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">Success?<br/>Save history</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">Failed?<br/>Delete token</span>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="filepath">app/notifications/service.py</span>
+        <span class="tag tag-accent">Core</span>
+      </div>
+      <pre><span class="kr">class</span> <span class="nc">NotificationService</span>:
+    <span class="sd">"""Orchestrates push notification delivery across providers."""</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">repository</span>: <span class="n">NotificationRepository</span><span class="p">,</span>
+        <span class="n">providers</span>: <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">NotificationProvider</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_repository</span> <span class="o">=</span> <span class="n">repository</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_providers</span> <span class="o">=</span> <span class="n">providers</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">send_to_user</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">user_id</span>: <span class="nb">int</span><span class="p">,</span>
+        <span class="n">title</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">body</span>: <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data</span>: <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-></span> <span class="n">SendResult</span><span class="p">:</span>
+        <span class="n">devices</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repository</span><span class="o">.</span><span class="n">get_active_devices</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">device</span> <span class="ow">in</span> <span class="n">devices</span><span class="p">:</span>
+            <span class="n">provider</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_providers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">device</span><span class="o">.</span><span class="n">platform</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">provider</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+                <span class="n">token</span><span class="o">=</span><span class="n">device</span><span class="o">.</span><span class="n">push_token</span><span class="p">,</span>
+                <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+                <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c"># Log to history</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_repository</span><span class="o">.</span><span class="n">save_history</span><span class="p">(</span>
+                <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
+                <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+                <span class="n">body</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
+                <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+                <span class="n">provider</span><span class="o">=</span><span class="n">device</span><span class="o">.</span><span class="n">platform</span><span class="p">,</span>
+                <span class="n">status</span><span class="o">=</span><span class="s2">"sent"</span> <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span> <span class="k">else</span> <span class="s2">"failed"</span><span class="p">,</span>
+                <span class="n">provider_response</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">provider_response</span><span class="p">,</span>
+                <span class="n">error</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c"># Delete invalid tokens</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">error</span> <span class="ow">in</span> <span class="p">{</span>
+                <span class="s2">"NotRegistered"</span><span class="p">,</span> <span class="s2">"InvalidToken"</span>
+            <span class="p">}:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_repository</span><span class="o">.</span><span class="n">delete_device</span><span class="p">(</span><span class="n">device</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">devices</span><span class="p">),</span>
+            <span class="n">sent</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">success</span><span class="p">),</span>
+            <span class="n">failed</span><span class="o">=</span><span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">r</span><span class="o">.</span><span class="n">success</span><span class="p">),</span>
+        <span class="p">)</span>
+    </pre>
+    </div>
+
+    <div class="card">
+      <h3>🎯 Retry Strategy — Ready for Background Workers</h3>
+      <p>The <code>send_to_user</code> method is a single async function — trivially dispatchable to <strong>Celery</strong>, <strong>Arq</strong>, <strong>Dramatiq</strong>, or any task queue later. No HTTP request will block while sending. The method signature stays the same; only the caller changes from <code>await service.send_to_user(...)</code> to <code>queue.enqueue(service.send_to_user, ...)</code>.</p>
+    </div>
+  </div>
+
+  <!-- Section 7: API Endpoints -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">7</div>
+      <div>
+        <div class="section-title">API Endpoints</div>
+        <div class="section-subtitle">REST endpoints for device registration</div>
+      </div>
+    </div>
+
+    <div class="card card-accent">
+      <h3>📡 POST /devices/register</h3>
+      <p class="small mb-2">Register or update device token for current user</p>
+      <div class="code-block" style="margin-bottom: 0;">
+        <div class="code-header">
+          <span class="filepath">Request</span>
+        </div>
+        <pre>{
+    <span class="str">"platform"</span>: <span class="str">"android"</span>,
+    <span class="str">"push_token"</span>: <span class="str">"fCM-t0k3n-fr0m-d3v1c3..."</span>,
+    <span class="str">"device_name"</span>: <span class="str">"Pixel 9 Pro"</span>,
+    <span class="str">"app_version"</span>: <span class="str">"1.0.1"</span>
+}</pre>
+      </div>
+      <div class="code-block" style="margin-bottom: 0;">
+        <div class="code-header">
+          <span class="filepath">Response 201</span>
+        </div>
+        <pre>{
+    <span class="str">"id"</span>: <span class="mi">42</span>,
+    <span class="str">"platform"</span>: <span class="str">"android"</span>,
+    <span class="str">"push_token"</span>: <span class="str">"fCM-t0k3n-..."</span>,
+    <span class="str">"device_name"</span>: <span class="str">"Pixel 9 Pro"</span>,
+    <span class="str">"last_seen"</span>: <span class="str">"2026-07-05T12:00:00Z"</span>
+}</pre>
+      </div>
+    </div>
+
+    <div class="card card-accent">
+      <h3>🗑️ POST /devices/unregister</h3>
+      <p class="small mb-2">Remove device token</p>
+      <div class="code-block" style="margin-bottom: 0;">
+        <div class="code-header">
+          <span class="filepath">Request</span>
+        </div>
+        <pre>{
+    <span class="str">"push_token"</span>: <span class="str">"fCM-t0k3n-t0-r3m0v3..."</span>
+}</pre>
+      </div>
+      <p class="small mt-2">Response: <span class="tag tag-green">204 No Content</span></p>
+    </div>
+
+    <div class="card card-accent">
+      <h3>📋 GET /devices</h3>
+      <p class="small mb-2">List current user's registered devices</p>
+      <p class="small">Response: <span class="tag tag-green">200</span> array of device objects</p>
+    </div>
+  </div>
+
+  <!-- Section 8: Mobile Integration -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">8</div>
+      <div>
+        <div class="section-title">Mobile Integration</div>
+        <div class="section-subtitle">React Native / Expo — hook, permissions, deep linking</div>
+      </div>
+    </div>
+
+    <div class="card card-accent">
+      <h3>📱 useNotificationRegistration Hook</h3>
+      <p class="small mb-2">Single hook that replaces existing <code>src/utils/notifications.ts</code></p>
+      <div class="code-block" style="margin-bottom: 0;">
+        <div class="code-header">
+          <span class="filepath">src/hooks/useNotificationRegistration.ts (new)</span>
+          <span class="tag tag-accent">Hook</span>
+        </div>
+        <pre><span class="kr">export function useNotificationRegistration</span>() {
+  <span class="c">// 1. Request permission (Android channel setup)</span>
+  <span class="c">// 2. Get raw FCM token via getDevicePushTokenAsync()</span>
+  <span class="c">// 3. POST /devices/register with platform + token</span>
+  <span class="c">// 4. Handle token refresh (event listener)</span>
+  <span class="c">// 5. Clean up on unmount</span>
+}</pre>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>🔔 Foreground</h3>
+        <p>Use <code>setNotificationHandler</code> (already configured) to show in-app banners. Tap handler navigates based on <code>data.screen</code>.</p>
+      </div>
+      <div class="card">
+        <h3>🔕 Background / Killed</h3>
+        <p>Use <code>addNotificationResponseReceivedListener</code> to intercept tap and navigate to the correct screen from deep link data.</p>
+      </div>
+    </div>
+
+    <div class="card card-accent">
+      <h3>🧭 Deep Link Routing</h3>
+      <p>Centralized navigation handler:</p>
+      <div class="code-block" style="margin-bottom: 0;">
+        <pre><span class="kr">async function handleNotificationTap</span>(
+  data: Record&lt;string, any&gt;,
+  navigation: NavigationProp&lt;RootStackParamList&gt;
+) {
+  <span class="kr">switch</span> (data.<span class="fn">screen</span>) {
+    <span class="kr">case</span> <span class="str">"chat"</span>:
+      navigation.<span class="fn">navigate</span>(<span class="str">"Chat"</span>, { chatId: data.<span class="fn">chatId</span> });
+      <span class="kr">break</span>;
+    <span class="kr">case</span> <span class="str">"session"</span>:
+      navigation.<span class="fn">navigate</span>(<span class="str">"SessionDetail"</span>, { id: data.<span class="fn">sessionId</span> });
+      <span class="kr">break</span>;
+    <span class="c">// Extensible — add new screens here</span>
+  }
+}</pre>
+      </div>
+    </div>
+
+    <div class="decision-box">
+      <h3>⚠️ Important: Token Type Switch</h3>
+      <p>Current code uses <code>getExpoPushTokenAsync()</code>. Will change to <code>getDevicePushTokenAsync()</code> to get raw FCM token. Requires FCM configured via <code>google-services.json</code> in native Android project — which you've confirmed is set up.</p>
+    </div>
+  </div>
+
+  <!-- Section 9: Error Handling & Edge Cases -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">9</div>
+      <div>
+        <div class="section-title">Error Handling & Edge Cases</div>
+        <div class="section-subtitle">Production reliability patterns</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card card-warning">
+        <h3>🔥 Invalid Tokens</h3>
+        <p>FCM returns <code>UnregisteredError</code> when token is stale. Provider returns <code>"NotRegistered"</code> error → <code>NotificationService</code> deletes device from DB automatically.</p>
+      </div>
+      <div class="card card-warning">
+        <h3>⏱️ Rate Limiting</h3>
+        <p>SlowAPI middleware already configured (120 req/min). FCM has its own rate limits (600 msg/s per project). <code>NotificationService</code> is designed for queued dispatch when volume grows.</p>
+      </div>
+      <div class="card card-warning">
+        <h3>📵 No Devices</h3>
+        <p>If user has no registered devices, <code>send_to_user</code> returns <code>SendResult(total=0, sent=0, failed=0)</code> — no error thrown. Silent no-op.</p>
+      </div>
+      <div class="card card-warning">
+        <h3>🔐 Missing Provider</h3>
+        <p>If <code>FCMProvider</code> fails to initialize (bad credentials), <code>send_to_user</code> skips that platform. Logged and captured by Sentry.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 10: Files to Create / Modify -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">10</div>
+      <div>
+        <div class="section-title">Files to Create/Modify</div>
+        <div class="section-subtitle">Complete change inventory</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card card-accent">
+        <h3>📝 Backend (New Files)</h3>
+        <ul>
+          <li><code>app/notifications/__init__.py</code></li>
+          <li><code>app/notifications/models.py</code></li>
+          <li><code>app/notifications/schemas.py</code></li>
+          <li><code>app/notifications/repository.py</code></li>
+          <li><code>app/notifications/service.py</code></li>
+          <li><code>app/notifications/router.py</code></li>
+          <li><code>app/notifications/exceptions.py</code></li>
+          <li><code>app/notifications/providers/__init__.py</code></li>
+          <li><code>app/notifications/providers/base.py</code></li>
+          <li><code>app/notifications/providers/fcm.py</code></li>
+          <li><code>app/notifications/providers/apns.py</code></li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <h3>📝 Backend (Modified Files)</h3>
+        <ul>
+          <li><code>app/main.py</code> — register router, init FCMProvider</li>
+          <li><code>app/api/v1/router.py</code> — include notifications router</li>
+          <li><code>app/core/config.py</code> — add FCM env vars</li>
+          <li><code>app/core/logging.py</code> — no change needed</li>
+          <li><code>pyproject.toml</code> — add <code>firebase-admin</code></li>
+          <li><code>.env.example</code> — add FCM_* vars</li>
+          <li><code>alembic/versions/</code> — new migration</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <h3>📱 Mobile (New Files)</h3>
+        <ul>
+          <li><code>src/hooks/useNotificationRegistration.ts</code></li>
+          <li><code>src/hooks/useNotificationTapHandler.ts</code></li>
+          <li><code>src/api/endpoints/notifications.ts</code> (or add to queries.ts)</li>
+        </ul>
+      </div>
+      <div class="card card-accent">
+        <h3>📱 Mobile (Modified Files)</h3>
+        <ul>
+          <li><code>App.tsx</code> — call <code>useNotificationRegistration()</code></li>
+          <li><code>src/utils/notifications.ts</code> — refactor to use <code>getDevicePushTokenAsync()</code></li>
+          <li><code>src/navigation/AppContent.tsx</code> — tap handler setup</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Divider -->
+  <div class="divider"></div>
+
+  <!-- Approval -->
+  <div class="approval-area">
+    <h3>✅ Review Complete?</h3>
+    <p>Does this design match what you envisioned? Once approved, I'll write the formal spec and transition to implementation.</p>
+    <form data-lavish-question="approval" onsubmit="event.preventDefault(); const choice = new FormData(event.currentTarget).get('approval'); if (choice) window.lavish.queuePrompt('Design approval: ' + choice, { tag: 'choice', text: 'Approval: ' + choice, element: event.currentTarget, data: { question: 'approval', answer: choice } });">
+      <label style="display: inline-block; margin: 0 8px;">
+        <input type="radio" name="approval" value="approved" required>
+        <span style="color: var(--success); font-weight: 600; margin-left: 4px;">✅ Approved — write spec</span>
+      </label>
+      <label style="display: inline-block; margin: 0 8px;">
+        <input type="radio" name="approval" value="changes">
+        <span style="color: var(--warning); font-weight: 600; margin-left: 4px;">🔄 Needs changes</span>
+      </label>
+      <label style="display: inline-block; margin: 0 8px;">
+        <input type="radio" name="approval" value="questions">
+        <span style="color: var(--textMuted); font-weight: 600; margin-left: 4px;">❓ Have questions</span>
+      </label>
+      <br><br>
+      <button type="submit" class="approval-btn">Submit Feedback</button>
+    </form>
+  </div>
+
+</div>
+
+<script type="module">
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+mermaid.initialize({
+  theme: 'dark',
+  themeVariables: {
+    fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+    primaryColor: '#FF5A36',
+    primaryTextColor: '#fff',
+    primaryBorderColor: '#FF5A36',
+    lineColor: '#333',
+    secondaryColor: '#242424',
+    tertiaryColor: '#1A1A1A',
+    clusterBkg: '#1A1A1A',
+    clusterBorder: '#2A2A2A',
+    nodeBorder: '#333',
+    nodeTextColor: '#fff',
+    edgeLabelBackground: '#1A1A1A',
+  },
+  flowchart: { useMaxWidth: false, htmlLabels: true }
+});
+</script>
+</body>
+</html>
