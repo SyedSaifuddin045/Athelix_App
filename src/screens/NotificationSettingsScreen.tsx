@@ -55,25 +55,6 @@ export function NotificationSettingsScreen({ navigation }: Props) {
   const [hourPickerOpen, setHourPickerOpen] = useState(false);
   const [pendingHour, setPendingHour] = useState(settings?.preferred_send_hour ?? 8);
 
-  // Proactively request permission on screen mount if any toggle is enabled
-  useEffect(() => {
-    if (!settings) return;
-    const anyEnabled = TOGGLES.some((t) => (settings as any)[t.key]);
-    if (anyEnabled) {
-      ensurePermission();
-    }
-    // Intentional: only run on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!settings]);
-
-  const accent = theme.accent?.get() ?? "#FF5A36";
-  const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
-  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
-  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
-  const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
-  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
-
   const hasRequestedPermission = useRef(false);
 
   const ensurePermission = useCallback(async (): Promise<boolean> => {
@@ -89,14 +70,45 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     return false;
   }, []);
 
+  // Proactively request permission on screen mount if any toggle is enabled
+  useEffect(() => {
+    if (!settings) return;
+    const anyEnabled = TOGGLES.some((t) => (settings as any)[t.key]);
+    if (anyEnabled) {
+      ensurePermission();
+    }
+    // Intentional: only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!settings]);
+
   const handleToggle = useCallback(
     async (key: string, value: boolean) => {
-      // Request permission before enabling any notification type
       if (value) {
         const granted = await ensurePermission();
         if (!granted) return;
       }
       updateMutation.mutate({ [key]: value });
+    },
+    [updateMutation, ensurePermission],
+  );
+
+  const handleMasterToggle = useCallback(
+    async (value: boolean) => {
+      if (value) {
+        const granted = await ensurePermission();
+        if (!granted) return;
+        updateMutation.mutate({
+          morning_motivation_enabled: true,
+          inactivity_nudge_enabled: false,
+          milestone_enabled: false,
+        });
+      } else {
+        updateMutation.mutate({
+          morning_motivation_enabled: false,
+          inactivity_nudge_enabled: false,
+          milestone_enabled: false,
+        });
+      }
     },
     [updateMutation, ensurePermission],
   );
@@ -127,6 +139,14 @@ export function NotificationSettingsScreen({ navigation }: Props) {
     }
   }, [refetch]);
 
+  const accent = theme.accent?.get() ?? "#FF5A36";
+  const textColor = theme.color?.get() ?? "#FFFFFF";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
+  const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
+  const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
+  const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+
   if (isLoading) {
     return (
       <Screen>
@@ -140,27 +160,6 @@ export function NotificationSettingsScreen({ navigation }: Props) {
 
   const s = settings ?? {};
   const masterEnabled = TOGGLES.some((t) => (s as any)[t.key]);
-
-  const handleMasterToggle = useCallback(
-    async (value: boolean) => {
-      if (value) {
-        const granted = await ensurePermission();
-        if (!granted) return;
-        updateMutation.mutate({
-          morning_motivation_enabled: true,
-          inactivity_nudge_enabled: false,
-          milestone_enabled: false,
-        });
-      } else {
-        updateMutation.mutate({
-          morning_motivation_enabled: false,
-          inactivity_nudge_enabled: false,
-          milestone_enabled: false,
-        });
-      }
-    },
-    [updateMutation, ensurePermission],
-  );
 
   return (
     <Screen>
