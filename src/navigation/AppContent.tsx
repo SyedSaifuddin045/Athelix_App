@@ -8,7 +8,6 @@ import type { NavigationContainerRef } from "@react-navigation/native";
 import { AppNavigator } from "./AppNavigator";
 import { useScreenTracking } from "../analytics/useScreenTracking";
 import type { RootStackParamList } from "../types/navigation";
-import { useNotificationTapHandler } from "../hooks/useNotificationTapHandler";
 
 const FALLBACK_BACKGROUND = "#050505";
 
@@ -18,7 +17,6 @@ export function AppContent() {
   const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
   const { onReady, onStateChange } = useScreenTracking(navigationRef);
   const backgroundColor = theme.background?.get() ?? FALLBACK_BACKGROUND;
-  useNotificationTapHandler();
 
   return (
     <View style={{ flex: 1, backgroundColor, paddingTop: insets.top }}>

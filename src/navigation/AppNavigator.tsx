@@ -43,6 +43,7 @@ import { BodyweightHistoryScreen } from "../screens/BodyweightHistoryScreen";
 import { QuickCardioScreen } from "../screens/QuickCardioScreen";
 import { NotificationSettingsScreen } from "../screens/NotificationSettingsScreen";
 import { SettingsScreen } from "../screens/SettingsScreen";
+import { useNotificationTapHandler } from "../hooks/useNotificationTapHandler";
 import { getTokenWithTimeout, setRefreshTokenHandler, updateClerkToken } from "../api/client";
 
 const RootStack = createPlatformStackNavigator<RootStackParamList>();
@@ -156,6 +157,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export function AppNavigator() {
+  useNotificationTapHandler();
   return (
     <AuthGate>
       <RootStack.Navigator
