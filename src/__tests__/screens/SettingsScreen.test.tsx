@@ -158,11 +158,12 @@ describe("SettingsScreen general", () => {
     });
   });
 
-  it("does not render notification toggles (moved to NotificationSettings)", () => {
+  it("renders push notification navigation row (links to NotificationSettings)", () => {
     const qc = setupQC(mockUserData);
-    const { queryByText } = renderScreen(qc);
+    const { getByText, queryByText } = renderScreen(qc);
+    expect(getByText("Push Notification Preferences")).toBeTruthy();
+    expect(getByText("Morning motivation, inactivity nudges & milestones")).toBeTruthy();
     expect(queryByText("Workout Reminders")).toBeNull();
-    expect(queryByText("Push Notification Preferences")).toBeNull();
   });
 
   it("renders danger zone", () => {
