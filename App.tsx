@@ -15,7 +15,6 @@ import { queryClient } from "./src/api/queryClient";
 import { AppContent } from "./src/navigation/AppContent";
 import { ErrorBoundary } from "./src/components/ui/ErrorBoundary";
 import { configureNotificationHandler } from "./src/utils/notifications";
-import { useNotificationRegistration } from "./src/hooks/useNotificationRegistration";
 import { getPostHogConfig } from "./src/analytics/posthog";
 import { TamaguiAppProvider } from "./src/tamagui/provider";
 
@@ -42,7 +41,6 @@ Sentry.init({
 configureNotificationHandler();
 
 function App() {
-  useNotificationRegistration();
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
