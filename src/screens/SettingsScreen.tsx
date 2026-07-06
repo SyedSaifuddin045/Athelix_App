@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, Pressable, Switch, Text, TextInput, View } from "react-native";
+import { Alert, Linking, Pressable, Text, TextInput, View } from "react-native";
 import { usePostHog } from "posthog-react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -19,8 +19,7 @@ import { AppIcon } from "../design-system/icons/AppIcon";
 import { apiFetch, ApiError, getApiErrorMessage } from "../api/client";
 import { successData } from "../utils/mapping";
 import { Events } from "../analytics/events";
-import { requestNotificationPermission, getDevicePushToken } from "../utils/notifications";
-import * as Notifications from "expo-notifications";
+
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "Settings"> };
 
@@ -34,12 +33,6 @@ export function SettingsScreen({ navigation }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [usernameError, setUsernameError] = useState("");
-  const [pushToken, setPushToken] = useState<string | null>(null);
-  const [enabledNotifications, setEnabledNotifications] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    getDevicePushToken().then(setPushToken);
-  }, []);
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
@@ -174,89 +167,7 @@ export function SettingsScreen({ navigation }: Props) {
             </Card>
           </View>
 
-          <View>
-            <SectionEyebrow>Notifications</SectionEyebrow>
-            <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
-              {([
-                ["workoutReminders", "Workout Reminders", "Daily reminders to stay consistent"],
-                ["prAlerts", "PR Alerts", "Get notified when you set a new record"],
-                ["weeklyReport", "Weekly Report", "Weekly summary of your training"],
-                ["newFeatures", "New Features", "Updates about new app features"],
-              ] as const).map(([key, label, description], index, array) => (
-                <View key={key}>
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2, gap: spacing.xl2 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, flex: 1 }}>
-                      <AppIcon
-                        name="bell"
-                        size={15}
-                        color={faintColor}
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{label}</Text>
-                        <Text style={{ color: mutedColor, fontSize: 10 }}>{description}</Text>
-                      </View>
-                    </View>
-                    <Switch
-                      value={enabledNotifications[key] ?? false}
-                      onValueChange={async (newValue) => {
-                        // Optimistic toggle — instant visual feedback
-                        setEnabledNotifications((c) => ({ ...c, [key]: newValue }));
 
-                        if (newValue && !pushToken) {
-                          const granted = await requestNotificationPermission();
-                          if (granted) {
-                            const token = await getDevicePushToken();
-                            if (token) setPushToken(token);
-                          } else {
-                            // Permission denied — revert toggle
-                            setEnabledNotifications((c) => ({ ...c, [key]: false }));
-                            const permStatus = await Notifications.getPermissionsAsync();
-                            if (permStatus.status === "denied") {
-                              Alert.alert(
-                                "Enable Notifications",
-                                "To enable notifications, go to Settings > Athelix and allow notifications."
-                              );
-                            }
-                            return;
-                          }
-                        }
-                        posthog.capture(Events.NOTIFICATION_SETTING_CHANGED, { setting: key, enabled: newValue });
-                      }}
-                      trackColor={{ false: borderColor, true: accent }}
-                      thumbColor="#ffffff"
-                    />
-                  </View>
-                  {index < array.length - 1 ? (
-                    <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
-                  ) : null}
-                </View>
-              ))}
-              <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
-              <Pressable
-                onPress={() => navigation.navigate("NotificationSettings")}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  paddingHorizontal: spacing.xl3,
-                  paddingVertical: spacing.xl2,
-                }}
-              >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, flex: 1 }}>
-                  <AppIcon name="bell" size={15} color={accent} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>
-                      Push Notification Preferences
-                    </Text>
-                    <Text style={{ color: mutedColor, fontSize: 10 }}>
-                      Morning motivation, inactivity nudges & milestones
-                    </Text>
-                  </View>
-                </View>
-                <AppIcon name="chevron-right" size={14} color={faintColor} />
-              </Pressable>
-            </Card>
-          </View>
 
           <View>
             <SectionEyebrow>Feedback</SectionEyebrow>

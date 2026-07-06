@@ -158,13 +158,11 @@ describe("SettingsScreen general", () => {
     });
   });
 
-  it("renders notification toggles", () => {
+  it("does not render notification toggles (moved to NotificationSettings)", () => {
     const qc = setupQC(mockUserData);
-    const { getByText } = renderScreen(qc);
-    expect(getByText("Workout Reminders")).toBeTruthy();
-    expect(getByText("PR Alerts")).toBeTruthy();
-    expect(getByText("Weekly Report")).toBeTruthy();
-    expect(getByText("New Features")).toBeTruthy();
+    const { queryByText } = renderScreen(qc);
+    expect(queryByText("Workout Reminders")).toBeNull();
+    expect(queryByText("Push Notification Preferences")).toBeNull();
   });
 
   it("renders danger zone", () => {

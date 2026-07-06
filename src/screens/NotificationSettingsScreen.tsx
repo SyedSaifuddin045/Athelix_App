@@ -139,6 +139,28 @@ export function NotificationSettingsScreen({ navigation }: Props) {
   }
 
   const s = settings ?? {};
+  const masterEnabled = TOGGLES.some((t) => (s as any)[t.key]);
+
+  const handleMasterToggle = useCallback(
+    async (value: boolean) => {
+      if (value) {
+        const granted = await ensurePermission();
+        if (!granted) return;
+        updateMutation.mutate({
+          morning_motivation_enabled: true,
+          inactivity_nudge_enabled: false,
+          milestone_enabled: false,
+        });
+      } else {
+        updateMutation.mutate({
+          morning_motivation_enabled: false,
+          inactivity_nudge_enabled: false,
+          milestone_enabled: false,
+        });
+      }
+    },
+    [updateMutation, ensurePermission],
+  );
 
   return (
     <Screen>
@@ -153,6 +175,29 @@ export function NotificationSettingsScreen({ navigation }: Props) {
         <View>
           <SectionEyebrow>Push Notifications</SectionEyebrow>
           <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
+            {/* Master Toggle */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingHorizontal: spacing.xl3,
+                paddingVertical: spacing.xl2,
+                gap: spacing.xl2,
+              }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>Enable Notifications</Text>
+                <Text style={{ color: mutedColor, fontSize: 10 }}>Master toggle for all notifications</Text>
+              </View>
+              <Switch
+                value={masterEnabled}
+                onValueChange={handleMasterToggle}
+                trackColor={{ false: borderColor, true: accent }}
+                thumbColor="#ffffff"
+              />
+            </View>
+            <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
             {TOGGLES.map((t, idx) => (
               <View key={t.key}>
                 <View
@@ -163,6 +208,7 @@ export function NotificationSettingsScreen({ navigation }: Props) {
                     paddingHorizontal: spacing.xl3,
                     paddingVertical: spacing.xl2,
                     gap: spacing.xl2,
+                    opacity: masterEnabled ? 1 : 0.4,
                   }}
                 >
                   <View style={{ flex: 1 }}>
@@ -171,9 +217,10 @@ export function NotificationSettingsScreen({ navigation }: Props) {
                   </View>
                   <Switch
                     value={(s as any)[t.key] ?? false}
-                    onValueChange={(v) => handleToggle(t.key, v)}
-                    trackColor={{ false: borderColor, true: accent }}
+                    onValueChange={masterEnabled ? (v) => handleToggle(t.key, v) : undefined}
+                    trackColor={{ false: borderColor, true: masterEnabled ? accent : mutedColor }}
                     thumbColor="#ffffff"
+                    disabled={!masterEnabled}
                   />
                 </View>
                 {idx < TOGGLES.length - 1 ? (
