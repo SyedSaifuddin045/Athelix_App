@@ -3,7 +3,7 @@ import { ActivityIndicator, AppState, Text, TouchableOpacity, View } from "react
 import * as SecureStore from "expo-secure-store";
 import * as Updates from "expo-updates";
 import { useAuth } from "@clerk/expo";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { createPlatformStackNavigator, platformScreenOptions } from "./createPlatformStackNavigator";
 
 import { useTheme } from "@tamagui/core";
 import { radii } from "../design-system/tokens/radii";
@@ -45,7 +45,7 @@ import { NotificationSettingsScreen } from "../screens/NotificationSettingsScree
 import { SettingsScreen } from "../screens/SettingsScreen";
 import { getTokenWithTimeout, setRefreshTokenHandler, updateClerkToken } from "../api/client";
 
-const RootStack = createNativeStackNavigator<RootStackParamList>();
+const RootStack = createPlatformStackNavigator<RootStackParamList>();
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const theme = useTheme();
@@ -159,11 +159,11 @@ export function AppNavigator() {
   return (
     <AuthGate>
       <RootStack.Navigator
-        screenOptions={{
+        screenOptions={platformScreenOptions({
           headerShown: false,
           animation: "slide_from_right",
           contentStyle: { backgroundColor: rawColors.root },
-        }}
+        })}
       >
         <RootStack.Screen name="Splash" component={SplashScreen} />
         <RootStack.Screen name="Onboarding" component={OnboardingScreen} />

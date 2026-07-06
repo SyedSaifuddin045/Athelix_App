@@ -22,7 +22,7 @@
         "backgroundColor": "#111111"
       },
       "package": "com.athelix.app",
-      "versionCode": 51,
+      "versionCode": 52,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
