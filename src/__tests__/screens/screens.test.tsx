@@ -11,6 +11,18 @@ import { ProgressHubScreen } from "../../screens/ProgressHubScreen";
 
 const mockUseAuth = jest.fn();
 const mockUseSignIn = jest.fn();
+jest.mock("react-native-safe-area-context", () => ({
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+  SafeAreaView: ({ children }: { children: React.ReactNode }) => children,
+  useSafeAreaInsets: () => ({ top: 47, right: 0, bottom: 34, left: 0 }),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () => ({
+  getItem: jest.fn(() => Promise.resolve(null)),
+  setItem: jest.fn(() => Promise.resolve()),
+  removeItem: jest.fn(() => Promise.resolve()),
+}));
+
 jest.mock("@clerk/expo", () => ({
   useAuth: () => mockUseAuth(),
   useSignIn: () => mockUseSignIn(),

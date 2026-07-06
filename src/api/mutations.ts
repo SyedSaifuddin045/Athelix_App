@@ -170,3 +170,16 @@ export function useUpdateNotificationSettings(options?: { onSuccess?: () => void
     },
   });
 }
+
+export function useSendTestNotification() {
+  return useMutation({
+    mutationFn: async () => {
+      const resp = await apiFetch("/devices/test", { method: "POST" });
+      const body = await resp.json();
+      if (!resp.ok) {
+        throw new ApiError(body.message ?? "Failed to send test notification", resp.status);
+      }
+      return body as { ok: boolean; total_devices: number; sent: number; failed: number; message: string };
+    },
+  });
+}

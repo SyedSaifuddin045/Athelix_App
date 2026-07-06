@@ -19,6 +19,7 @@ import { Screen } from "../components/ui/Layout";
 import { Card, LoadingCard, ErrorCard } from "../components/ui/Card";
 import { Tag } from "../components/ui/Indicators";
 import { PrimaryButton, RoundButton, IconButton } from "../components/ui/Button";
+import { NotificationBell } from "../components/NotificationBell";
 import { StatPill, DividerVertical, MetricBlock } from "../components/ui/Stats";
 import { VerticalBars } from "../components/ui/Charts";
 import { AppIcon } from "../design-system/icons/AppIcon";
@@ -223,7 +224,7 @@ export function HomeScreen({ navigation }: Props) {
             <Text style={{ color: textColor, fontSize: 15, fontWeight: "700", marginTop: 2 }}>Hey, {name.split(" ")[0]}</Text>
           </View>
         </Pressable>
-        <IconButton icon="bell" size={40} />
+        <NotificationBell />
       </View>
 
       {overview.isPending ? (

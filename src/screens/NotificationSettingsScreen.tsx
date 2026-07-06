@@ -15,7 +15,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "@tamagui/core";
 import type { RootStackParamList } from "../types/navigation";
 import { useNotificationSettingsQuery } from "../api/queries";
-import { useUpdateNotificationSettings } from "../api/mutations";
+import { useSendTestNotification, useUpdateNotificationSettings } from "../api/mutations";
 import { spacing } from "../design-system/tokens/spacing";
 import { radii } from "../design-system/tokens/radii";
 import { Card } from "../components/ui/Card";
@@ -51,6 +51,7 @@ export function NotificationSettingsScreen({ navigation }: Props) {
   const theme = useTheme();
   const { data: settings, isLoading, refetch } = useNotificationSettingsQuery(true);
   const updateMutation = useUpdateNotificationSettings();
+  const sendTestMutation = useSendTestNotification();
 
   const [hourPickerOpen, setHourPickerOpen] = useState(false);
   const [pendingHour, setPendingHour] = useState(settings?.preferred_send_hour ?? 8);
@@ -342,6 +343,38 @@ export function NotificationSettingsScreen({ navigation }: Props) {
         >
           <AppIcon name="map-pin" size={15} color={accent} />
           <Text style={{ color: accent, fontSize: 14, fontWeight: "700" }}>Detect Timezone from Device</Text>
+        </Pressable>
+
+        {/* ── Test Notification ── */}
+        <Pressable
+          onPress={() => {
+            sendTestMutation.mutate(undefined, {
+              onSuccess: (data) => {
+                Alert.alert("Test Notification", data.message);
+              },
+              onError: (err) => {
+                Alert.alert("Error", getApiErrorMessage(err));
+              },
+            });
+          }}
+          disabled={sendTestMutation.isPending}
+          style={{
+            minHeight: 52,
+            borderRadius: radii.input,
+            borderWidth: 1,
+            borderColor: borderColor,
+            backgroundColor: surface2Color,
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "row",
+            gap: spacing.md,
+            opacity: sendTestMutation.isPending ? 0.5 : 1,
+          }}
+        >
+          <AppIcon name="bell" size={15} color={textColor} />
+          <Text style={{ color: textColor, fontSize: 14, fontWeight: "700" }}>
+            {sendTestMutation.isPending ? "Sending..." : "Send Test Notification"}
+          </Text>
         </Pressable>
       </ScrollView>
 
