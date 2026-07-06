@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "848693244711",
+    "project_id": "athelix-6c1e9",
+    "storage_bucket": "athelix-6c1e9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:848693244711:android:2d9d1669b0d57f3fa02f02",
+        "android_client_info": {
+          "package_name": "com.athelix.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyZpiNWKuNGeHbuGDQ2nCsVK8dhIUckUQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
