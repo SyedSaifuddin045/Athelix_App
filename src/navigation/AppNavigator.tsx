@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, AppState, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, AppState, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import * as Updates from "expo-updates";
 import { useAuth } from "@clerk/expo";
@@ -55,11 +55,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const mutedColor = theme.colorMuted?.get() ?? rawColors.muted;
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const [isLoadedTimedOut, setIsLoadedTimedOut] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(!isLoaded);
 
   useEffect(() => {
     if (isLoaded) return;
     const timer = setTimeout(() => setIsLoadedTimedOut(true), 15000);
     return () => clearTimeout(timer);
+  }, [isLoaded]);
+
+  // Delay overlay dismissal slightly to ensure navigation context is stable
+  useEffect(() => {
+    if (isLoaded) {
+      const timer = setTimeout(() => setShowOverlay(false), 100);
+      return () => clearTimeout(timer);
+    } else {
+      setShowOverlay(true);
+    }
   }, [isLoaded]);
 
   useEffect(() => {
@@ -93,66 +104,82 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     };
   }, [isLoaded, isSignedIn]);
 
-  if (isLoadedTimedOut) {
-    return (
-      <View style={{ flex: 1, backgroundColor, alignItems: "center", justifyContent: "center", padding: 24 }}>
-        <Text style={{ color: textColor, fontSize: 18, textAlign: "center", marginBottom: 8 }}>
-          Could not restore session
-        </Text>
-        <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center", marginBottom: 24 }}>
-          We had trouble loading your account. Please try again.
-        </Text>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={async () => {
-            await Promise.allSettled(
-              CLERK_CACHE_KEYS.map((k) => SecureStore.deleteItemAsync(k))
-            );
-            await Updates.reloadAsync();
-          }}
-          style={{
-            backgroundColor: accentColor,
-            paddingHorizontal: 24,
-            paddingVertical: 12,
-            borderRadius: 8,
-          }}
-        >
-          <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
-            Retry
-          </Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <View style={{ flex: 1, backgroundColor, alignItems: "center", justifyContent: "center" }}>
+  // Always render children (navigator stays mounted) — show overlays on top
+  // This keeps NavigationContainer context alive so screens always find it
+  return (
+    <View style={{ flex: 1 }}>
+      {children}
+      {isLoadedTimedOut ? (
         <View
           style={{
-            width: 96,
-            height: 96,
-            borderRadius: radii.card,
-            backgroundColor: accentColor,
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor,
             alignItems: "center",
             justifyContent: "center",
-            marginBottom: 24,
-            ...shadows.glow(accentColor),
+            padding: 24,
           }}
         >
-          <AppIcon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
+          <Text style={{ color: textColor, fontSize: 18, textAlign: "center", marginBottom: 8 }}>
+            Could not restore session
+          </Text>
+          <Text style={{ color: mutedColor, fontSize: 14, textAlign: "center", marginBottom: 24 }}>
+            We had trouble loading your account. Please try again.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={async () => {
+              await Promise.allSettled(
+                CLERK_CACHE_KEYS.map((k) => SecureStore.deleteItemAsync(k))
+              );
+              await Updates.reloadAsync();
+            }}
+            style={{
+              backgroundColor: accentColor,
+              paddingHorizontal: 24,
+              paddingVertical: 12,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "600" }}>
+              Retry
+            </Text>
+          </TouchableOpacity>
         </View>
-        <Text style={{ color: textColor, fontSize: 24, fontWeight: "700", marginBottom: 32 }}>
-          Athelix
-        </Text>
-        <ActivityIndicator size="small" color={accentColor} />
-        <Text style={{ color: mutedColor, fontSize: 12, marginTop: 16 }}>
-          Restoring session...
-        </Text>
-      </View>
-    );
-  }
-  return <>{children}</>;
+      ) : null}
+      {showOverlay && !isLoadedTimedOut ? (
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <View
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: radii.card,
+              backgroundColor: accentColor,
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: 24,
+              ...shadows.glow(accentColor),
+            }}
+          >
+            <AppIcon name="dumbbell" size={42} color="#000000" strokeWidth={2.5} />
+          </View>
+          <Text style={{ color: textColor, fontSize: 24, fontWeight: "700", marginBottom: 32 }}>
+            Athelix
+          </Text>
+          <ActivityIndicator size="small" color={accentColor} />
+          <Text style={{ color: mutedColor, fontSize: 12, marginTop: 16 }}>
+            Restoring session...
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export function AppNavigator() {
