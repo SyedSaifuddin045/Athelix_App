@@ -1,4 +1,6 @@
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { ActivityIndicator, Alert, Animated, Pressable, Text, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -33,12 +35,13 @@ export function MesocycleDetailScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const purpleColor = theme.colorPurple?.get() ?? "#8B5CF6";
   const greenColor = theme.colorGreen?.get() ?? "#22C55E";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const press = usePressOpacity();
 
   return (
     <Screen>
@@ -103,23 +106,31 @@ export function MesocycleDetailScreen({ navigation, route }: Props) {
                     <AnalyticsCard label="Total Sets" value={String(summary?.total_sets ?? 0)} sub="current block" color={greenColor} />
                     <AnalyticsCard label="Avg Session RPE" value={summary?.average_session_rpe?.toFixed(1) ?? "-"} sub="current block" color={greenColor} />
                   </View>
-                  <Pressable
-                    onPress={() => navigation.navigate({ name: "MuscleBalance", params: { mesocycleId: mesocycleId ?? undefined } })}
-                    style={[{ marginTop: spacing.xl2, borderRadius: radii.input, backgroundColor: "rgba(139,92,246,0.12)", paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
-                  >
+                  <Animated.View style={{ opacity: press.opacity }}>
+                    <Pressable
+                      onPress={() => navigation.navigate({ name: "MuscleBalance", params: { mesocycleId: mesocycleId ?? undefined } })}
+                      onPressIn={press.onPressIn}
+                      onPressOut={press.onPressOut}
+                      style={[{ marginTop: spacing.xl2, borderRadius: radii.input, backgroundColor: "rgba(139,92,246,0.12)", paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl2, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+                    >
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                       <AppIcon name="bar-chart-2" size={14} color={purpleColor} />
                       <Text style={[{ color: purpleColor, fontSize: 11, fontWeight: "700" }]}>Muscle Balance Analysis</Text>
                     </View>
                     <AppIcon name="chevron-right" size={13} color={purpleColor} />
                   </Pressable>
+                  </Animated.View>
                 </Card>
 
                 <View style={{ marginTop: spacing.xl3 }}>
                   <SectionEyebrow>Linked Sessions</SectionEyebrow>
                   <View style={{ gap: spacing.lg, marginTop: spacing.xl }}>
                     {meso.sessions.map((session) => (
-                      <Pressable key={session.id} onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}>
+                      <Animated.View key={session.id} style={{ opacity: press.opacity }}>
+                        <Pressable onPress={() => navigation.navigate("SessionDetail", { id: String(session.id) })}
+                          onPressIn={press.onPressIn}
+                          onPressOut={press.onPressOut}
+                        >
                         <Card elevated style={[{ flexDirection: "row", alignItems: "center", gap: spacing.lg }]}>
                           <View style={[{ width: 34, height: 34, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.07)" }, { width: 40, height: 40, borderRadius: radii.iconWrap, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }]}>
                             <AppIcon name="list-checks" size={16} color={purpleColor} />
@@ -133,6 +144,7 @@ export function MesocycleDetailScreen({ navigation, route }: Props) {
                           <AppIcon name="chevron-right" size={13} color={faintColor} />
                         </Card>
                       </Pressable>
+                      </Animated.View>
                     ))}
                     {meso.sessions.length === 0 ? <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>No sessions linked to this mesocycle yet.</Text> : null}
                   </View>

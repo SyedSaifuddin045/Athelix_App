@@ -87,7 +87,7 @@ export function SplashScreen({ navigation }: Props) {
       </Text>
       <Text
         style={{
-          color: theme.colorFaint?.get() ?? "rgba(255,255,255,0.35)",
+          color: theme.colorFaint?.get() ?? "rgba(255,255,255,0.55)",
           fontSize: 13,
           marginTop: 6,
         }}
@@ -120,7 +120,7 @@ export function SplashScreen({ navigation }: Props) {
         <ProgressBar value={progress} color={accent} height={8} />
         <Text
           style={{
-            color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.35)",
+            color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)",
             fontSize: 12,
             textAlign: "center",
           }}

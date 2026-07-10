@@ -1,14 +1,16 @@
-import { ScrollView, View } from "react-native";
+import { ScrollView, View, RefreshControl, RefreshControlProps } from "react-native";
 import { useTheme } from "@tamagui/core";
 
 export function Screen({
   children,
   scroll = true,
   contentContainerStyle,
+  refreshControl,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
   contentContainerStyle?: object;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }) {
   const theme = useTheme();
   const screenBg = theme.background?.get() ?? "#050505";
@@ -21,6 +23,7 @@ export function Screen({
       contentContainerStyle={[{ flexGrow: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 }, contentContainerStyle]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      refreshControl={refreshControl}
     >
       {children}
     </ScrollView>

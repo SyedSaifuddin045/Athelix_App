@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Animated, Pressable, ScrollView, Text, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -33,7 +34,7 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
   const redDarkColor = theme.colorRedDark?.get() ?? "#7F1D1D";
@@ -41,6 +42,7 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
   const id = route?.params?.id;
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(id ?? null);
   const [selectedMeso, setSelectedMeso] = useState<string | null>(null);
+  const press = usePressOpacity();
   const templates = useTemplatesQuery(isAuthenticated);
   const recentTemplates = useMemo(() => {
     if (!templates.data) return [];
@@ -71,13 +73,16 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
     <Screen>
       <BackHeader title="Start Workout" subtitle="Choose how to begin" onBack={() => navigation.goBack()} />
 
-      <Pressable
-        onPress={() =>
-          startSession.mutate({ template_id: null, mesocycle_id: toNumberId(selectedMeso), name: "Workout", started_at: new Date().toISOString(), is_completed: false })
-        }
-        style={{ marginTop: spacing.xl3 }}
-        disabled={startSession.isPending}
-      >
+      <Animated.View style={{ opacity: press.opacity }}>
+        <Pressable
+          onPress={() =>
+            startSession.mutate({ template_id: null, mesocycle_id: toNumberId(selectedMeso), name: "Workout", started_at: new Date().toISOString(), is_completed: false })
+          }
+          style={{ marginTop: spacing.xl3 }}
+          disabled={startSession.isPending}
+          onPressIn={press.onPressIn}
+          onPressOut={press.onPressOut}
+        >
         <Card elevated accent="coral">
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -93,6 +98,7 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
           </View>
         </Card>
       </Pressable>
+      </Animated.View>
 
       {recentTemplates.length > 0 ? (
         <View style={{ marginTop: spacing.xl5 }}>
@@ -101,22 +107,25 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
             {recentTemplates.map((template) => {
               const isSelected = selectedTemplate === String(template.id);
               return (
-                <Pressable
-                  key={template.id}
-                  onPress={() => setSelectedTemplate((c) => (c === String(template.id) ? null : String(template.id)))}
-                  style={{
-                    paddingHorizontal: 16,
-                    paddingVertical: 14,
-                    borderRadius: radii.card,
-                    borderWidth: 1,
-                    borderColor: isSelected ? "rgba(255,90,54,0.44)" : borderColor,
-                    backgroundColor: isSelected ? "rgba(255,90,54,0.12)" : surface1Color,
-                    minWidth: 140,
-                  }}
-                >
-                  <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{template.name}</Text>
-                  <Text style={{ color: mutedColor, fontSize: 10, marginTop: 4 }}>{formatShortDate(template.updated_at)}</Text>
-                </Pressable>
+                <Animated.View key={template.id} style={{ opacity: press.opacity }}>
+                  <Pressable
+                    onPress={() => setSelectedTemplate((c) => (c === String(template.id) ? null : String(template.id)))}
+                    onPressIn={press.onPressIn}
+                    onPressOut={press.onPressOut}
+                    style={{
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                      borderRadius: radii.card,
+                      borderWidth: 1,
+                      borderColor: isSelected ? "rgba(255,90,54,0.44)" : borderColor,
+                      backgroundColor: isSelected ? "rgba(255,90,54,0.12)" : surface1Color,
+                      minWidth: 140,
+                    }}
+                  >
+                    <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{template.name}</Text>
+                    <Text style={{ color: mutedColor, fontSize: 10, marginTop: 4 }}>{formatShortDate(template.updated_at)}</Text>
+                  </Pressable>
+                </Animated.View>
               );
             })}
           </ScrollView>
@@ -146,29 +155,34 @@ export function StartWorkoutScreen({ navigation, route }: Props) {
           {!templates.isPending ? (
             <>
               {(templates.data ?? []).map((template) => (
-            <Pressable key={template.id} onPress={() => setSelectedTemplate((c) => (c === String(template.id) ? null : String(template.id)))}>
-              <Card
-                elevated
-                style={{
-                  borderColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.44)" : borderColor,
-                  backgroundColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.12)" : surface1Color,
-                }}
+            <Animated.View key={template.id} style={{ opacity: press.opacity }}>
+              <Pressable onPress={() => setSelectedTemplate((c) => (c === String(template.id) ? null : String(template.id)))}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { flex: 1, alignItems: "flex-start" }]}>
-                    <Radio selected={selectedTemplate === String(template.id)} color={accent} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{template.name}</Text>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: spacing.sm }}>
-                        <MetaInline icon="dumbbell" label={template.description ?? "Template"} />
-                        <MetaInline icon="calendar" label={formatShortDate(template.updated_at)} />
+                <Card
+                  elevated
+                  style={{
+                    borderColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.44)" : borderColor,
+                    backgroundColor: selectedTemplate === String(template.id) ? "rgba(255,90,54,0.12)" : surface1Color,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                    <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { flex: 1, alignItems: "flex-start" }]}>
+                      <Radio selected={selectedTemplate === String(template.id)} color={accent} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: textColor, fontSize: 13, fontWeight: "700" }}>{template.name}</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flexWrap: "wrap", marginTop: spacing.sm }}>
+                          <MetaInline icon="dumbbell" label={template.description ?? "Template"} />
+                          <MetaInline icon="calendar" label={formatShortDate(template.updated_at)} />
+                        </View>
                       </View>
                     </View>
+                    <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10 }}>{template.is_public ? "Public" : "Private"}</Text>
                   </View>
-                  <Text style={{ color: "rgba(255,255,255,0.34)", fontSize: 10 }}>{template.is_public ? "Public" : "Private"}</Text>
-                </View>
-              </Card>
-            </Pressable>
+                </Card>
+              </Pressable>
+            </Animated.View>
           ))}
             </>
           ) : null}

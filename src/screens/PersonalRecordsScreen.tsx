@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
@@ -100,11 +101,12 @@ export function PersonalRecordsScreen({ navigation }: Props) {
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";
+  const press = usePressOpacity();
 
   const grouped = useMemo(() => {
     const normalized = search.toLowerCase();
@@ -142,22 +144,25 @@ export function PersonalRecordsScreen({ navigation }: Props) {
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: spacing.xl }}>
         {recordTypes.map((type) => (
-          <Pressable
-            key={type}
-            onPress={() => setFilter(type)}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: filter === type ? "rgba(251,191,36,0.4)" : borderColor,
-              backgroundColor: filter === type ? "rgba(251,191,36,0.2)" : surface2Color,
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-            }}
-          >
-            <Text style={{ color: filter === type ? goldColor : mutedColor, fontSize: 11, fontWeight: "700" }}>
-              {type}
-            </Text>
-          </Pressable>
+          <Animated.View key={type} style={{ opacity: press.opacity }}>
+            <Pressable
+              onPress={() => setFilter(type)}
+              onPressIn={press.onPressIn}
+              onPressOut={press.onPressOut}
+              style={{
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: filter === type ? "rgba(251,191,36,0.4)" : borderColor,
+                backgroundColor: filter === type ? "rgba(251,191,36,0.2)" : surface2Color,
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+              }}
+            >
+              <Text style={{ color: filter === type ? goldColor : mutedColor, fontSize: 11, fontWeight: "700" }}>
+                {type}
+              </Text>
+            </Pressable>
+          </Animated.View>
         ))}
       </View>
 
@@ -171,10 +176,13 @@ export function PersonalRecordsScreen({ navigation }: Props) {
             const exercise = lookup.get(entry.exerciseId);
             return (
               <Card key={entry.exerciseId} elevated style={{ paddingVertical: 0 }}>
-                <Pressable
-                  style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, paddingVertical: spacing.xl2, paddingHorizontal: spacing.xl3, borderBottomWidth: 1, borderBottomColor: borderColor }}
-                  onPress={() => navigation.navigate("ExerciseProgress", { id: entry.exerciseId })}
-                >
+                <Animated.View style={{ opacity: press.opacity }}>
+                  <Pressable
+                    style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl, paddingVertical: spacing.xl2, paddingHorizontal: spacing.xl3, borderBottomWidth: 1, borderBottomColor: borderColor }}
+                    onPress={() => navigation.navigate("ExerciseProgress", { id: entry.exerciseId })}
+                    onPressIn={press.onPressIn}
+                    onPressOut={press.onPressOut}
+                  >
                   <View style={{ width: 3, height: 32, borderRadius: 2, backgroundColor: muscleAccentColor(exercise?.target ?? exercise?.body_part) ?? accent }} />
                   <Text style={{ flex: 1, color: textColor, fontSize: 13, fontWeight: "700" }}>{nameForExercise(entry.exerciseId, lookup) ?? entry.exerciseId}</Text>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -182,11 +190,12 @@ export function PersonalRecordsScreen({ navigation }: Props) {
                     <AppIcon name="chevron-right" size={13} color={faintColor} />
                   </View>
                 </Pressable>
+                </Animated.View>
                 <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2, gap: spacing.lg }}>
                   {entry.records.map((record) => (
                     <View key={record.id} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        <View style={{ width: 34, height: 34, borderRadius: radii.iconWrap, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" }}>
+                        <View style={{ width: 44, height: 44, borderRadius: radii.iconWrap, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" }}>
                           <AppIcon name="award" size={13} color={goldColor} />
                         </View>
                         <View>

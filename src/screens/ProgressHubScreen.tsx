@@ -1,5 +1,6 @@
-import { useMemo } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Animated, Pressable, Text, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
@@ -33,11 +34,33 @@ export function ProgressHubScreen({ navigation }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";
   const greenColor = theme.colorGreen?.get() ?? "#22C55E";
+  const press = usePressOpacity();
   const overview = useOverviewQuery(isAuthenticated);
+
+  if (overview.isPending) {
+    return (
+      <Screen>
+        <View style={{ paddingTop: 8 }}>
+          <SectionEyebrow>Analytics</SectionEyebrow>
+          <Text style={{ color: textColor, fontSize: 28, fontWeight: "900", marginTop: 4 }}>Progress</Text>
+        </View>
+        <View style={{ marginTop: spacing.xl3, flexDirection: "row", gap: spacing.lg }}>
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={{ flex: 1, height: 80, borderRadius: 16, backgroundColor: theme.surface1?.get() ?? "rgba(255,255,255,0.08)", opacity: 0.5 }} />
+          ))}
+        </View>
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
+          {[1, 2, 3, 4].map((i) => (
+            <View key={i} style={{ height: 80, borderRadius: 16, backgroundColor: theme.surface1?.get() ?? "rgba(255,255,255,0.08)", opacity: 0.5 }} />
+          ))}
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -75,7 +98,12 @@ export function ProgressHubScreen({ navigation }: Props) {
       ) : null}
 
       {overview.data?.recent_personal_records && overview.data.recent_personal_records.length > 0 ? (
-        <Pressable style={{ marginTop: spacing.xl3, marginBottom: spacing.xl2 }}>
+        <Animated.View style={{ opacity: press.opacity }}>
+          <Pressable style={{ marginTop: spacing.xl3, marginBottom: spacing.xl2 }}
+            onPress={() => navigation.navigate({ name: "PersonalRecords", params: undefined })}
+            onPressIn={press.onPressIn}
+            onPressOut={press.onPressOut}
+          >
           <Card elevated accent="gold">
             <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xl }}>
               <View
@@ -107,6 +135,7 @@ export function ProgressHubScreen({ navigation }: Props) {
             </View>
           </Card>
         </Pressable>
+        </Animated.View>
       ) : null}
 
       <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
@@ -120,19 +149,21 @@ export function ProgressHubScreen({ navigation }: Props) {
             }
           }
           return (
-            <Pressable
-              key={section.title}
-              onPress={() => {
-                if (section.path === "achievements")
-                  navigation.navigate({ name: "Achievements", params: undefined });
-                else if (section.path === "personalRecords")
-                  navigation.navigate({ name: "PersonalRecords", params: undefined });
-                else if (section.path === "exerciseProgress")
-                  navigation.navigate({ name: "ExerciseProgress", params: {} });
-                else if (section.path === "muscleBalance")
-                  navigation.navigate({ name: "MuscleBalance", params: undefined });
-              }}
-            >
+            <Animated.View key={section.title} style={{ opacity: press.opacity }}>
+              <Pressable
+                onPress={() => {
+                  if (section.path === "achievements")
+                    navigation.navigate({ name: "Achievements", params: undefined });
+                  else if (section.path === "personalRecords")
+                    navigation.navigate({ name: "PersonalRecords", params: undefined });
+                  else if (section.path === "exerciseProgress")
+                    navigation.navigate({ name: "ExerciseProgress", params: {} });
+                  else if (section.path === "muscleBalance")
+                    navigation.navigate({ name: "MuscleBalance", params: undefined });
+                }}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
+              >
               <Card
                 elevated
                 style={{
@@ -169,6 +200,7 @@ export function ProgressHubScreen({ navigation }: Props) {
                 </View>
               </Card>
             </Pressable>
+            </Animated.View>
           );
         })}
       </View>

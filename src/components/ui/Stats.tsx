@@ -24,7 +24,7 @@ export function StatPill({
         <AppIcon name={icon} size={16} color={color ?? theme.colorMuted?.get()} />
       ) : null}
       <Text style={[{ color: theme.color?.get(), fontSize: 15, fontWeight: "800" }, color ? { color } : null]}>{value}</Text>
-      <Text style={{ color: "rgba(255,255,255,0.38)", fontSize: 10 }}>{label}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10 }}>{label}</Text>
     </View>
   );
 }
@@ -58,7 +58,7 @@ export function CompactStatCard({
         </View>
       ) : null}
       <Text style={[{ color: theme.color?.get(), fontSize: 18, fontWeight: "900" }, color ? { color } : null]}>{value}</Text>
-      <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 9, textAlign: "center", marginTop: spacing.sm }}>{label}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, textAlign: "center", marginTop: spacing.sm }}>{label}</Text>
     </Card>
   );
 }
@@ -81,7 +81,7 @@ export function MetricBlock({
         <AppIcon name={icon} size={14} color={color ?? theme.colorMuted?.get()} />
       ) : null}
       <Text style={[{ color: theme.color?.get(), fontSize: 14, fontWeight: "800" }, color ? { color } : null]}>{value}</Text>
-      <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 9, marginTop: 3 }}>{label}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 9, marginTop: 3 }}>{label}</Text>
     </View>
   );
 }
@@ -116,7 +116,7 @@ export function DetailStat({
       ) : null}
       <View>
         <Text style={[{ color: theme.color?.get(), fontSize: 20, fontWeight: "800" }, color ? { color } : null]}>{value}</Text>
-        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>{label}</Text>
+        <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 16 }}>{label}</Text>
       </View>
     </View>
   );
@@ -147,8 +147,8 @@ export function AnalyticsCard({
       }}
     >
       <Text style={[{ fontSize: 16, fontWeight: "800" }, { color }]}>{value}</Text>
-      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, marginBottom: 6 }}>{label}</Text>
-      {sub ? <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 4 }}>{sub}</Text> : null}
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, marginBottom: 6 }}>{label}</Text>
+      {sub ? <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, marginTop: 4 }}>{sub}</Text> : null}
     </Card>
   );
 }
@@ -164,7 +164,7 @@ export function MetaInline({
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.xs }}>
       {icon ? <AppIcon name={icon} size={12} color={theme.colorFaint?.get()} /> : null}
-      <Text style={{ color: "rgba(255,255,255,0.34)", fontSize: 10 }}>{label}</Text>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10 }}>{label}</Text>
     </View>
   );
 }

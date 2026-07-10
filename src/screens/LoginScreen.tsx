@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { useAuth, useSignIn, useSSO } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -33,7 +33,7 @@ export function LoginScreen({ navigation }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
@@ -128,6 +128,7 @@ export function LoginScreen({ navigation }: Props) {
   if (isSignedIn) return null;
 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
     <Screen contentContainerStyle={{ paddingHorizontal: spacing.xl5, paddingBottom: spacing.xl7 }}>
       <View style={[{ alignItems: "center", paddingTop: spacing.xl4, paddingBottom: spacing.xl6 }]}>
         <View
@@ -159,7 +160,7 @@ export function LoginScreen({ navigation }: Props) {
 
       <View style={[{ gap: spacing.xl2 }]}>
         <View>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Email</Text>
+          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Email</Text>
           <TextInput
             value={email}
             onChangeText={setEmail}
@@ -181,7 +182,7 @@ export function LoginScreen({ navigation }: Props) {
           />
         </View>
         <View>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Password</Text>
+          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Password</Text>
           <View style={{ position: "relative" }}>
             <TextInput
               value={password}
@@ -203,7 +204,7 @@ export function LoginScreen({ navigation }: Props) {
               secureTextEntry={!showPassword}
             />
             <Pressable
-              style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3 }}
+              style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3, width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
               onPress={() => setShowPassword((v) => !v)}
             >
               <AppIcon name={showPassword ? "eye-off" : "eye"} size={16} color={mutedColor} />
@@ -278,5 +279,6 @@ export function LoginScreen({ navigation }: Props) {
         </Text>
       </Text>
     </Screen>
+    </KeyboardAvoidingView>
   );
 }

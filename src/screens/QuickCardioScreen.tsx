@@ -49,7 +49,7 @@ function ControlButton({
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const borderCol = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surface2 = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
 
@@ -147,7 +147,7 @@ export function QuickCardioScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const redColor = theme.colorRed?.get() ?? "#EF4444";

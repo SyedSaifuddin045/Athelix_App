@@ -109,16 +109,16 @@ export function LoadingCard({ label = "Loading..." }: { label?: string }) {
   );
 }
 
-export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+export function ErrorCard({ error, onRetry, onDismiss, compact }: { error: unknown; onRetry?: () => void; onDismiss?: () => void; compact?: boolean }) {
   const theme = useTheme();
-  return (
-    <Card elevated accent="red" style={{ marginTop: spacing.xl3, gap: spacing.sm }}>
+  const errorContent = (
+    <>
       <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
-        <AppIcon name="alert-circle" size={18} color={theme.colorRed?.get() ?? "#EF4444"} />
+        <AppIcon name="alert-circle" size={compact ? 16 : 18} color={theme.colorRed?.get() ?? "#EF4444"} />
         <Text
           style={{
             color: theme.colorRed?.get() ?? "#EF4444",
-            fontSize: 13,
+            fontSize: compact ? 12 : 13,
             fontWeight: "700",
           }}
         >
@@ -163,6 +163,65 @@ export function ErrorCard({ error, onRetry }: { error: unknown; onRetry?: () => 
           </Text>
         </Pressable>
       ) : null}
+      {onRetry && (
+        <Text
+          style={{
+            color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
+            fontSize: 10,
+            marginTop: spacing.xs,
+          }}
+        >
+          Tap to retry
+        </Text>
+      )}
+    </>
+  );
+
+  const content = (
+    <View style={{ position: "relative" }}>
+      {errorContent}
+      {onDismiss && (
+        <Pressable
+          onPress={onDismiss}
+          hitSlop={6}
+          style={{ position: "absolute", bottom: 0, right: 0, padding: spacing.xs }}
+        >
+          <Text
+            style={{
+              color: theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)",
+              fontSize: 10,
+            }}
+          >
+            Dismiss
+          </Text>
+        </Pressable>
+      )}
+    </View>
+  );
+
+  if (compact) {
+    return (
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "flex-start",
+          gap: spacing.md,
+          paddingHorizontal: spacing.xl3,
+          paddingVertical: spacing.xl,
+          borderRadius: radii.card,
+          backgroundColor: (theme.surface1?.get() ?? "rgba(255,255,255,0.05)") as string,
+          borderWidth: 1,
+          borderColor: (theme.colorRed?.get() ?? "#EF4444") + "33",
+        }}
+      >
+        {content}
+      </View>
+    );
+  }
+
+  return (
+    <Card elevated accent="red" style={{ marginTop: spacing.xl3, gap: spacing.sm }}>
+      {content}
     </Card>
   );
 }

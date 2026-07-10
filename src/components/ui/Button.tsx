@@ -36,6 +36,8 @@ export function PrimaryButton({
   style,
   subtle,
   loading,
+  accessibilityLabel,
+  accessibilityRole,
 }: {
   label: string;
   onPress?: () => void;
@@ -44,6 +46,8 @@ export function PrimaryButton({
   style?: object | object[];
   subtle?: boolean;
   loading?: boolean;
+  accessibilityLabel?: string;
+  accessibilityRole?: import("react-native").ViewProps["accessibilityRole"];
 }) {
   const theme = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useScalePress();
@@ -63,6 +67,8 @@ export function PrimaryButton({
       onPress={onPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole={accessibilityRole}
       style={[
         {
           minHeight: 56,
@@ -127,9 +133,9 @@ export function RoundButton({
       onPressOut={onPressOut}
       style={[
         {
-          width: 36,
-          height: 36,
-          borderRadius: 18,
+          width: 44,
+          height: 44,
+          borderRadius: 22,
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: accent
@@ -151,15 +157,19 @@ export function RoundButton({
 export function IconButton({
   icon,
   onPress,
-  size = 40,
+  size = 44,
   color,
   backgroundColor,
+  accessibilityLabel,
+  accessibilityRole,
 }: {
   icon: IconName;
   onPress?: () => void;
   size?: number;
   color?: string;
   backgroundColor?: string;
+  accessibilityLabel?: string;
+  accessibilityRole?: import("react-native").ViewProps["accessibilityRole"];
 }) {
   const theme = useTheme();
   const { animatedStyle, onPressIn, onPressOut } = useScalePress();
@@ -170,6 +180,8 @@ export function IconButton({
       onPress={onPress}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole={accessibilityRole}
       style={[
         {
           width: btnSize,
@@ -239,7 +251,7 @@ export function BackHeader({
           ) : null}
         </View>
       </View>
-      {right ? <View>{right}</View> : <View style={{ width: 36 }} />}
+      {right ? <View>{right}</View> : <View style={{ width: 44 }} />}
     </View>
   );
 }

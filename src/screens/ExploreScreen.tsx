@@ -11,7 +11,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, "MainTa
 export function ExploreScreen({ navigation }: Props) {
   const { isSignedIn: isAuthenticated = false } = useAuth();
   const theme = useTheme();
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
 
   if (!isAuthenticated) {
     return (

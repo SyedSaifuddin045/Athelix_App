@@ -63,7 +63,7 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
   };
 
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const accent = theme.accent?.get() ?? "#FF5A36";
 
   return (
@@ -130,7 +130,7 @@ export function BodyweightHistoryScreen({ navigation }: Props) {
                   {entry.notes ? ` - ${entry.notes}` : ""}
                 </Text>
               </View>
-              <Pressable onPress={() => deleteLog.mutate(entry.id)} style={{ width: 32, height: 32, borderRadius: radii.stepper, backgroundColor: theme.colorRedDark?.get(), alignItems: "center", justifyContent: "center" }}>
+              <Pressable onPress={() => deleteLog.mutate(entry.id)} style={{ width: 44, height: 44, borderRadius: radii.stepper, backgroundColor: theme.colorRedDark?.get(), alignItems: "center", justifyContent: "center" }}>
                 <AppIcon name="trash-2" size={13} color={theme.colorRed?.get() ?? "#EF4444"} />
               </Pressable>
             </Card>

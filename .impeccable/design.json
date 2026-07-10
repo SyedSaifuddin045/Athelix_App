@@ -1,0 +1,360 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-10T00:00:00.000Z",
+  "title": "Design System: Athelix",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Signal Coral",
+        "canonical": "#FF5A36",
+        "tonalRamp": [
+          "rgba(255,90,54,0.12)",
+          "rgba(255,90,54,0.25)",
+          "rgba(255,90,54,0.40)",
+          "rgba(255,90,54,0.55)",
+          "rgba(255,90,54,0.70)",
+          "rgba(255,90,54,0.85)",
+          "#FF5A36",
+          "#FF7A5C"
+        ]
+      },
+      "root": {
+        "role": "neutral",
+        "displayName": "Void Black",
+        "canonical": "#050505",
+        "tonalRamp": [
+          "#050505",
+          "#0A0A0A",
+          "#0D0D0D",
+          "#141414",
+          "#1A1A1A",
+          "#222222",
+          "#2A2A2A",
+          "#333333"
+        ]
+      },
+      "screen": {
+        "role": "neutral",
+        "displayName": "Gym Floor",
+        "canonical": "#0A0A0A",
+        "tonalRamp": [
+          "#0A0A0A",
+          "#0D0D0D",
+          "#141414",
+          "#1A1A1A",
+          "#222222",
+          "#2A2A2A",
+          "#333333",
+          "#444444"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Mat Black",
+        "canonical": "#0D0D0D",
+        "tonalRamp": [
+          "#0D0D0D",
+          "#141414",
+          "#1A1A1A",
+          "#222222",
+          "#2A2A2A",
+          "#333333",
+          "#444444",
+          "#555555"
+        ]
+      },
+      "surface-light": {
+        "role": "neutral",
+        "displayName": "Rubber Surface",
+        "canonical": "#141414",
+        "tonalRamp": [
+          "#141414",
+          "#1A1A1A",
+          "#222222",
+          "#2A2A2A",
+          "#333333",
+          "#444444",
+          "#555555",
+          "#666666"
+        ]
+      },
+      "green": {
+        "role": "semantic",
+        "displayName": "Success Green",
+        "canonical": "#22C55E",
+        "tonalRamp": [
+          "rgba(34,197,94,0.12)",
+          "rgba(34,197,94,0.25)",
+          "rgba(34,197,94,0.40)",
+          "rgba(34,197,94,0.55)",
+          "rgba(34,197,94,0.70)",
+          "rgba(34,197,94,0.85)",
+          "#22C55E",
+          "#4ADE80"
+        ]
+      },
+      "red": {
+        "role": "semantic",
+        "displayName": "Error Red",
+        "canonical": "#EF4444",
+        "tonalRamp": [
+          "rgba(239,68,68,0.12)",
+          "rgba(239,68,68,0.25)",
+          "rgba(239,68,68,0.40)",
+          "rgba(239,68,68,0.55)",
+          "rgba(239,68,68,0.70)",
+          "rgba(239,68,68,0.85)",
+          "#EF4444",
+          "#F87171"
+        ]
+      },
+      "gold": {
+        "role": "semantic",
+        "displayName": "Caution Gold",
+        "canonical": "#FBBF24",
+        "tonalRamp": [
+          "rgba(251,191,36,0.12)",
+          "rgba(251,191,36,0.25)",
+          "rgba(251,191,36,0.40)",
+          "rgba(251,191,36,0.55)",
+          "rgba(251,191,36,0.70)",
+          "rgba(251,191,36,0.85)",
+          "#FBBF24",
+          "#FCD34D"
+        ]
+      },
+      "orange": {
+        "role": "semantic",
+        "displayName": "Warning Orange",
+        "canonical": "#F59E0B",
+        "tonalRamp": [
+          "rgba(245,158,11,0.12)",
+          "rgba(245,158,11,0.25)",
+          "rgba(245,158,11,0.40)",
+          "rgba(245,158,11,0.55)",
+          "rgba(245,158,11,0.70)",
+          "rgba(245,158,11,0.85)",
+          "#F59E0B",
+          "#FBBF24"
+        ]
+      },
+      "purple": {
+        "role": "semantic",
+        "displayName": "Info Purple",
+        "canonical": "#8B5CF6",
+        "tonalRamp": [
+          "rgba(139,92,246,0.12)",
+          "rgba(139,92,246,0.25)",
+          "rgba(139,92,246,0.40)",
+          "rgba(139,92,246,0.55)",
+          "rgba(139,92,246,0.70)",
+          "rgba(139,92,246,0.85)",
+          "#8B5CF6",
+          "#A78BFA"
+        ]
+      },
+      "blue": {
+        "role": "semantic",
+        "displayName": "Link Blue",
+        "canonical": "#3B82F6",
+        "tonalRamp": [
+          "rgba(59,130,246,0.12)",
+          "rgba(59,130,246,0.25)",
+          "rgba(59,130,246,0.40)",
+          "rgba(59,130,246,0.55)",
+          "rgba(59,130,246,0.70)",
+          "rgba(59,130,246,0.85)",
+          "#3B82F6",
+          "#60A5FA"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero metrics — big numbers that anchor progress screens. Used sparingly for key performance indicators."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Screen titles and section headers. The primary structural type."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card titles, list item headings. Dense but readable."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Primary text — descriptions, instructions, data values. Max line length 65–75ch for prose."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tags, badges, metadata, timestamps. Small but legible."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card-rest",
+        "value": "0 4px 8px rgba(0,0,0,0.2)",
+        "purpose": "Default card state. Separates cards from the screen background."
+      },
+      {
+        "name": "card-elevated",
+        "value": "0 4px 8px rgba(0,0,0,0.2)",
+        "purpose": "Active or important cards. Same shadow, elevated surface color."
+      },
+      {
+        "name": "button-press",
+        "value": "0 0 12px rgba(255,90,54,0.28)",
+        "purpose": "Primary button glow on press. Coral shadow creates tactile feedback."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing for state transitions."
+      },
+      {
+        "name": "spring-press",
+        "value": "{ damping: 15, stiffness: 300 }",
+        "purpose": "Scale-press animation for buttons and interactive elements."
+      },
+      {
+        "name": "spring-release",
+        "value": "{ damping: 15, stiffness: 300 }",
+        "purpose": "Scale-release animation returning to default state."
+      }
+    ],
+    "breakpoints": [
+      { "name": "xxs", "value": "390px" },
+      { "name": "xs", "value": "660px" },
+      { "name": "sm", "value": "800px" },
+      { "name": "md", "value": "1020px" },
+      { "name": "lg", "value": "1280px" },
+      { "name": "xl", "value": "1650px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action button. Signal coral background, black text, pill shape, scale-press feedback.",
+      "html": "<button class=\"ds-btn-primary\">START WORKOUT</button>",
+      "css": ".ds-btn-primary { background: #FF5A36; color: #000000; padding: 16px 24px; min-height: 56px; border-radius: 18px; font-family: system-ui, -apple-system, sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.3px; border: none; cursor: pointer; transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1); } .ds-btn-primary:hover { transform: scale(1.02); } .ds-btn-primary:active { transform: scale(0.97); box-shadow: 0 0 12px rgba(255,90,54,0.28); } .ds-btn-primary:focus-visible { outline: 2px solid #FF5A36; outline-offset: 2px; } .ds-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }"
+    },
+    {
+      "name": "Subtle Button",
+      "kind": "button",
+      "refersTo": "button-subtle",
+      "description": "Secondary action button. Translucent background, white text, 1px border.",
+      "html": "<button class=\"ds-btn-subtle\">Cancel</button>",
+      "css": ".ds-btn-subtle { background: rgba(255,255,255,0.06); color: #FFFFFF; padding: 16px 24px; min-height: 56px; border-radius: 18px; font-family: system-ui, -apple-system, sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.3px; border: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: background 0.15s, border-color 0.15s; } .ds-btn-subtle:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); } .ds-btn-subtle:active { background: rgba(255,255,255,0.10); } .ds-btn-subtle:focus-visible { outline: 2px solid #FF5A36; outline-offset: 2px; } .ds-btn-subtle:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Default container. Mat black background, subtle border, generous rounding.",
+      "html": "<div class=\"ds-card\"><p>Card content</p></div>",
+      "css": ".ds-card { background: #0D0D0D; border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }"
+    },
+    {
+      "name": "Elevated Card",
+      "kind": "card",
+      "refersTo": "card-elevated",
+      "description": "Active or important card. Lighter surface, same shadow.",
+      "html": "<div class=\"ds-card-elevated\"><p>Elevated content</p></div>",
+      "css": ".ds-card-elevated { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 16px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Text input. Translucent background, white text, coral focus ring.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Enter value\" />",
+      "css": ".ds-input { background: rgba(255,255,255,0.04); color: #FFFFFF; padding: 14px 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.08); font-family: system-ui, -apple-system, sans-serif; font-size: 15px; transition: border-color 0.15s, box-shadow 0.15s; } .ds-input::placeholder { color: rgba(255,255,255,0.25); } .ds-input:focus { outline: none; border-color: #FF5A36; box-shadow: 0 0 0 3px rgba(255,90,54,0.2); } .ds-input:disabled { opacity: 0.5; cursor: not-allowed; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Tag or filter chip. Translucent background, pill shape, muted text.",
+      "html": "<span class=\"ds-chip\">Chest</span>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; padding: 8px 12px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.45); border-radius: 999px; font-family: system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; } .ds-chip-selected { background: #FF5A36; color: #000000; }"
+    },
+    {
+      "name": "Metric Block",
+      "kind": "custom",
+      "refersTo": "metric-block",
+      "description": "Large-format data display for progress screens. Display/headline weight numbers with muted labels.",
+      "html": "<div class=\"ds-metric\"><span class=\"ds-metric-value\">185</span><span class=\"ds-metric-label\">lbs</span></div>",
+      "css": ".ds-metric { display: flex; flex-direction: column; align-items: center; gap: 4px; } .ds-metric-value { font-family: system-ui, -apple-system, sans-serif; font-size: 40px; font-weight: 700; color: #FFFFFF; line-height: 48px; } .ds-metric-label { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.45); letter-spacing: 0.4px; text-transform: uppercase; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Iron Log",
+    "overview": "Athelix treats the interface like a precision instrument — raw, functional, stripped to essentials. The dark palette isn't aesthetic decoration; it's practical for gym environments where overhead fluorescents glare off bright screens. Every element earns its place like equipment in a well-organized weight room: nothing decorative, everything functional. The visual language draws from the confidence of a training log that's seen real progress — precise data, clear hierarchy, no hesitation.\n\nThe system rejects the generic fitness app aesthetic: no motivational quotes, no social feeds, no lifestyle photography. It also rejects clinical interfaces that feel like medical dashboards. Athelix lives in the space between — empowering data for healthy people training hard, not diagnostic readouts for patients.",
+    "keyCharacteristics": [
+      "Dark-first for gym environments (reduced glare, focus on content)",
+      "High-contrast data for mid-workout readability",
+      "Translucent layering over shadows for depth",
+      "Single accent color (coral) for primary actions only",
+      "System typography for platform-native feel",
+      "Scale-press feedback on interactive elements"
+    ],
+    "rules": [
+      {
+        "name": "The Coral Restraint Rule",
+        "body": "Signal coral appears on primary actions and active states only. Never for decoration, never for large surfaces, never for secondary elements. Its rarity creates hierarchy; overuse destroys it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Translucent Layer Rule",
+        "body": "Depth comes from stacking translucent white layers, not from shadows. Cards, inputs, and containers use rgba(255,255,255,0.04–0.07) to create separation. Shadows appear only as state feedback (press, elevation).",
+        "section": "colors"
+      },
+      {
+        "name": "The Metric Scale Rule",
+        "body": "Large numbers (progress values, percentages, personal records) use the display/headline weights at scale. They are the visual anchors of their screens — confident, unmissable, data-forward.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Display-Font Rule",
+        "body": "System fonts only. No custom typefaces for headings, no decorative fonts for labels. The interface disappears into the task; the typography never calls attention to itself.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ambient Depth Rule",
+        "body": "Shadows are diffuse and ambient, never sharp. They create gentle separation between layers, not dramatic lifting. The shadow under a card should feel like soft ambient light, not a spotlight.",
+        "section": "elevation"
+      },
+      {
+        "name": "The State-Only Shadow Rule",
+        "body": "Shadows appear at rest for structural separation (cards, modals) and intensify for state feedback (press, hover). Shadows never appear purely for decoration.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the coral accent sparingly — primary actions and active states only, ≤10% of screen surface.",
+      "Do use translucent layering (rgba white tints) for depth instead of heavy shadows.",
+      "Do keep system fonts for all text — the interface should feel native to each platform.",
+      "Do use skeleton states for loading, not spinners in the middle of content.",
+      "Do ensure touch targets are 44×44pt minimum (iOS) / 48×48dp minimum (Android) for sweaty fingers.",
+      "Do test contrast under bright gym lighting — high-contrast data is non-negotiable.",
+      "Do use scale-press feedback on all interactive elements for tactile confidence.",
+      "Do keep one task per screen — focused interfaces beat feature-packed dashboards."
+    ],
+    "donts": [
+      "Don't use generic fitness app aesthetics: motivational quotes, social feeds, lifestyle photography, \"great job!\" cheerleading. Athelix is a tool, not a content platform.",
+      "Don't use clinical/medical aesthetics: diagnostic dashboards, white-coat vibes, rehab app patterns. The data should feel empowering, not diagnostic.",
+      "Don't use gradient text, glassmorphism as default, or decorative motion that doesn't convey state.",
+      "Don't use display fonts for UI labels, buttons, or data — system fonts only.",
+      "Don't stack FABs or use modals as first thought — exhaust inline alternatives first.",
+      "Don't reinvent standard affordances for flavor — use platform-native controls (iOS switches, Android Material components).",
+      "Don't use border-left greater than 1px as a colored accent stripe — use full borders or background tints.",
+      "Don't ship with missing component states — every interactive element needs default, hover, focus, active, disabled, loading, error."
+    ]
+  }
+}

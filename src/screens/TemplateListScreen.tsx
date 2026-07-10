@@ -1,4 +1,5 @@
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Animated, Pressable, Text, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
@@ -26,13 +27,14 @@ export function TemplateListScreen({ navigation }: Props) {
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
   const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const press = usePressOpacity();
 
   const handleDelete = (template: WorkoutTemplateResponse) => {
     Alert.alert("Delete template?", template.name, [
@@ -48,13 +50,17 @@ export function TemplateListScreen({ navigation }: Props) {
         subtitle={`${templates.data?.length ?? 0} saved`}
         onBack={() => navigation.goBack()}
         right={
-          <Pressable
-            style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radii.input, backgroundColor: "rgba(255,90,54,0.15)", borderWidth: 1, borderColor: "rgba(255,90,54,0.3)" }}
-            onPress={() => navigation.navigate({ name: "TemplateBuilder", params: {} })}
-          >
+          <Animated.View style={{ opacity: press.opacity }}>
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, borderRadius: radii.input, backgroundColor: "rgba(255,90,54,0.15)", borderWidth: 1, borderColor: "rgba(255,90,54,0.3)" }}
+              onPress={() => navigation.navigate({ name: "TemplateBuilder", params: {} })}
+              onPressIn={press.onPressIn}
+              onPressOut={press.onPressOut}
+            >
             <AppIcon name="plus" size={15} color={accent} />
             <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>New</Text>
           </Pressable>
+          </Animated.View>
         }
       />
 
@@ -70,7 +76,7 @@ export function TemplateListScreen({ navigation }: Props) {
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: accent }} />
                   <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>{template.name}</Text>
                 </View>
-                <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16, marginLeft: spacing.xl2, marginTop: spacing.sm }}>
+                <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 16, marginLeft: spacing.xl2, marginTop: spacing.sm }}>
                   {template.description || `Created ${formatShortDate(template.created_at)}`}
                 </Text>
               </View>
@@ -83,17 +89,26 @@ export function TemplateListScreen({ navigation }: Props) {
                 <MetaInline icon="calendar" label={formatShortDate(template.updated_at)} />
                 {template.is_public ? <Tag label="Public" color={blueColor} /> : <Tag label="Private" color={accent} />}
               </View>
-              <Pressable
-                style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radii.tag, backgroundColor: "rgba(255,90,54,0.13)", borderWidth: 1, borderColor: "rgba(255,90,54,0.32)" }}
-                onPress={() => navigation.navigate("StartWorkout", { id: String(template.id) })}
-              >
+              <Animated.View style={{ opacity: press.opacity }}>
+                <Pressable
+                  style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, borderRadius: radii.tag, backgroundColor: "rgba(255,90,54,0.13)", borderWidth: 1, borderColor: "rgba(255,90,54,0.32)" }}
+                  onPress={() => navigation.navigate("StartWorkout", { id: String(template.id) })}
+                  onPressIn={press.onPressIn}
+                  onPressOut={press.onPressOut}
+                >
                 <AppIcon name="play" size={11} color={accent} />
                 <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>Start</Text>
               </Pressable>
+              </Animated.View>
             </View>
-            <Pressable onPress={() => handleDelete(template)} style={{ alignSelf: "flex-start", marginTop: spacing.xl }}>
-              <Text style={{ color: redColor, fontSize: 10 }}>Delete</Text>
-            </Pressable>
+            <Animated.View style={{ opacity: press.opacity }}>
+              <Pressable onPress={() => handleDelete(template)} style={{ alignSelf: "flex-start", marginTop: spacing.xl }}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
+              >
+                <Text style={{ color: redColor, fontSize: 10 }}>Delete</Text>
+              </Pressable>
+            </Animated.View>
           </Card>
         ))}
 
@@ -101,7 +116,11 @@ export function TemplateListScreen({ navigation }: Props) {
           <EmptyCard title="No templates yet" text="Create your first reusable workout plan." />
         ) : null}
 
-        <Pressable onPress={() => navigation.navigate({ name: "TemplateBuilder", params: {} })}>
+        <Animated.View style={{ opacity: press.opacity }}>
+          <Pressable onPress={() => navigation.navigate({ name: "TemplateBuilder", params: {} })}
+            onPressIn={press.onPressIn}
+            onPressOut={press.onPressOut}
+          >
           <View style={{ borderRadius: radii.card, borderWidth: 1, borderStyle: "dashed", borderColor, backgroundColor: surface1Color, padding: spacing.xl3, flexDirection: "row", alignItems: "center", gap: spacing.xl }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: surface2Color, alignItems: "center", justifyContent: "center" }}>
               <AppIcon name="plus" size={18} color={faintColor} />
@@ -109,6 +128,7 @@ export function TemplateListScreen({ navigation }: Props) {
             <Text style={{ color: mutedColor, fontSize: 13, textAlign: "center" }}>Create new template</Text>
           </View>
         </Pressable>
+        </Animated.View>
       </View>
     </Screen>
   );

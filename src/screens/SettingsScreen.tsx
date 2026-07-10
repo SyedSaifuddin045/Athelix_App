@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Alert, Linking, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Linking, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { usePostHog } from "posthog-react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -36,7 +36,7 @@ export function SettingsScreen({ navigation }: Props) {
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
@@ -75,10 +75,22 @@ export function SettingsScreen({ navigation }: Props) {
       return;
     }
     setUsernameError("");
-    saveAccount.mutate({ username: form.username.trim() || null, email: form.email.trim() || null });
+    const payload: { username: string | null; email: string | null; password?: string } = {
+      username: form.username.trim() || null,
+      email: form.email.trim() || null,
+    };
+    if (form.newPassword.trim()) {
+      if (form.newPassword !== form.confirmPassword) {
+        setError("Passwords do not match");
+        return;
+      }
+      payload.password = form.newPassword.trim();
+    }
+    saveAccount.mutate(payload);
   };
 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
     <Screen>
       <BackHeader
         title="Account Settings"
@@ -135,7 +147,7 @@ export function SettingsScreen({ navigation }: Props) {
             <SectionEyebrow>Security</SectionEyebrow>
             <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
               <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
-                <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>New Password</Text>
+                <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>New Password</Text>
                 <View style={{ position: "relative" }}>
                   <TextInput
                     value={form.newPassword}
@@ -157,17 +169,37 @@ export function SettingsScreen({ navigation }: Props) {
                     secureTextEntry={!showPassword}
                   />
                   <Pressable
-                    style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3 }}
+                    style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3, width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
                     onPress={() => setShowPassword((v) => !v)}
                   >
                     <AppIcon name={showPassword ? "eye-off" : "eye"} size={16} color={mutedColor} />
                   </Pressable>
                 </View>
               </View>
+              <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
+              <View style={{ paddingHorizontal: spacing.xl3, paddingVertical: spacing.xl2 }}>
+                <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Confirm Password</Text>
+                <TextInput
+                  value={form.confirmPassword}
+                  onChangeText={(v) => setForm((c) => ({ ...c, confirmPassword: v }))}
+                  placeholder="Re-enter new password"
+                  placeholderTextColor={faintColor}
+                  style={{
+                    width: "100%",
+                    minHeight: 52,
+                    borderRadius: radii.input,
+                    backgroundColor: surface2Color,
+                    borderWidth: 1,
+                    borderColor,
+                    color: textColor,
+                    paddingHorizontal: 16,
+                    fontSize: 14,
+                  }}
+                  secureTextEntry={!showPassword}
+                />
+              </View>
             </Card>
           </View>
-
-
 
           <View>
             <SectionEyebrow>Notifications</SectionEyebrow>
@@ -289,5 +321,6 @@ export function SettingsScreen({ navigation }: Props) {
         </View>
       ) : null}
     </Screen>
+    </KeyboardAvoidingView>
   );
 }

@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from "react-native";
 import { useAuth, useSignUp, useSSO } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -35,7 +35,7 @@ export function RegisterScreen({ navigation }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
@@ -196,6 +196,7 @@ export function RegisterScreen({ navigation }: Props) {
 
   if (pendingVerification) {
     return (
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <Screen contentContainerStyle={{ paddingHorizontal: spacing.xl5, paddingBottom: spacing.xl7 }}>
         <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, { paddingTop: spacing.lg }]}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
@@ -230,10 +231,12 @@ export function RegisterScreen({ navigation }: Props) {
           />
         </View>
       </Screen>
+      </KeyboardAvoidingView>
     );
   }
 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
     <Screen contentContainerStyle={{ paddingHorizontal: spacing.xl5, paddingBottom: spacing.xl7 }}>
       <View style={[{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, { paddingTop: spacing.lg }]}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
@@ -249,7 +252,7 @@ export function RegisterScreen({ navigation }: Props) {
 
       <View style={[{ gap: spacing.xl2, marginTop: spacing.xl4 }]}>
         <View>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Username</Text>
+          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Username</Text>
           <TextInput
             value={form.username}
             onChangeText={(v) => { setForm((c) => ({ ...c, username: v })); setUsernameError(""); setError(""); }}
@@ -262,7 +265,7 @@ export function RegisterScreen({ navigation }: Props) {
           ) : null}
         </View>
         <View>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Email</Text>
+          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Email</Text>
           <TextInput
             value={form.email}
             onChangeText={(v) => setForm((c) => ({ ...c, email: v }))}
@@ -274,7 +277,7 @@ export function RegisterScreen({ navigation }: Props) {
           />
         </View>
         <View>
-          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Password</Text>
+          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Password</Text>
           <View style={{ position: "relative" }}>
             <TextInput
               value={form.password}
@@ -284,7 +287,7 @@ export function RegisterScreen({ navigation }: Props) {
               style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, color: textColor, paddingHorizontal: 16, fontSize: 14, paddingRight: 46 }}
               secureTextEntry={!showPassword}
             />
-            <Pressable style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3 }} onPress={() => setShowPassword((v) => !v)}>
+            <Pressable style={{ position: "absolute", right: spacing.xl2, top: spacing.xl3, width: 44, height: 44, alignItems: "center", justifyContent: "center" }} onPress={() => setShowPassword((v) => !v)}>
               <AppIcon name={showPassword ? "eye-off" : "eye"} size={16} color={mutedColor} />
             </Pressable>
           </View>
@@ -301,7 +304,7 @@ export function RegisterScreen({ navigation }: Props) {
             </View>
           ) : null}
         </View>
-        <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, lineHeight: 16 }}>
+        <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 16 }}>
           By creating an account, you agree to our <Text style={{ color: accent, fontWeight: "700" }}>Terms of Service</Text> and{" "}
           <Text style={{ color: accent, fontWeight: "700" }}>Privacy Policy</Text>.
         </Text>
@@ -350,5 +353,6 @@ export function RegisterScreen({ navigation }: Props) {
         </Text>
       </Text>
     </Screen>
+    </KeyboardAvoidingView>
   );
 }

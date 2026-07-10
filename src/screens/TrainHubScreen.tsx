@@ -1,4 +1,6 @@
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { Animated, Pressable, Text, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -27,12 +29,35 @@ export function TrainHubScreen({ navigation }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";
   const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
   const purpleColor = theme.colorPurple?.get() ?? "#A855F7";
+  const press = usePressOpacity();
   const overview = useOverviewQuery(isAuthenticated);
+
+  if (overview.isPending) {
+    return (
+      <Screen>
+        <View style={{ paddingTop: 8 }}>
+          <SectionEyebrow>Train</SectionEyebrow>
+          <Text style={{ color: textColor, fontSize: 28, fontWeight: "900", marginTop: 4 }}>Workouts</Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 10, marginTop: spacing.xl3 }}>
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={{ flex: 1, height: 80, borderRadius: 16, backgroundColor: theme.surface1?.get() ?? "rgba(255,255,255,0.08)", opacity: 0.5 }} />
+          ))}
+        </View>
+        <View style={{ marginTop: spacing.xl3, gap: spacing.xl }}>
+          {[1, 2, 3].map((i) => (
+            <View key={i} style={{ height: 80, borderRadius: 16, backgroundColor: theme.surface1?.get() ?? "rgba(255,255,255,0.08)", opacity: 0.5 }} />
+          ))}
+        </View>
+      </Screen>
+    );
+  }
+
   return (
     <Screen>
       <View style={{ paddingTop: 8 }}>
@@ -40,10 +65,13 @@ export function TrainHubScreen({ navigation }: Props) {
         <Text style={{ color: textColor, fontSize: 28, fontWeight: "900", marginTop: 4 }}>Workouts</Text>
       </View>
 
-      <Pressable
-        onPress={() => navigation.navigate({ name: "StartWorkout", params: {} })}
-        style={{ marginTop: spacing.xl3 }}
-      >
+      <Animated.View style={{ opacity: press.opacity }}>
+        <Pressable
+          onPress={() => navigation.navigate({ name: "StartWorkout", params: {} })}
+          style={{ marginTop: spacing.xl3 }}
+          onPressIn={press.onPressIn}
+          onPressOut={press.onPressOut}
+        >
         <View
           style={[
             {
@@ -62,7 +90,8 @@ export function TrainHubScreen({ navigation }: Props) {
           <Text style={{ color: "#000000", fontSize: 18, fontWeight: "900", marginTop: 14 }}>Start Workout</Text>
           <Text style={{ color: "rgba(0,0,0,0.55)", fontSize: 12, marginTop: 4 }}>Begin now or choose a template</Text>
         </View>
-      </Pressable>
+        </Pressable>
+      </Animated.View>
 
       <View style={[{ flexDirection: "row", gap: 10, marginTop: spacing.xl3 }]}>
         <CompactStatCard
@@ -97,17 +126,19 @@ export function TrainHubScreen({ navigation }: Props) {
           }
           const isAdvanced = "advanced" in section && section.advanced;
           return (
-            <Pressable
-              key={section.title}
-              onPress={() => {
-                if (section.title === "Templates")
-                  navigation.navigate({ name: "TemplateList", params: undefined });
-                else if (section.title === "Workout History")
-                  navigation.navigate({ name: "WorkoutHistory", params: undefined });
-                else if (section.title === "Mesocycles")
-                  navigation.navigate({ name: "MesocycleList", params: undefined });
-              }}
-            >
+            <Animated.View key={section.title} style={{ opacity: press.opacity }}>
+              <Pressable
+                onPress={() => {
+                  if (section.title === "Templates")
+                    navigation.navigate({ name: "TemplateList", params: undefined });
+                  else if (section.title === "Workout History")
+                    navigation.navigate({ name: "WorkoutHistory", params: undefined });
+                  else if (section.title === "Mesocycles")
+                    navigation.navigate({ name: "MesocycleList", params: undefined });
+                }}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
+              >
               <Card elevated accent={isAdvanced ? "purple" : "none"}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                   <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { flex: 1 }]}>
@@ -142,6 +173,7 @@ export function TrainHubScreen({ navigation }: Props) {
                 </View>
               </Card>
             </Pressable>
+            </Animated.View>
           );
         })}
       </View>

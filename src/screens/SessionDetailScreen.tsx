@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Alert, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Animated, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import { useQueryClient } from "@tanstack/react-query";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
@@ -62,7 +63,7 @@ export function SessionDetailScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";
@@ -70,6 +71,7 @@ export function SessionDetailScreen({ navigation, route }: Props) {
   const orangeColor = theme.colorOrange?.get() ?? "#F59E0B";
   const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
   const surfaceHover = theme.surfaceHover?.get() ?? "rgba(255,255,255,0.06)";
+  const press = usePressOpacity();
 
   const confirmDelete = async () => {
     if (!sessionId) return;
@@ -194,7 +196,7 @@ export function SessionDetailScreen({ navigation, route }: Props) {
             <View style={{ paddingVertical: spacing.xl2 }}>
               <View style={[{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }, { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: spacing.lg }]}>
                 {(isCardioEx ? ["Set", "Time", "km", "RPE", "kcal"] : ["Set", "kg", "Reps", "RPE"]).map((label) => (
-                  <Text key={label} style={[{ flex: 1, color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1, color: faintColor, fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center" }]}>
+                  <Text key={label} style={[{ flex: 1, color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1, color: faintColor, fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center" }]}>
                     {label}
                   </Text>
                 ))}
@@ -289,14 +291,24 @@ export function SessionDetailScreen({ navigation, route }: Props) {
       <Modal visible={showMenu} transparent animationType="fade" onRequestClose={() => setShowMenu(false)}>
         <Pressable style={[{ flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 60, paddingRight: 20 }, { flex: 1, justifyContent: "flex-start", alignItems: "flex-end", paddingTop: 60, paddingRight: spacing.xl4 }]} onPress={() => setShowMenu(false)}>
           <View style={[{ width: 170, borderRadius: 18, backgroundColor: "#111d1b", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingVertical: 6 }, { width: 170, borderRadius: radii.cardSmall, backgroundColor: surfaceColor, borderWidth: 1, borderColor: borderColor, paddingVertical: spacing.sm }]}>
-            <Pressable style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 }, { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl }]} onPress={handleEdit} hitSlop={12}>
-              <AppIcon name="pencil" size={14} color={mutedColor} />
-              <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Edit session</Text>
-            </Pressable>
-            <Pressable style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 12 }, { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl }]} onPress={handleDelete} hitSlop={12}>
-              <AppIcon name="trash-2" size={14} color={redColor} />
-              <Text style={[{ color: "rgba(255,255,255,0.75)", fontSize: 13 }, { color: redColor }]}>Delete session</Text>
-            </Pressable>
+            <Animated.View style={{ opacity: press.opacity }}>
+              <Pressable style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 16 }, { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl }]} onPress={handleEdit} hitSlop={12}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
+              >
+                <AppIcon name="pencil" size={14} color={mutedColor} />
+                <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 13 }}>Edit session</Text>
+              </Pressable>
+            </Animated.View>
+            <Animated.View style={{ opacity: press.opacity }}>
+              <Pressable style={[{ flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, paddingVertical: 16 }, { flexDirection: "row", alignItems: "center", gap: spacing.lg, paddingHorizontal: spacing.xl2, paddingVertical: spacing.xl }]} onPress={handleDelete} hitSlop={12}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
+              >
+                <AppIcon name="trash-2" size={14} color={redColor} />
+                <Text style={[{ color: "rgba(255,255,255,0.75)", fontSize: 13 }, { color: redColor }]}>Delete session</Text>
+              </Pressable>
+            </Animated.View>
           </View>
         </Pressable>
       </Modal>

@@ -164,7 +164,7 @@ function NotificationDropdown({
   );
 }
 
-export function NotificationBell() {
+export function NotificationBell({ onPress }: { onPress?: () => void }) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { notifications, unreadCount, clearAll, markRead } =
@@ -189,7 +189,7 @@ export function NotificationBell() {
       <IconButton
         icon="bell"
         size={40}
-        onPress={() => setShowDropdown((prev) => !prev)}
+        onPress={() => { onPress?.(); setShowDropdown((prev) => !prev); }}
       />
       {unreadCount > 0 && (
         <View

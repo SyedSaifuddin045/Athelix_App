@@ -38,7 +38,7 @@ export function MesocycleListScreen({ navigation }: Props) {
   });
 
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
@@ -73,7 +73,7 @@ export function MesocycleListScreen({ navigation }: Props) {
           <AppIcon name="trending-up" size={18} color={purpleColor} />
           <View style={{ flex: 1 }}>
             <Text style={{ color: purpleColor, fontSize: 13, fontWeight: "700" }}>Advanced Planning Mode</Text>
-            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>Mesocycles are optional training blocks.</Text>
+            <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 16 }}>Mesocycles are optional training blocks.</Text>
           </View>
         </View>
       </Card>
@@ -95,7 +95,7 @@ export function MesocycleListScreen({ navigation }: Props) {
                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: purpleColor }} />
                         <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>{meso.name}</Text>
                       </View>
-                      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16, marginLeft: spacing.xl2, marginTop: spacing.sm }}>{meso.goal ?? "Training block"}</Text>
+                      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 16, marginLeft: spacing.xl2, marginTop: spacing.sm }}>{meso.goal ?? "Training block"}</Text>
                     </View>
                     <View style={{ alignItems: "flex-end", gap: spacing.sm }}>
                       <Tag label={meso.ended_on ? "Complete" : "Active"} color={meso.ended_on ? greenColor : purpleColor} />
@@ -104,7 +104,7 @@ export function MesocycleListScreen({ navigation }: Props) {
                   </View>
                   <View style={{ marginTop: spacing.xl2 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16 }}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
+                      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 16 }}>{meso.weeks ? `${meso.weeks} weeks` : "Open ended"}</Text>
                       <Text style={{ color: purpleColor, fontSize: 11, fontWeight: "700" }}>{Math.round(Math.max(0, Math.min(100, progress)))}%</Text>
                     </View>
                     <View style={{ marginTop: spacing.md }}>
@@ -129,7 +129,7 @@ export function MesocycleListScreen({ navigation }: Props) {
             <Text style={{ color: textColor, fontSize: 22, fontWeight: "900", textAlign: "center" }}>New Mesocycle</Text>
 
             <View style={{ marginTop: spacing.xl4 }}>
-              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Name</Text>
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Name</Text>
               <TextInput
                 value={newMesoName}
                 onChangeText={setNewMesoName}
@@ -141,7 +141,7 @@ export function MesocycleListScreen({ navigation }: Props) {
             </View>
 
             <View style={{ marginTop: spacing.xl3 }}>
-              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Goal (optional)</Text>
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Goal (optional)</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
                 {MESOCYCLE_GOALS.map((goal) => (
                   <Pressable
@@ -165,7 +165,7 @@ export function MesocycleListScreen({ navigation }: Props) {
             </View>
 
             <View style={{ marginTop: spacing.xl3 }}>
-              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Weeks (optional)</Text>
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Weeks (optional)</Text>
               <TextInput
                 value={newMesoWeeks}
                 onChangeText={setNewMesoWeeks}

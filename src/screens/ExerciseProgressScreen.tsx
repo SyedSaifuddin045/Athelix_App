@@ -79,7 +79,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";
@@ -198,7 +198,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
             <Pressable
               onPress={() => setCompareMode(true)}
               style={{
-                height: 32,
+                height: 44,
                 borderRadius: radii.tag,
                 borderWidth: 1,
                 borderColor: `${compareBlue}4D`,
@@ -227,7 +227,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
               <Pressable
                 onPress={() => setCompareId(undefined)}
                 style={{
-                  height: 28,
+                  height: 36,
                   borderRadius: radii.tag,
                   borderWidth: 1,
                   borderColor,
@@ -245,7 +245,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
                 onPress={() => setComparePickerOpen(true)}
                 style={{
                   flex: 1,
-                  height: 36,
+                  height: 44,
                   borderRadius: radii.card,
                   borderWidth: 1,
                   borderColor,
@@ -264,7 +264,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
               setCompareId(undefined);
             }}
             style={{
-              height: 28,
+              height: 36,
               borderRadius: radii.tag,
               borderWidth: 1,
               borderColor: "rgba(239,68,68,0.3)",
@@ -280,13 +280,13 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
 
       {selectedId && periods.length > 0 ? (
         <View style={{ height: 32, marginTop: spacing.xl3 }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.md, paddingVertical: spacing.xs }}>
             {periods.map((p) => (
               <Pressable
                 key={p}
                 onPress={() => setPeriod(p)}
                 style={{
-                  height: 32,
+                  height: 44,
                   borderRadius: radii.tag,
                   borderWidth: 1,
                   borderColor: period === p ? "rgba(255,90,54,0.4)" : "transparent",
@@ -404,7 +404,7 @@ export function ExerciseProgressScreen({ navigation, route }: Props) {
                           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                             <View>
                               <Text style={{ color: textColor, fontSize: 15, fontWeight: "800" }}>{entry.current_best_weight_kg ?? "-"} kg × {entry.current_best_reps ?? "-"} reps</Text>
-                              <Text style={{ color: "rgba(255,255,255,0.34)", fontSize: 10 }}>{formatShortDate(entry.performed_at)}</Text>
+                              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10 }}>{formatShortDate(entry.performed_at)}</Text>
                             </View>
                             <AppIcon name="trophy" size={18} color={goldColor} />
                           </View>

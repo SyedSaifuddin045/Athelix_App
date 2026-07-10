@@ -8,7 +8,7 @@ export function SectionEyebrow({ children, color }: { children: React.ReactNode;
   return (
     <Text
       style={{
-        color: color ?? (theme.colorFaint?.get() ?? "rgba(255,255,255,0.35)"),
+        color: color ?? (theme.colorFaint?.get() ?? "rgba(255,255,255,0.55)"),
         fontSize: 11,
         fontWeight: "700",
         letterSpacing: 1.4,

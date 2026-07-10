@@ -142,7 +142,7 @@ export function NotificationSettingsScreen({ navigation }: Props) {
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
@@ -292,9 +292,9 @@ export function NotificationSettingsScreen({ navigation }: Props) {
                     handleUpdateSettings({ inactivity_threshold_hours: next });
                   }}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
                     backgroundColor: surface2Color,
                     alignItems: "center",
                     justifyContent: "center",
@@ -311,9 +311,9 @@ export function NotificationSettingsScreen({ navigation }: Props) {
                     handleUpdateSettings({ inactivity_threshold_hours: next });
                   }}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 16,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
                     backgroundColor: surface2Color,
                     alignItems: "center",
                     justifyContent: "center",
@@ -419,9 +419,9 @@ export function NotificationSettingsScreen({ navigation }: Props) {
                   handleUpdateSettings({ preferred_send_hour: pendingHour });
                   setHourPickerOpen(false);
                 }}
-                style={{
-                  minHeight: 30,
-                  borderRadius: radii.tag,
+                  style={{
+                    minHeight: 44,
+                    borderRadius: radii.tag,
                   backgroundColor: accent,
                   paddingHorizontal: spacing.xl,
                   alignItems: "center",

@@ -1,4 +1,6 @@
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, Animated, Pressable, Text, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import { useAuth } from "@clerk/expo";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
@@ -45,7 +47,7 @@ export function ProfileScreen({ navigation }: Props) {
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surfaceColor = theme.surface?.get() ?? "#0D0D0D";
@@ -53,6 +55,7 @@ export function ProfileScreen({ navigation }: Props) {
   const greenColor = theme.colorGreen?.get() ?? "#22C55E";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
   const redDarkColor = theme.colorRedDark?.get() ?? "rgba(239,68,68,0.12)";
+  const press = usePressOpacity();
 
   return (
     <Screen>
@@ -82,24 +85,28 @@ export function ProfileScreen({ navigation }: Props) {
               {initialsFor(name)}
             </Text>
           </View>
-          <Pressable
-            style={{
-              position: "absolute",
-              right: 0,
-              bottom: 0,
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: surfaceColor,
-              borderWidth: 2,
-              borderColor: screenColor,
-            }}
-            onPress={() => navigation.navigate("ProfileSetup", { mode: "edit" })}
-          >
+          <Animated.View style={{ opacity: press.opacity }}>
+            <Pressable
+              style={{
+                position: "absolute",
+                right: 0,
+                bottom: 0,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: surfaceColor,
+                borderWidth: 2,
+                borderColor: screenColor,
+              }}
+              onPress={() => navigation.navigate("ProfileSetup", { mode: "edit" })}
+              onPressIn={press.onPressIn}
+              onPressOut={press.onPressOut}
+            >
             <AppIcon name="pencil" size={13} color={accent} />
           </Pressable>
+          </Animated.View>
         </View>
         <Text style={{ color: textColor, fontSize: 21, fontWeight: "900" }}>{name}</Text>
         <Text style={{ color: mutedColor, fontSize: 11, lineHeight: 16 }}>
@@ -144,22 +151,25 @@ export function ProfileScreen({ navigation }: Props) {
             <Card elevated style={{ paddingVertical: 0, marginTop: spacing.lg }}>
               {section.items.map((item, index) => (
                 <View key={item.label}>
-                  <Pressable
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: spacing.xl,
-                      paddingHorizontal: spacing.xl3,
-                      paddingVertical: spacing.xl2,
-                    }}
-                    onPress={() => {
-                      if (item.route === "ProfileSetup") {
-                        navigation.navigate("ProfileSetup", { mode: "edit" });
-                      } else {
-                        (navigation.navigate as any)(item.route);
-                      }
-                    }}
-                  >
+                  <Animated.View style={{ opacity: press.opacity }}>
+                    <Pressable
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: spacing.xl,
+                        paddingHorizontal: spacing.xl3,
+                        paddingVertical: spacing.xl2,
+                      }}
+                      onPress={() => {
+                        if (item.route === "ProfileSetup") {
+                          navigation.navigate("ProfileSetup", { mode: "edit" });
+                        } else {
+                          (navigation.navigate as any)(item.route);
+                        }
+                      }}
+                      onPressIn={press.onPressIn}
+                      onPressOut={press.onPressOut}
+                    >
                     <View
                       style={{
                         width: 34,
@@ -180,6 +190,7 @@ export function ProfileScreen({ navigation }: Props) {
                     ) : null}
                     <AppIcon name="chevron-right" size={14} color={faintColor} />
                   </Pressable>
+                  </Animated.View>
                   {index < section.items.length - 1 ? (
                     <View style={{ height: 1, backgroundColor: borderColor, marginHorizontal: spacing.xl3 }} />
                   ) : null}
@@ -190,13 +201,29 @@ export function ProfileScreen({ navigation }: Props) {
         ))}
       </View>
 
-      <Pressable
-        onPress={async () => {
-          await signOut();
-          navigation.replace("Login");
-        }}
-        style={{ marginTop: spacing.xl3 }}
-      >
+      <Animated.View style={{ opacity: press.opacity }}>
+        <Pressable
+          onPress={() => {
+            Alert.alert(
+              "Sign out?",
+              "You'll need to sign in again.",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Sign out",
+                  style: "destructive",
+                  onPress: async () => {
+                    await signOut();
+                    navigation.replace("Login");
+                  },
+                },
+              ],
+            );
+          }}
+          style={{ marginTop: spacing.xl3 }}
+          onPressIn={press.onPressIn}
+          onPressOut={press.onPressOut}
+        >
         <View
           style={{
             minHeight: 52,
@@ -214,6 +241,7 @@ export function ProfileScreen({ navigation }: Props) {
           <Text style={{ color: redColor, fontSize: 14, fontWeight: "700" }}>Sign Out</Text>
         </View>
       </Pressable>
+      </Animated.View>
 
       <Text style={{ color: faintColor, fontSize: 10, textAlign: "center", marginTop: spacing.xl4 }}>
         Athelix - member since {formatShortDate(user?.created_at)}

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Platform, Pressable, Text, View } from "react-native";
+import { Alert, KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/core";
 import type { RootStackParamList } from "../types/navigation";
@@ -48,7 +48,7 @@ export function ProfileSetupScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
@@ -132,6 +132,7 @@ export function ProfileSetupScreen({ navigation, route }: Props) {
   });
 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
     <Screen>
       <BackHeader
         title="Profile Setup"
@@ -182,7 +183,7 @@ export function ProfileSetupScreen({ navigation, route }: Props) {
           <View style={[{ gap: spacing.xl2 }]}>
             <LabeledInput label="Display Name" value={form.displayName} onChangeText={(v) => setForm((c) => ({ ...c, displayName: v }))} />
             <View>
-              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Date of Birth</Text>
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Date of Birth</Text>
               <Pressable onPress={() => setShowDatePicker(true)} style={{ width: "100%", minHeight: 52, borderRadius: radii.input, backgroundColor: surfaceHover, borderWidth: 1, borderColor: borderColor, justifyContent: "center", paddingHorizontal: 16 }}>
                 <Text style={{ color: form.dob ? textColor : faintColor, fontSize: 14 }}>
                   {formattedDob}
@@ -193,7 +194,7 @@ export function ProfileSetupScreen({ navigation, route }: Props) {
               )}
             </View>
             <View>
-              <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Gender</Text>
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }}>Gender</Text>
               <ChipWrap items={GENDERS.map((g) => ({ value: g, label: g }))} selected={form.gender} onSelect={(v) => setForm((c) => ({ ...c, gender: v }))} activeColor={accent} />
             </View>
           </View>
@@ -277,5 +278,6 @@ export function ProfileSetupScreen({ navigation, route }: Props) {
       </View>
       ) : null}
     </Screen>
+    </KeyboardAvoidingView>
   );
 }

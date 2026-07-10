@@ -1,5 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, SectionList, Text, TouchableOpacity, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../types/navigation";
 import { useAuth } from "@clerk/expo";
@@ -145,12 +146,13 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";
   const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
   const greenColor = theme.colorGreen?.get() ?? "#22C55E";
   const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
+  const press = usePressOpacity();
   const sessions = useSessionsQuery(isAuthenticated);
   const totalVolume = useMemo(() => (sessions.data ?? []).reduce((sum, session) => sum + (session.total_volume ?? 0), 0), [sessions.data]);
 
@@ -281,9 +283,9 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
                     if (viewMode === "calendar") setSelectedDate(null);
                   }}
                   style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 18,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: surface2Color,
@@ -305,11 +307,11 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
             {viewMode === "calendar" ? (
               <View style={{ marginTop: spacing.xl3 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: spacing.lg }}>
-                  <TouchableOpacity onPress={goToPrevMonth} style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
+                  <TouchableOpacity onPress={goToPrevMonth} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
                     <AppIcon name="chevron-left" size={16} color={mutedColor} />
                   </TouchableOpacity>
                   <Text style={{ color: textColor, fontSize: 15, fontWeight: "700" }}>{monthLabel}</Text>
-                  <TouchableOpacity onPress={goToNextMonth} style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
+                  <TouchableOpacity onPress={goToNextMonth} style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}>
                     <AppIcon name="chevron-right" size={16} color={mutedColor} />
                   </TouchableOpacity>
                 </View>
@@ -337,11 +339,13 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
                     const isSelected = selectedDate === dateStr;
 
                     return (
-                      <Pressable
-                        key={dateStr}
-                        onPress={() => handleDayPress(day)}
-                        style={{ width: `${100 / 7}%`, aspectRatio: 1, alignItems: "center", justifyContent: "center" }}
-                      >
+                      <Animated.View key={dateStr} style={{ opacity: press.opacity, width: `${100 / 7}%`, aspectRatio: 1 }}>
+                        <Pressable
+                          onPress={() => handleDayPress(day)}
+                          onPressIn={press.onPressIn}
+                          onPressOut={press.onPressOut}
+                          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
+                        >
                         <View
                           style={{
                             width: 32,
@@ -374,6 +378,7 @@ export function WorkoutHistoryScreen({ navigation }: Props) {
                           />
                         ) : null}
                       </Pressable>
+                      </Animated.View>
                     );
                   })}
                 </View>

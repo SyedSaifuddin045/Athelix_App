@@ -40,7 +40,7 @@ export function ExerciseDetailScreen({ navigation, route }: Props) {
 
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const goldColor = theme.colorGold?.get() ?? "#FBBF24";

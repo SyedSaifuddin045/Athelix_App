@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Animated, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -142,7 +143,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const faintColor = theme.colorFaint?.get() ?? "rgba(255,255,255,0.25)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
   const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
@@ -170,6 +171,8 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
   const sessionDetail = useSessionDetailQuery(templateId ? undefined : sessionId, isAuthenticated && !!sessionId && !templateId);
   const lookupQuery = useExercisesQuery({ limit: 200, offset: 0 }, isAuthenticated);
   const lookup = useMemo(() => exerciseLookup(lookupQuery.data?.items), [lookupQuery.data?.items]);
+
+  const press = usePressOpacity();
 
   const isCardio = (exerciseId: string) => lookup.get(exerciseId)?.exercise_category === "cardio";
 
@@ -546,44 +549,52 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
       <Screen>
         <Card style={[{ marginTop: 0, paddingVertical: spacing.xl, borderRadius: 0, marginHorizontal: -20, paddingHorizontal: 20, borderLeftWidth: 0, borderRightWidth: 0, borderTopWidth: 0 }]}>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <Pressable
-              style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: spacing.sm,
-                  paddingHorizontal: spacing.xl2,
-                  paddingVertical: spacing.md,
-                  borderRadius: radii.input,
-                  backgroundColor: theme.colorRedDark?.get(),
-                  borderColor: "rgba(239,68,68,0.25)",
-                  borderWidth: 1,
-                }}
-              onPress={discardWorkout}
-            >
-              <AppIcon name="x" size={13} color={theme.colorRed?.get()} />
-              <Text style={{ color: theme.colorRed?.get(), fontSize: 12, fontWeight: "600" }}>Discard</Text>
-            </Pressable>
+            <Animated.View style={{ opacity: press.opacity }}>
+              <Pressable
+                style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: spacing.sm,
+                    paddingHorizontal: spacing.xl2,
+                    paddingVertical: spacing.md,
+                    borderRadius: radii.input,
+                    backgroundColor: theme.colorRedDark?.get(),
+                    borderColor: "rgba(239,68,68,0.25)",
+                    borderWidth: 1,
+                  }}
+                onPress={discardWorkout}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
+              >
+                <AppIcon name="x" size={13} color={theme.colorRed?.get()} />
+                <Text style={{ color: theme.colorRed?.get(), fontSize: 12, fontWeight: "600" }}>Discard</Text>
+              </Pressable>
+            </Animated.View>
             <View style={{ alignItems: "center" }}>
               <Text style={{ color: textColor, fontSize: 18, fontWeight: "900" }}>{formatTime(elapsed)}</Text>
-              <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, marginTop: 2 }}>
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, marginTop: 2 }}>
                 {completedSets}/{totalSets} work sets done
               </Text>
             </View>
-            <Pressable
-              style={{
-                  backgroundColor: accent,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: spacing.sm,
-                  paddingHorizontal: spacing.xl2,
-                  paddingVertical: spacing.md,
-                  borderRadius: radii.input,
-                }}
-              onPress={() => setShowFinish(true)}
-            >
-              <AppIcon name="check" size={13} color="#000000" />
-              <Text style={{ color: "#000000", fontSize: 12, fontWeight: "800" }}>Finish</Text>
-            </Pressable>
+            <Animated.View style={{ opacity: press.opacity }}>
+              <Pressable
+                style={{
+                    backgroundColor: accent,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: spacing.sm,
+                    paddingHorizontal: spacing.xl2,
+                    paddingVertical: spacing.md,
+                    borderRadius: radii.input,
+                  }}
+                onPress={() => setShowFinish(true)}
+                onPressIn={press.onPressIn}
+                onPressOut={press.onPressOut}
+              >
+                <AppIcon name="check" size={13} color="#000000" />
+                <Text style={{ color: "#000000", fontSize: 12, fontWeight: "800" }}>Finish</Text>
+              </Pressable>
+            </Animated.View>
           </View>
           <View style={{ marginTop: spacing.xl2 }}>
             <ProgressBar value={totalSets ? (completedSets / totalSets) * 100 : 0} color={accent} />
@@ -612,7 +623,7 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                     <Text style={[{ color: textColor, fontSize: 13, fontWeight: "700" }, { flex: 1 }]}>{exercise.name}</Text>
                   </View>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <Text style={{ color: "rgba(255,255,255,0.34)", fontSize: 10 }}>
+                    <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10 }}>
                       {done}/{total}
                     </Text>
                     <AppIcon
@@ -625,15 +636,15 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                 {expanded === exercise.id ? (
                   <View style={{ marginTop: spacing.xl2 }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4, marginBottom: 10 }}>
-                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.index }]}>Set</Text>
-                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1 }]}>
+                      <Text style={[{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { width: GRID_COL_WIDTHS.index }]}>Set</Text>
+                      <Text style={[{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1 }]}>
                         {isCardio(exercise.exerciseId) ? "Time" : "kg"}
                       </Text>
-                      <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1 }]}>
+                      <Text style={[{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }, { flex: 1 }]}>
                         {isCardio(exercise.exerciseId) ? "km" : "Reps"}
                       </Text>
                       <Pressable onPress={() => setRpeChartModal(true)} style={[{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 }, { width: GRID_COL_WIDTHS.rpe }]}>
-                        <Text style={[{ color: "rgba(255,255,255,0.3)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }]}>RPE</Text>
+                        <Text style={[{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: "700", textTransform: "uppercase", textAlign: "center", paddingHorizontal: 4 }]}>RPE</Text>
                         <Text style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, fontWeight: "700" }}>?</Text>
                       </Pressable>
                       <View style={{ width: GRID_COL_WIDTHS.checkbox }} />
@@ -644,7 +655,10 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                         <View style={[{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 4 }, set.done ? { opacity: 0.5 } : null]}>
                           <Pressable
                             onPress={() => toggleWarmup(exercise.id, set.id)}
-                            style={{ width: GRID_COL_WIDTHS.index, alignItems: "center", justifyContent: "center" }}
+                            onPressIn={press.onPressIn}
+                            onPressOut={press.onPressOut}
+                            hitSlop={6}
+                            style={{ width: GRID_COL_WIDTHS.index, alignItems: "center", justifyContent: "center", opacity: press.opacity }}
                           >
                             <Text style={[{ color: textColor, fontSize: 11, fontWeight: "700" }, { color: set.warmup ? theme.colorOrange?.get() : "rgba(255,255,255,0.55)" }]}>
                               {set.warmup ? "W" : exercise.sets.filter((item) => !item.warmup).indexOf(set) + 1}
@@ -678,8 +692,10 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                               />
                               <Pressable
                                 onPress={() => setPlateCalc({ exerciseId: exercise.id, setId: set.id, weight: set.weight })}
-                                hitSlop={6}
-                                style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}
+                                onPressIn={press.onPressIn}
+                                onPressOut={press.onPressOut}
+                                hitSlop={12}
+                                style={{ width: 28, height: 28, alignItems: "center", justifyContent: "center", opacity: press.opacity }}
                               >
                                 <AppIcon name="scale" size={13} color="rgba(255,255,255,0.25)" />
                               </Pressable>
@@ -693,15 +709,18 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                           )}
                           <Pressable
                             onPress={() => setRpePicker({ exerciseId: exercise.id, setId: set.id })}
+                            onPressIn={press.onPressIn}
+                            onPressOut={press.onPressOut}
                             style={{
                               width: GRID_COL_WIDTHS.rpe,
-                              height: 38,
+                              height: 44,
                               borderRadius: radii.stepper,
                               backgroundColor: surface2Color,
                               borderWidth: 1,
                               borderColor: borderColor,
                               alignItems: "center",
                               justifyContent: "center",
+                              opacity: press.opacity,
                             }}
                           >
                             <Text style={{ color: set.rpe ? textColor : faintColor, fontSize: 13, fontWeight: "600" }}>
@@ -710,15 +729,18 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                           </Pressable>
                           <Pressable
                             onPress={() => toggleSet(exercise.id, set.id)}
+                            onPressIn={press.onPressIn}
+                            onPressOut={press.onPressOut}
                             style={{
                                 width: GRID_COL_WIDTHS.checkbox,
-                                height: 36,
+                                height: 44,
                                 borderRadius: radii.iconWrap,
                                 backgroundColor: set.done ? accent : surface2Color,
                                 borderColor: set.done ? accent : borderColor,
                                 borderWidth: 1,
                                 alignItems: "center",
                                 justifyContent: "center",
+                                opacity: press.opacity,
                               }}
                           >
                             {set.done ? <AppIcon name="check" size={15} color="#000000" /> : null}
@@ -727,85 +749,94 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                         </SwipeableSetRow>
                       ))}
                     </View>
-                    <Pressable
-                      style={{
-                          marginTop: spacing.lg,
-                          minHeight: 42,
-                          borderRadius: radii.input,
-                          borderWidth: 1,
-                          borderStyle: "dashed",
-                          borderColor: "rgba(255,90,54,0.25)",
-                          backgroundColor: "rgba(255,90,54,0.08)",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexDirection: "row",
-                          gap: spacing.sm,
-                        }}
-                      onPress={() => addSet(exercise.id)}
-                    >
-                      <AppIcon name="plus" size={13} color={accent} />
-                      <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>Add Set</Text>
-                    </Pressable>
+                    <Animated.View style={{ opacity: press.opacity }}>
+                      <Pressable
+                        style={{
+                            marginTop: spacing.lg,
+                            minHeight: 42,
+                            borderRadius: radii.input,
+                            borderWidth: 1,
+                            borderStyle: "dashed",
+                            borderColor: "rgba(255,90,54,0.25)",
+                            backgroundColor: "rgba(255,90,54,0.08)",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexDirection: "row",
+                            gap: spacing.sm,
+                          }}
+                        onPress={() => addSet(exercise.id)}
+                        onPressIn={press.onPressIn}
+                        onPressOut={press.onPressOut}
+                      >
+                        <AppIcon name="plus" size={13} color={accent} />
+                        <Text style={{ color: accent, fontSize: 12, fontWeight: "700" }}>Add Set</Text>
+                      </Pressable>
+                    </Animated.View>
                   </View>
                 ) : null}
               </Card>
             );
           })}
 
-          <Pressable onPress={() => setShowExercisePicker(true)}>
-            <View
-              style={{
-                borderRadius: radii.card,
-                borderWidth: 1,
-                borderStyle: "dashed",
-                borderColor: borderColor,
-                backgroundColor: surface1Color,
-                padding: spacing.xl3,
-                flexDirection: "row",
-                alignItems: "center",
-                gap: spacing.xl,
-              }}
-            >
+          <Animated.View style={{ opacity: press.opacity }}>
+            <Pressable onPress={() => setShowExercisePicker(true)}>
               <View
                 style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: "rgba(255,90,54,0.12)",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  borderRadius: radii.card,
+                  borderWidth: 1,
+                  borderStyle: "dashed",
+                  borderColor: borderColor,
+                  backgroundColor: surface1Color,
+                  padding: spacing.xl3,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: spacing.xl,
+                }}
               >
-                <AppIcon name="plus" size={18} color={accent} />
+                <View
+                  style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 20,
+                      backgroundColor: "rgba(255,90,54,0.12)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                >
+                  <AppIcon name="plus" size={18} color={accent} />
+                </View>
+                <Text style={[{ color: textColor, fontSize: 15, fontWeight: "800" }, { color: mutedColor }]}>Add Exercise</Text>
               </View>
-              <Text style={[{ color: textColor, fontSize: 15, fontWeight: "800" }, { color: mutedColor }]}>Add Exercise</Text>
-            </View>
-          </Pressable>
+            </Pressable>
+          </Animated.View>
 
           <Card elevated>
             <SectionEyebrow>Session Notes</SectionEyebrow>
             <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { marginTop: spacing.xl, flexWrap: "wrap", gap: spacing.md }]}>
               {MOODS.map((entry) => (
-                <Pressable
-                  key={entry.label}
-                  onPress={() => setMood(entry.label)}
-                  style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: radii.iconWrap,
-                      backgroundColor: mood === entry.label ? "rgba(255,90,54,0.2)" : surface2Color,
-                      borderColor: mood === entry.label ? "rgba(255,90,54,0.4)" : "transparent",
-                      borderWidth: 1,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                >
-                  <AppIcon
-                    name={entry.icon}
-                    size={20}
-                    color={mood === entry.label ? accent : mutedColor}
-                  />
-                </Pressable>
+                <Animated.View key={entry.label} style={{ opacity: press.opacity }}>
+                  <Pressable
+                    onPress={() => setMood(entry.label)}
+                    onPressIn={press.onPressIn}
+                    onPressOut={press.onPressOut}
+                    style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: radii.iconWrap,
+                        backgroundColor: mood === entry.label ? "rgba(255,90,54,0.2)" : surface2Color,
+                        borderColor: mood === entry.label ? "rgba(255,90,54,0.4)" : "transparent",
+                        borderWidth: 1,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                  >
+                    <AppIcon
+                      name={entry.icon}
+                      size={20}
+                      color={mood === entry.label ? accent : mutedColor}
+                    />
+                  </Pressable>
+                </Animated.View>
               ))}
             </View>
             <View style={[{ flexDirection: "row", alignItems: "center", gap: 10 }, { alignItems: "flex-start", marginTop: spacing.xl2 }]}>
@@ -881,21 +912,27 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
               >
                 <AppIcon name="smile" size={16} color={accent} />
                 {MOODS.map((entry) => (
-                  <Pressable
-                    key={entry.label}
-                    onPress={() => setMood(entry.label)}
-                    style={{
-                      opacity: mood && mood !== entry.label ? 0.45 : 1,
-                      alignItems: "center",
-                      gap: spacing.xxs,
-                    }}
-                  >
-                    <AppIcon
-                      name={entry.icon}
-                      size={24}
-                      color={mood === entry.label ? accent : mutedColor}
-                    />
-                  </Pressable>
+                  <Animated.View key={entry.label} style={{ opacity: press.opacity }}>
+                    <Pressable
+                      onPress={() => setMood(entry.label)}
+                      onPressIn={press.onPressIn}
+                      onPressOut={press.onPressOut}
+                      style={{
+                        opacity: mood && mood !== entry.label ? 0.45 : 1,
+                        alignItems: "center",
+                        gap: spacing.xxs,
+                        width: 44,
+                        height: 44,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <AppIcon
+                        name={entry.icon}
+                        size={24}
+                        color={mood === entry.label ? accent : mutedColor}
+                      />
+                    </Pressable>
+                  </Animated.View>
                 ))}
               </View>
               <PrimaryButton
@@ -947,33 +984,41 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                     : "";
                   const isSelected = String(val) === current;
                   return (
-                    <Pressable
-                      key={val}
-                      onPress={() => {
-                        if (rpePicker) {
-                          updateSet(rpePicker.exerciseId, rpePicker.setId, "rpe", String(val));
-                          setRpePicker(null);
-                        }
-                      }}
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
-                        backgroundColor: isSelected ? accent : surface2Color,
-                        borderWidth: 1,
-                        borderColor: isSelected ? accent : borderColor,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text style={{ color: isSelected ? "#000" : textColor, fontSize: 15, fontWeight: "700" }}>{val}</Text>
-                    </Pressable>
+                    <Animated.View key={val} style={{ opacity: press.opacity }}>
+                      <Pressable
+                        onPress={() => {
+                          if (rpePicker) {
+                            updateSet(rpePicker.exerciseId, rpePicker.setId, "rpe", String(val));
+                            setRpePicker(null);
+                          }
+                        }}
+                        onPressIn={press.onPressIn}
+                        onPressOut={press.onPressOut}
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 22,
+                          backgroundColor: isSelected ? accent : surface2Color,
+                          borderWidth: 1,
+                          borderColor: isSelected ? accent : borderColor,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text style={{ color: isSelected ? "#000" : textColor, fontSize: 15, fontWeight: "700" }}>{val}</Text>
+                      </Pressable>
+                    </Animated.View>
                   );
                 })}
               </View>
-              <Pressable onPress={() => setRpePicker(null)} style={{ marginTop: spacing.xl, alignItems: "center" }}>
-                <Text style={{ color: mutedColor, fontSize: 13 }}>Clear</Text>
-              </Pressable>
+              <Animated.View style={{ opacity: press.opacity }}>
+                <Pressable onPress={() => setRpePicker(null)} style={{ marginTop: spacing.xl, alignItems: "center" }}
+                  onPressIn={press.onPressIn}
+                  onPressOut={press.onPressOut}
+                >
+                  <Text style={{ color: mutedColor, fontSize: 13 }}>Clear</Text>
+                </Pressable>
+              </Animated.View>
             </Pressable>
           </Pressable>
         </Modal>
@@ -1005,9 +1050,14 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                   </View>
                 ))}
               </View>
-              <Pressable onPress={() => setRpeChartModal(false)} style={{ marginTop: spacing.xl, alignItems: "center" }}>
-                <Text style={{ color: mutedColor, fontSize: 13 }}>Close</Text>
-              </Pressable>
+              <Animated.View style={{ opacity: press.opacity }}>
+                <Pressable onPress={() => setRpeChartModal(false)} style={{ marginTop: spacing.xl, alignItems: "center" }}
+                  onPressIn={press.onPressIn}
+                  onPressOut={press.onPressOut}
+                >
+                  <Text style={{ color: mutedColor, fontSize: 13 }}>Close</Text>
+                </Pressable>
+              </Animated.View>
             </Pressable>
           </Pressable>
         </Modal>
@@ -1048,9 +1098,14 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                   );
                 })()}
               </View>
-              <Pressable onPress={() => setPlateCalc(null)} style={{ marginTop: spacing.xl, alignItems: "center" }}>
-                <Text style={{ color: mutedColor, fontSize: 13 }}>Close</Text>
-              </Pressable>
+              <Animated.View style={{ opacity: press.opacity }}>
+                <Pressable onPress={() => setPlateCalc(null)} style={{ marginTop: spacing.xl, alignItems: "center" }}
+                  onPressIn={press.onPressIn}
+                  onPressOut={press.onPressOut}
+                >
+                  <Text style={{ color: mutedColor, fontSize: 13 }}>Close</Text>
+                </Pressable>
+              </Animated.View>
             </Pressable>
           </Pressable>
         </Modal>
@@ -1101,16 +1156,21 @@ export function ActiveWorkoutScreen({ navigation, route }: Props) {
                     {formatTime(restTimer.remaining)}
                   </Text>
                 </View>
-                <Pressable onPress={() => setRestTimer(null)} style={{
-                  paddingHorizontal: spacing.xl4,
-                  paddingVertical: spacing.md,
-                  borderRadius: radii.input,
-                  backgroundColor: surface2Color,
-                  borderWidth: 1,
-                  borderColor: borderColor,
-                }}>
-                  <Text style={{ color: mutedColor, fontSize: 14, fontWeight: "700" }}>Skip</Text>
-                </Pressable>
+                <Animated.View style={{ opacity: press.opacity }}>
+                  <Pressable onPress={() => setRestTimer(null)} style={{
+                    paddingHorizontal: spacing.xl4,
+                    paddingVertical: spacing.md,
+                    borderRadius: radii.input,
+                    backgroundColor: surface2Color,
+                    borderWidth: 1,
+                    borderColor: borderColor,
+                  }}
+                    onPressIn={press.onPressIn}
+                    onPressOut={press.onPressOut}
+                  >
+                    <Text style={{ color: mutedColor, fontSize: 14, fontWeight: "700" }}>Skip</Text>
+                  </Pressable>
+                </Animated.View>
               </Pressable>
             </Pressable>
           </Modal>

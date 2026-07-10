@@ -6,46 +6,77 @@ import { useTheme } from "@tamagui/core";
 import { spacing } from "../../design-system/tokens/spacing";
 import { radii } from "../../design-system/tokens/radii";
 
+function formatCompactValue(value: number): string {
+  if (value >= 1000) return `${(value / 1000).toFixed(value % 1000 >= 100 ? 1 : 0)}k`;
+  return String(value);
+}
+
 export function VerticalBars({
   data,
   height = 120,
   barColor: barColorProp,
   maxValue,
+  activeIndex,
+  goalValue,
 }: {
   data: { label: string; value: number }[];
   height?: number;
   barColor?: string;
   maxValue?: number;
+  activeIndex?: number;
+  goalValue?: number;
 }) {
   const theme = useTheme();
   const barColor = barColorProp ?? theme.accent?.get() ?? "#FF5A36";
-  const max = maxValue ?? Math.max(...data.map((d) => d.value), 1);
+  const mutedColor = "rgba(255,255,255,0.3)";
+  const max = maxValue ?? Math.max(...data.map((d) => d.value), goalValue ?? 0, 1);
+  const goalY = goalValue != null ? ((goalValue / max) * height) : null;
 
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: spacing.xs }}>
-      {data.map((item, i) => {
-        const barHeight = Math.max((item.value / max) * height, 4);
-        return (
-          <View key={i} style={{ flex: 1, alignItems: "center", gap: spacing.xxs }}>
-            <Text style={{ color: barColor, fontSize: 10, fontWeight: "700", minHeight: 14 }}>
-              {item.value > 0 ? item.value : ""}
-            </Text>
-            <View style={{ justifyContent: "flex-end", width: 26, height }}>
-              <View
-                style={{
-                  width: 22,
-                  borderRadius: radii.stepper,
-                  alignSelf: "center",
-                  height: barHeight,
-                  backgroundColor: barColor,
-                  opacity: 0.4 + (item.value / max) * 0.6,
-                }}
-              />
+    <View>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", gap: spacing.xs }}>
+        {data.map((item, i) => {
+          const barHeight = Math.max((item.value / max) * height, 4);
+          const isActive = activeIndex != null && i === activeIndex;
+          const barBg = isActive ? barColor : barColor;
+          const barOpacity = isActive ? 0.8 : 0.3;
+          return (
+            <View key={i} style={{ flex: 1, alignItems: "center", gap: spacing.xxs }}>
+              <Text style={{ color: isActive ? barColor : mutedColor, fontSize: 10, fontWeight: "700", minHeight: 14 }}>
+                {item.value > 0 ? formatCompactValue(item.value) : ""}
+              </Text>
+              <View style={{ justifyContent: "flex-end", width: 26, height, position: "relative" }}>
+                {goalY != null && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: height - goalY,
+                      left: -4,
+                      right: -4,
+                      borderWidth: 1,
+                      borderStyle: "dashed",
+                      borderColor: theme.colorMuted?.get() ?? "rgba(255,255,255,0.3)",
+                      opacity: 0.3,
+                      zIndex: 1,
+                    }}
+                  />
+                )}
+                <View
+                  style={{
+                    width: 22,
+                    borderRadius: radii.stepper,
+                    alignSelf: "center",
+                    height: barHeight,
+                    backgroundColor: barBg,
+                    opacity: barOpacity,
+                  }}
+                />
+              </View>
+              <Text style={{ color: isActive ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 8, fontWeight: isActive ? "600" : "400" }}>{item.label}</Text>
             </View>
-            <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, marginTop: 8 }}>{item.label}</Text>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
     </View>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Animated, BackHandler, LayoutAnimation, Modal, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, Animated, BackHandler, KeyboardAvoidingView, LayoutAnimation, Modal, Platform, Pressable, Text, TextInput, View } from "react-native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -52,7 +52,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   const theme = useTheme();
   const accent = theme.accent?.get() ?? "#FF5A36";
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
   const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
@@ -424,6 +424,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
   };
 
   return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
     <Screen contentContainerStyle={{ paddingBottom: 28 }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)" }}>
         <RoundButton onPress={() => navigation.goBack()}>
@@ -519,24 +520,24 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                   {expanded === exercise.id ? (
                     <View style={{ marginTop: 14, gap: 8 }}>
                       <View style={{ flexDirection: "row", paddingHorizontal: 2, marginBottom: 4 }}>
-                        <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 28, letterSpacing: 0.4, textTransform: "uppercase" }}>#</Text>
-                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "reps" })} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 4 }}>
+                        <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", width: 28, letterSpacing: 0.4, textTransform: "uppercase" }}>#</Text>
+                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "reps" })} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 4, minHeight: 44 }}>
                           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", letterSpacing: 0.4, textTransform: "uppercase" }}>Reps</Text>
                           <AppIcon name="pen" size={10} color="rgba(255,255,255,0.2)" />
                         </Pressable>
-                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "rpe" })} style={{ width: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3 }}>
+                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "rpe" })} style={{ width: 46, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, minHeight: 44 }}>
                           <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>RPE</Text>
                           <AppIcon name="pen" size={10} color="rgba(255,255,255,0.2)" />
                         </Pressable>
-                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "rest" })} style={{ width: 60, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3 }}>
-                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
+                        <Pressable onPress={() => setBulkModal({ exerciseId: exercise.id, field: "rest" })} style={{ width: 60, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3, minHeight: 44 }}>
+                          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", textAlign: "center", letterSpacing: 0.4, textTransform: "uppercase" }}>Rest</Text>
                           <AppIcon name="pen" size={10} color="rgba(255,255,255,0.2)" />
                         </Pressable>
                         <View style={{ width: 24 }} />
                       </View>
                       {exercise.sets.map((set, setIdx) => (
                         <View key={setIdx} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", width: 28 }}>
+                          <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", width: 28 }}>
                             {setIdx + 1}
                           </Text>
                           <MiniInput
@@ -569,7 +570,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                             <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>{set.rest}</Text>
                           </Pressable>
                           {setIdx > 0 ? (
-                            <Pressable onPress={() => removeSet(exercise.id, setIdx)} hitSlop={6}>
+                            <Pressable onPress={() => removeSet(exercise.id, setIdx)} hitSlop={12} style={{ width: 32, height: 32, alignItems: "center", justifyContent: "center" }}>
                               <AppIcon name="x" size={14} color="rgba(239,68,68,0.6)" />
                             </Pressable>
                           ) : (
@@ -579,7 +580,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
                       ))}
                       <Pressable
                         onPress={() => addSet(exercise.id)}
-                        style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4 }}
+                        style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 12 }}
                       >
                         <AppIcon name="plus" size={12} color={accent} />
                         <Text style={{ color: accent, fontSize: 11 }}>Add Set</Text>
@@ -607,18 +608,18 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
               transform: [{ translateY: getGap(exercise.id) }],
             }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
-                <Pressable onPress={() => moveExercise(index, index - 1)} hitSlop={8}>
+                <Pressable onPress={() => moveExercise(index, index - 1)} hitSlop={12} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
                   <AppIcon name="chevron-up" size={15} color="rgba(255,255,255,0.3)" />
                 </Pressable>
-                <Pressable onPress={() => moveExercise(index, index + 1)} hitSlop={8}>
+                <Pressable onPress={() => moveExercise(index, index + 1)} hitSlop={12} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
                   <AppIcon name="chevron-down" size={15} color="rgba(255,255,255,0.3)" />
                 </Pressable>
               </View>
               <View style={{ width: 1, height: 16, marginHorizontal: 8, backgroundColor: "rgba(255,255,255,0.1)" }} />
-              <Pressable onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))} hitSlop={8}>
+              <Pressable onPress={() => setExpanded((current) => (current === exercise.id ? null : exercise.id))} hitSlop={12} style={{ width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
                 <AppIcon name={expanded === exercise.id ? "chevron-up" : "chevron-down"} size={17} color="rgba(255,255,255,0.6)" />
               </Pressable>
-              <Pressable onPress={() => removeExercise(exercise.id)} hitSlop={8} style={{ marginLeft: 10 }}>
+              <Pressable onPress={() => removeExercise(exercise.id)} hitSlop={12} style={{ marginLeft: 10, width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
                 <AppIcon name="trash-2" size={15} color="rgba(239,68,68,0.6)" />
               </Pressable>
             </Animated.View>
@@ -681,7 +682,7 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
               ))}
             </View>
             <View style={{ marginTop: 20, alignItems: "center" }}>
-              <Text style={[{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }, { marginBottom: 10 }]}>Custom</Text>
+              <Text style={[{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: "700", marginBottom: 8, letterSpacing: 0.4, textTransform: "uppercase" }, { marginBottom: 10 }]}>Custom</Text>
               <View style={{ flexDirection: "row", gap: 12, justifyContent: "center", alignItems: "flex-end" }}>
                 <PickerColumn values={MINUTES} selected={customMinutes} onSelect={setCustomMinutes} label="Min" />
                 <Text style={{ fontSize: 24, fontWeight: "900", color: textColor, paddingBottom: 18 }}>:</Text>
@@ -787,5 +788,6 @@ export function TemplateBuilderScreen({ navigation, route }: Props) {
         </Pressable>
       </Modal>
     </Screen>
+    </KeyboardAvoidingView>
   );
 }

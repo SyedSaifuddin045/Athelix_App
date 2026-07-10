@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Dimensions, Pressable, ScrollView, Text, View } from "react-native";
+import { Animated, Dimensions, Pressable, ScrollView, Text, View } from "react-native";
+import { usePressOpacity } from "../utils/usePressOpacity";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import type { RootStackParamList } from "../types/navigation";
@@ -105,7 +106,7 @@ function VolumeBar({
           </View>
         ) : null}
       </View>
-      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, lineHeight: 16, marginTop: spacing.xs }}>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, lineHeight: 16, marginTop: spacing.xs }}>
         {current} set{current !== 1 ? "s" : ""} this period · {average} avg{target && target > 0 ? ` · Target: ${target} sets` : ""}
       </Text>
     </View>
@@ -132,7 +133,7 @@ function ExerciseRow({
           backgroundColor: color,
         }}
       />
-      <Text style={{ color: "rgba(255,255,255,0.34)", fontSize: 10, flex: 1 }} numberOfLines={1}>
+      <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, flex: 1 }} numberOfLines={1}>
         {exercise.exercise_name}
       </Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
@@ -181,7 +182,7 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
   const items = report.data?.items ?? [];
 
   const textColor = theme.color?.get() ?? "#FFFFFF";
-  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.45)";
+  const mutedColor = theme.colorMuted?.get() ?? "rgba(255,255,255,0.55)";
   const surface2Color = theme.surface2?.get() ?? "rgba(255,255,255,0.06)";
   const surface1Color = theme.surface1?.get() ?? "rgba(255,255,255,0.04)";
   const borderColor = theme.borderColor?.get() ?? "rgba(255,255,255,0.08)";
@@ -189,6 +190,7 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
   const greenColor = theme.colorGreen?.get() ?? "#22C55E";
   const blueColor = theme.colorBlue?.get() ?? "#3B82F6";
   const redColor = theme.colorRed?.get() ?? "#EF4444";
+  const press = usePressOpacity();
 
   const STATUS_COLORS: Record<string, string> = {
     Strong: greenColor,
@@ -244,20 +246,22 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
         }}
       >
         {MUSCLE_PERIODS.map((p) => (
-          <Pressable
-            key={p}
-            onPress={() => setPeriod(p)}
-            style={{
-              flex: 1,
-              minHeight: 38,
-              borderRadius: radii.input - 4,
-              alignItems: "center",
-              justifyContent: "center",
-              borderWidth: 1,
-              borderColor: period === p ? borderLight : "transparent",
-              backgroundColor: period === p ? surface1Color : "transparent",
-            }}
-          >
+          <Animated.View key={p} style={{ opacity: press.opacity, flex: 1 }}>
+            <Pressable
+              onPress={() => setPeriod(p)}
+              onPressIn={press.onPressIn}
+              onPressOut={press.onPressOut}
+              style={{
+                flex: 1,
+                minHeight: 38,
+                borderRadius: radii.input - 4,
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 1,
+                borderColor: period === p ? borderLight : "transparent",
+                backgroundColor: period === p ? surface1Color : "transparent",
+              }}
+            >
             <Text
               style={{
                 fontSize: 12,
@@ -268,6 +272,7 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
               {p}
             </Text>
           </Pressable>
+          </Animated.View>
         ))}
       </View>
 
@@ -295,7 +300,11 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
               const exercises = item.exercises ?? [];
               return (
                 <Card key={item.muscle_group} elevated accentColor={accent}>
-                  <Pressable onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}>
+                  <Animated.View style={{ opacity: press.opacity }}>
+                    <Pressable onPress={() => setExpanded(isExpanded ? null : item.muscle_group)}
+                      onPressIn={press.onPressIn}
+                      onPressOut={press.onPressOut}
+                    >
                     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
                         <View
@@ -326,6 +335,7 @@ export function MuscleBalanceScreen({ navigation, route }: Props) {
                       target={Math.round(item.average_weekly_sets * 1.15)}
                     />
                   </Pressable>
+                  </Animated.View>
 
                   {isExpanded && exercises.length > 0 ? (
                     <View style={{ marginTop: spacing.xl2, gap: spacing.md, paddingTop: spacing.md, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" }}>
