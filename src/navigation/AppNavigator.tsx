@@ -74,7 +74,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   }, [isLoaded]);
 
   useEffect(() => {
-    setRefreshTokenHandler(isSignedIn ? () => getTokenWithTimeout(getToken) : null);
+    setRefreshTokenHandler(isSignedIn ? () => getTokenWithTimeout(() => getToken({ skipCache: true })) : null);
     return () => setRefreshTokenHandler(null);
   }, [isSignedIn, getToken]);
 
@@ -82,19 +82,19 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (!isLoaded) return;
 
     if (isSignedIn) {
-      getTokenWithTimeout(getToken).then((t) => { if (t) updateClerkToken(t); });
+      getTokenWithTimeout(() => getToken({ skipCache: true })).then((t) => { if (t) updateClerkToken(t); });
     } else {
       updateClerkToken(null);
     }
 
     const interval = setInterval(async () => {
-      const token = await getTokenWithTimeout(getToken);
+      const token = await getTokenWithTimeout(() => getToken({ skipCache: true }));
       if (token) updateClerkToken(token);
     }, 5 * 60 * 1000);
 
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active" && isSignedIn) {
-        getTokenWithTimeout(getToken).then((t) => { if (t) updateClerkToken(t); });
+        getTokenWithTimeout(() => getToken({ skipCache: true })).then((t) => { if (t) updateClerkToken(t); });
       }
     });
 
